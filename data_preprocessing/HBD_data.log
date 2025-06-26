@@ -1,0 +1,62 @@
+nohup: 忽略输入
+/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/HBD_data.py:388: FutureWarning: A value is trying to be set on a copy of a DataFrame or Series through chained assignment using an inplace method.
+The behavior will change in pandas 3.0. This inplace method will never work because the intermediate object on which we are setting values always behaves as a copy.
+
+For example, when doing 'df[col].method(value, inplace=True)', try using 'df.method({col: value}, inplace=True)' or df[col] = df[col].method(value) instead, to perform the operation inplace on the original object.
+
+
+  dataset["透中高血压_计算"].fillna(0, inplace=True)
+/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/HBD_data.py:395: FutureWarning: A value is trying to be set on a copy of a DataFrame or Series through chained assignment using an inplace method.
+The behavior will change in pandas 3.0. This inplace method will never work because the intermediate object on which we are setting values always behaves as a copy.
+
+For example, when doing 'df[col].method(value, inplace=True)', try using 'df.method({col: value}, inplace=True)' or df[col] = df[col].method(value) instead, to perform the operation inplace on the original object.
+
+
+  dataset["透中低血压_计算"].fillna(0, inplace=True)
+/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/HBD_data.py:419: UserWarning: Could not infer format, so each element will be parsed individually, falling back to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+  dataset["透析开始时间"] = pd.to_datetime(dataset["透析开始时间"])
+/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/HBD_data.py:420: UserWarning: Could not infer format, so each element will be parsed individually, falling back to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+  dataset["透析结束时间"] = pd.to_datetime(dataset["透析结束时间"])
+/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/HBD_data.py:423: UserWarning: Could not infer format, so each element will be parsed individually, falling back to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+  dataset["涨幅时间点"] = pd.to_datetime(dataset["涨幅时间点"], errors='coerce')
+/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/HBD_data.py:424: UserWarning: Could not infer format, so each element will be parsed individually, falling back to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+  dataset["降幅时间点"] = pd.to_datetime(dataset["降幅时间点"], errors='coerce')
+透析中收缩压
+透析中舒张压
+透析中脉搏
+超滤率
+超滤量
+静脉压
+原始动脉压
+血流速
+透析液温度
+跨膜压
+Traceback (most recent call last):
+  File "/home/cht/miniconda3/envs/ML/lib/python3.12/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
+    return self._engine.get_loc(casted_key)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "pandas/_libs/index.pyx", line 167, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/index.pyx", line 191, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/index.pyx", line 234, in pandas._libs.index.IndexEngine._get_loc_duplicates
+  File "pandas/_libs/index.pyx", line 242, in pandas._libs.index.IndexEngine._maybe_get_bool_indexer
+  File "pandas/_libs/index.pyx", line 134, in pandas._libs.index._unpack_bool_indexer
+KeyError: '涨幅时间点差值区间'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/HBD_data.py", line 589, in <module>
+    data = shengyi_dataset(i)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/HBD_data.py", line 583, in shengyi_dataset
+    return process_historical_averages_shenyi(dataset, first_pressure_sd)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/HBD_data.py", line 83, in process_historical_averages_shenyi
+    avg_value = historical_records[col].mean()
+                ~~~~~~~~~~~~~~~~~~^^^^^
+  File "/home/cht/miniconda3/envs/ML/lib/python3.12/site-packages/pandas/core/frame.py", line 4107, in __getitem__
+    indexer = self.columns.get_loc(key)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/cht/miniconda3/envs/ML/lib/python3.12/site-packages/pandas/core/indexes/base.py", line 3819, in get_loc
+    raise KeyError(key) from err
+KeyError: '涨幅时间点差值区间'
