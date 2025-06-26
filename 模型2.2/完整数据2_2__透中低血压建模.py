@@ -163,7 +163,7 @@ def generate_model_report(model_results, target_name, save_dir):
         logger.info(f"性能报告已保存到: {report_file}")
         
     except Exception as e:
-        logger.error(f"生成模型报告时出错: {e}")}]}}}
+        logger.error(f"生成模型报告时出错: {e}")
 
 def train_multiple_models(X_train, X_val, X_test, y_train, y_val, y_test, 
                          class_weights, target_name, model_prefix="模型2.2"):

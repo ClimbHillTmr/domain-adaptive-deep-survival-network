@@ -265,10 +265,10 @@ def main():
     # 加载数据
     print("\n加载数据...")
     dataset = pd.read_csv(
-        "/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/data/深医_final_data_透前动脉压.csv"
+        "/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/data/深医_final_data.csv"
     )
     
-    test_set = fuding_test(standard="透前动脉压")
+    test_set = fuding_test()
     
     # 选择基础特征
     dataset = dataset[features_based]
@@ -337,123 +337,123 @@ def main():
     
     # 对每个目标变量进行建模
     for target in targets:
-        print(f"\n{'='*60}")
-        print(f"目标变量: {target}")
-        print(f"{'='*60}")
-        
-        # 选择特征
-        current_features = features.copy()
-        if target in ["新_降幅时间点比值区间"]:
-            current_features.extend(history_rate_proportion)
-        elif target in ["新_降幅时间点差值区间"]:
-            current_features.extend(history_rate_diff)        
-        # 过滤数据（只对时间预测任务移除标签为4的样本）
-        if target in ["新_降幅时间点比值区间", "新_降幅时间点差值区间"]:
-            # 时间预测任务：移除标签为4的样本
-            train_data = dataset[dataset[target] != 4].copy()
-            test_data = test_set[test_set[target] != 4].copy()
-        else:
-            # 二分类任务：保留所有样本
-            train_data = dataset.copy()
-            test_data = test_set.copy()
-        
-        if len(train_data) == 0 or len(test_data) == 0:
-            print(f"警告: {target} 的有效数据不足，跳过")
-            continue
-        
-        # 准备特征和标签
-        X = train_data[current_features]
-        y = train_data[target]
-        X_external_test = test_data[current_features]
-        y_external_test = test_data[target]
-        
-        # 检查类别数量
-        unique_labels = np.unique(y)
-        n_classes = len(unique_labels)
-        is_binary = n_classes == 2
-        
-        print(f"任务类型: {'二分类' if is_binary else f'{n_classes}分类'}")
-        print(f"特征数量: {len(current_features)}")
-        print(f"类别标签: {unique_labels}")
-        
-        # 显示数据信息
-        print(f"\n训练数据形状: {X.shape}")
-        print(f"测试数据形状: {X_external_test.shape}")
-        
-        # 数据准备（使用高级缺失值填补）
-        X_train, X_val, X_test, y_train, y_val, y_test = pipeline.prepare_data(
-            X, y, X_external_test, y_external_test
-        )
-        
-        # 计算类别权重
-        class_weights = calculate_class_weights(y_train)
-        print(f"类别权重: {class_weights}")
-        
-        # 处理多分类的类别不平衡
-        if not is_binary and n_classes > 2:
-            print(f"\n检测到多分类问题，应用重采样...")
-            X_train_resampled, y_train_resampled = pipeline.handle_class_imbalance(
-                X_train, y_train, method='smotetomek'
-            )
-            print(f"重采样完成: {X_train.shape} -> {X_train_resampled.shape}")
-        else:
-            X_train_resampled, y_train_resampled = X_train, y_train
-        
-        # 打印数据集大小信息
-        print(f"\n训练集总长度: {len(X_train_resampled)}, label 为 1 的长度: {np.sum(y_train_resampled == 1)}")
-        print(f"验证集总长度: {len(X_val)}, label 为 1 的长度: {np.sum(y_val == 1)}")
-        print(f"测试集总长度: {len(X_test)}, label 为 1 的长度: {np.sum(y_test == 1)}")
-        
-        # 训练多个模型
-        model_results = train_multiple_models(
-            X_train_resampled, X_val, X_test, 
-            y_train_resampled, y_val, y_test,
-            class_weights, target, "模型2.1_完全优化版"
-        )
-        
-        # 输出模型比较结果
-        print(f"\n=== {target} 模型训练结果汇总 ===")
-        
-        # 创建性能比较表格
-        performance_summary = []
-        for model_name, result in model_results.items():
-            if result is not None:
-                print(f"{model_name}: 训练成功")
-                if isinstance(result, dict) and 'scores' in result:
-                    scores = result['scores']
-                    if isinstance(scores, dict):
-                        row = {'模型': model_name}
-                        for metric, value in scores.items():
-                            print(f"  {metric}: {value:.4f}")
-                            row[metric] = f"{value:.4f}"
-                        performance_summary.append(row)
-            else:
-                print(f"{model_name}: 训练失败")
-        
-        # 显示性能比较表格
-        if performance_summary:
-            print(f"\n=== {target} 模型性能比较表 ===")
-            performance_df = pd.DataFrame(performance_summary)
-            print(performance_df.to_string(index=False))
-            print()
-        
-        # 保存模型结果和生成报告
         try:
-            save_model_results(model_results, target, "./model_results_2.1")
-            generate_model_report(model_results, target, "./model_results_2.1")
-            print(f"模型结果已保存到: ./model_results_2.1")
-        except Exception as e:
-            print(f"保存模型时出错: {e}")
+            print(f"\n{'='*60}")
+            print(f"目标变量: {target}")
+            print(f"{'='*60}")
+            
+            # 选择特征
+            current_features = features.copy()
+            if target in ["新_降幅时间点比值区间"]:
+                current_features.extend(history_rate_proportion)
+            elif target in ["新_降幅时间点差值区间"]:
+                current_features.extend(history_rate_diff)        
+            # 过滤数据（只对时间预测任务移除标签为4的样本）
+            if target in ["新_降幅时间点比值区间", "新_降幅时间点差值区间"]:
+                # 时间预测任务：移除标签为4的样本
+                train_data = dataset[dataset[target] != 4].copy()
+                test_data = test_set[test_set[target] != 4].copy()
+            else:
+                # 二分类任务：保留所有样本
+                train_data = dataset.copy()
+                test_data = test_set.copy()
+            
+            if len(train_data) == 0 or len(test_data) == 0:
+                print(f"警告: {target} 的有效数据不足，跳过")
+                continue
+            
+            # 准备特征和标签
+            X = train_data[current_features]
+            y = train_data[target]
+            X_external_test = test_data[current_features]
+            y_external_test = test_data[target]
+            
+            # 检查类别数量
+            unique_labels = np.unique(y)
+            n_classes = len(unique_labels)
+            is_binary = n_classes == 2
+            
+            print(f"任务类型: {'二分类' if is_binary else f'{n_classes}分类'}")
+            print(f"特征数量: {len(current_features)}")
+            print(f"类别标签: {unique_labels}")
+            
+            # 显示数据信息
+            print(f"\n训练数据形状: {X.shape}")
+            print(f"测试数据形状: {X_external_test.shape}")
+            
+            # 数据准备（使用高级缺失值填补）
+            X_train, X_val, X_test, y_train, y_val, y_test = pipeline.prepare_data(
+                X, y, X_external_test, y_external_test
+            )
+            
+            # 计算类别权重
+            class_weights = calculate_class_weights(y_train)
+            print(f"类别权重: {class_weights}")
+            
+            # 处理多分类的类别不平衡
+            if not is_binary and n_classes > 2:
+                print(f"\n检测到多分类问题，应用重采样...")
+                X_train_resampled, y_train_resampled = pipeline.handle_class_imbalance(
+                    X_train, y_train, method='smotetomek'
+                )
+                print(f"重采样完成: {X_train.shape} -> {X_train_resampled.shape}")
+            else:
+                X_train_resampled, y_train_resampled = X_train, y_train
+            
+            # 打印数据集大小信息
+            print(f"\n训练集总长度: {len(X_train_resampled)}, label 为 1 的长度: {np.sum(y_train_resampled == 1)}")
+            print(f"验证集总长度: {len(X_val)}, label 为 1 的长度: {np.sum(y_val == 1)}")
+            print(f"测试集总长度: {len(X_test)}, label 为 1 的长度: {np.sum(y_test == 1)}")
+            
+            # 训练多个模型
+            model_results = train_multiple_models(
+                X_train_resampled, X_val, X_test, 
+                y_train_resampled, y_val, y_test,
+                class_weights, target, "模型2.1_完全优化版"
+            )
+            
+            # 输出模型比较结果
+            print(f"\n=== {target} 模型训练结果汇总 ===")
+            
+            # 创建性能比较表格
+            performance_summary = []
+            for model_name, result in model_results.items():
+                if result is not None:
+                    print(f"{model_name}: 训练成功")
+                    if isinstance(result, dict) and 'scores' in result:
+                        scores = result['scores']
+                        if isinstance(scores, dict):
+                            row = {'模型': model_name}
+                            for metric, value in scores.items():
+                                print(f"  {metric}: {value:.4f}")
+                                row[metric] = f"{value:.4f}"
+                            performance_summary.append(row)
+                else:
+                    print(f"{model_name}: 训练失败")
+            
+            # 显示性能比较表格
+            if performance_summary:
+                print(f"\n=== {target} 模型性能比较表 ===")
+                performance_df = pd.DataFrame(performance_summary)
+                print(performance_df.to_string(index=False))
+                print()
+            
+            # 保存模型结果和生成报告
+            try:
+                save_model_results(model_results, target, "./model_results_2.1")
+                generate_model_report(model_results, target, "./model_results_2.1")
+                print(f"模型结果已保存到: ./model_results_2.1")
+            except Exception as e:
+                print(f"保存模型时出错: {e}")
+            
+            print(f"目标变量 {target} 的所有模型训练完成")
         
-        print(f"目标变量 {target} 的所有模型训练完成")
+        except Exception as e:
+            print(f"处理目标变量 {target} 时发生错误: {e}")
     
-    except Exception as e:
-        print(f"处理目标变量 {target} 时发生错误: {e}")
-        continue
-    
-    print(f"\n{'='*60}")
-    print("所有模型训练完成!")
-    print(f"{'='*60}")
+print(f"\n{'='*60}")
+print("所有模型训练完成!")
+print(f"{'='*60}")
 
 
 if __name__ == "__main__":
