@@ -1,3 +1,7 @@
+/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/data/福鼎_final_data.csv filter=lfs diff=lfs merge=lfs -text
+/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/data/深医_final_data.csv filter=lfs diff=lfs merge=lfs -text
+/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/data_10_20_90/福鼎_final_data.csv filter=lfs diff=lfs merge=lfs -text
+/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/data_10_20_90/深医_final_data.csv filter=lfs diff=lfs merge=lfs -text
 data_preprocessing/data/*.csv filter=lfs diff=lfs merge=lfs -text
 data_preprocessing/*.csv filter=lfs diff=lfs merge=lfs -text
 archive/runs_old/*.tar.gz filter=lfs diff=lfs merge=lfs -text

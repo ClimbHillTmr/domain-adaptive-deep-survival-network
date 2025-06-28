@@ -1,8 +1,15 @@
 *.pyc
 *.pkl
+*.log
+*.out
 data_preprocessing/updated_dataset_fuding.csv
 data_preprocessing/updated_dataset_shenyi.csv
 data_preprocessing/data/福鼎_optimized_data透前动脉压.csv
 data_preprocessing/data/福鼎_result_df透前动脉压.csv
 data_preprocessing/data/深医_optimized_data.csv
 data_preprocessing/data/深医_result_df.csv
+data_preprocessing/data/福鼎_based_data透前动脉压_HDH.csv
+data_preprocessing/data_10_20_90/福鼎_optimized_data透前动脉压.csv
+data_preprocessing/data_10_20_90/深医_optimized_data.csv
+data_preprocessing/data_10_20_90/深医_result_df.csv
+data_preprocessing/data_10_20_90/福鼎_result_df透前动脉压.csv
