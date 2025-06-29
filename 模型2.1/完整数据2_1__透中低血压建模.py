@@ -292,6 +292,18 @@ def main():
     dataset.info()
     test_set.info()
     
+    # 检查关键列是否存在
+    print("\n检查关键列是否存在:")
+    key_columns = ['透中低血压_计算', '降幅时间点比值区间', '降幅时间点差值区间']
+    for col in key_columns:
+        print(f"{col}: {'存在' if col in dataset.columns else '不存在'}")
+    
+    # 如果关键列不存在，显示包含'透中低血压'的所有列
+    if '透中低血压_计算' not in dataset.columns:
+        print("\n包含'透中低血压'的列:")
+        related_cols = [col for col in dataset.columns if '透中低血压' in col]
+        print(related_cols)
+
     # 处理时间序列数据（模型2.1特有：使用n天数据预测n+1天）
     columns_to_move = [
         "透中低血压_计算",

@@ -32,7 +32,8 @@ except ImportError:
     BAYESIAN_AVAILABLE = False
 
 try:
-    from yellowbrick.classifier import ROCAUC, ClassificationReport, ConfusionMatrix
+    from yellowbrick.target import ClassBalance
+    from yellowbrick.classifier import ROCAUC, PrecisionRecallCurve, ClassificationReport, ClassPredictionError, DiscriminationThreshold, ConfusionMatrix
     YELLOWBRICK_AVAILABLE = True
 except ImportError:
     YELLOWBRICK_AVAILABLE = False
@@ -66,9 +67,9 @@ class OptimizedSVMClassifier:
                     'C': Real(1e-4, 1e3, prior='log-uniform'),
                     'class_weight': Categorical([None, 'balanced']),
                     'max_iter': Integer(1000, 10000),
-                    'loss': Categorical(['hinge', 'squared_hinge']),
-                    'penalty': Categorical(['l1', 'l2']),
-                    'dual': Categorical([True, False]),
+                    'loss': Categorical(['squared_hinge']),  # 只使用squared_hinge，避免与l1 penalty冲突
+                    'penalty': Categorical(['l2']),  # 只使用l2 penalty，避免与hinge loss冲突
+                    'dual': Categorical([False]),  # 对于l1 penalty必须设置dual=False
                     'tol': Real(1e-5, 1e-2, prior='log-uniform')
                 }
             else:
@@ -84,7 +85,7 @@ class OptimizedSVMClassifier:
                     'tol': Real(1e-5, 1e-2, prior='log-uniform'),
                     'cache_size': Integer(200, 1000)
                 }
-        elif search_type == 'grid':
+        elif search_type == None:
             if is_linear:
                 return {
                     'C': [0.001, 0.01, 0.1, 1, 10, 100],
@@ -117,6 +118,35 @@ class OptimizedSVMClassifier:
                     'shrinking': [True, False],
                     'probability': [True, False],
                     'tol': loguniform(1e-5, 1e-2)
+                }
+        elif search_type == 'grid':
+            if is_linear:
+                return {
+                    'C': [0.001, 0.01, 0.1, 1, 10, 100],
+                    'class_weight': ['balanced', None],
+                    'max_iter': [1000, 5000, 10000]
+                }
+            else:
+                return {
+                    'C': [0.001, 0.01, 0.1, 1, 10],
+                    'gamma': ['scale', 'auto', 0.001, 0.01, 0.1, 1],
+                    'kernel': ['rbf', 'poly', 'sigmoid'],
+                    'class_weight': ['balanced', None],
+                    'degree': [2, 3, 4]
+                }
+        else:
+            # 默认返回简单的网格搜索参数
+            if is_linear:
+                return {
+                    'C': [0.1, 1, 10],
+                    'class_weight': ['balanced', None]
+                }
+            else:
+                return {
+                    'C': [0.1, 1, 10],
+                    'gamma': ['scale', 'auto'],
+                    'kernel': ['rbf', 'linear'],
+                    'class_weight': ['balanced', None]
                 }
     
     def _get_scoring_metrics(self, is_binary=True):
@@ -176,19 +206,23 @@ class OptimizedSVMClassifier:
         if is_binary and len(X_combined) < 10000:  # 对于小数据集使用RBF SVM
             base_model = SVC(random_state=self.random_state, probability=True)
             param_grid = self._get_param_grid(search_type, is_linear=False)
-            if class_weights:
-                if search_type == 'bayesian' and BAYESIAN_AVAILABLE:
-                    param_grid['class_weight'] = Categorical([None, 'balanced', class_weights])
-                else:
-                    param_grid['class_weight'].append(class_weights)
+            if class_weights and search_type == 'bayesian' and BAYESIAN_AVAILABLE:
+                # 对于贝叶斯优化，字典类型的class_weight不能直接使用，只使用预定义选项
+                param_grid['class_weight'] = Categorical([None, 'balanced'])
+            elif class_weights and isinstance(class_weights, dict):
+                param_grid['class_weight'] = ['balanced', None, class_weights]
+            elif 'class_weight' not in param_grid:
+                param_grid['class_weight'] = ['balanced', None]
         else:  # 对于大数据集或多分类使用LinearSVC
             base_model = LinearSVC(random_state=self.random_state, dual=False)
             param_grid = self._get_param_grid(search_type, is_linear=True)
-            if class_weights:
-                if search_type == 'bayesian' and BAYESIAN_AVAILABLE:
-                    param_grid['class_weight'] = Categorical([None, 'balanced', class_weights])
-                else:
-                    param_grid['class_weight'].append(class_weights)
+            if class_weights and search_type == 'bayesian' and BAYESIAN_AVAILABLE:
+                # 对于贝叶斯优化，字典类型的class_weight不能直接使用，只使用预定义选项
+                param_grid['class_weight'] = Categorical([None, 'balanced'])
+            elif class_weights and isinstance(class_weights, dict):
+                param_grid['class_weight'] = ['balanced', None, class_weights]
+            elif 'class_weight' not in param_grid:
+                param_grid['class_weight'] = ['balanced', None]
         
         # 获取评估指标
         scoring = self._get_scoring_metrics(is_binary)
@@ -221,6 +255,34 @@ class OptimizedSVMClassifier:
         # 训练模型
         search.fit(X_combined, y_combined)
         self.model = search.best_estimator_
+        
+        # 如果使用贝叶斯优化且提供了自定义class_weights，重新训练最佳模型
+        if (search_type == 'bayesian' and BAYESIAN_AVAILABLE and 
+            class_weights and isinstance(class_weights, dict)):
+            print("应用自定义类权重重新训练最佳模型...")
+            best_params = search.best_params_.copy()
+            best_params['class_weight'] = class_weights
+            
+            # 创建新模型并应用最佳参数和自定义权重
+            if isinstance(self.model, SVC):
+                # 移除可能冲突的参数，然后添加固定参数
+                if 'probability' in best_params:
+                    del best_params['probability']
+                if 'random_state' in best_params:
+                    del best_params['random_state']
+                final_model = SVC(**best_params, random_state=self.random_state, probability=True)
+            else:
+                # 移除可能冲突的参数，然后添加固定参数
+                if 'dual' in best_params:
+                    del best_params['dual']
+                if 'random_state' in best_params:
+                    del best_params['random_state']
+                final_model = LinearSVC(**best_params, random_state=self.random_state, dual=False)
+            
+            final_model.fit(X_combined, y_combined)
+            self.model = final_model
+            print(f"已应用自定义类权重: {class_weights}")
+        
         self.is_fitted = True
         
         print(f"最佳参数: {search.best_params_}")
@@ -229,8 +291,18 @@ class OptimizedSVMClassifier:
         # 交叉验证详细结果
         cv_results = pd.DataFrame(search.cv_results_)
         print(f"\n交叉验证统计:")
-        print(f"平均训练分数: {cv_results['mean_train_score'].mean():.4f} ± {cv_results['std_train_score'].mean():.4f}")
-        print(f"平均验证分数: {cv_results['mean_test_score'].mean():.4f} ± {cv_results['std_test_score'].mean():.4f}")
+        
+        # 根据refit_metric确定使用的分数列
+        score_suffix = refit_metric if refit_metric in ['roc_auc', 'f1', 'recall', 'precision', 'accuracy'] else 'roc_auc'
+        train_score_col = f'mean_train_{score_suffix}'
+        test_score_col = f'mean_test_{score_suffix}'
+        
+        if train_score_col in cv_results.columns:
+            print(f"平均训练分数({score_suffix}): {cv_results[train_score_col].mean():.4f} ± {cv_results[f'std_train_{score_suffix}'].mean():.4f}")
+        if test_score_col in cv_results.columns:
+            print(f"平均验证分数({score_suffix}): {cv_results[test_score_col].mean():.4f} ± {cv_results[f'std_test_{score_suffix}'].mean():.4f}")
+        
+        print(f"最佳CV分数: {search.best_score_:.4f}")
         
         # 评估模型
         train_score = self.model.score(X_train_scaled, y_train)
@@ -343,7 +415,16 @@ def C_SVM_model(X_train, X_test, y_train, y_test, X_val, y_val,
     
     # 设置基础路径
     if base_path is None:
-        base_path = "/home/cht/Works/PredictionTimeHypotensionDialysis/透前模型"
+        from datetime import datetime
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        模型名称 = "SVM"
+        base_path = "./"
+        
+    # 创建结果目录
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    模型名称 = "SVM"
+    results_dir = f"./Results/{模型名称}_{target}_{timestamp}"
+    os.makedirs(results_dir, exist_ok=True)
     
     print(f"\n=== SVM模型训练: {target} ===")
     print(f"训练集长度: {len(X_train)}, 标签1数量: {np.sum(y_train == 1)}")
@@ -477,29 +558,69 @@ def C_SVM_model(X_train, X_test, y_train, y_test, X_val, y_val,
 
 
 def _create_visualizations(model, X_train, y_train, X_test, y_test, output_dir, target, unique_labels):
-    """创建可视化图表"""
+    """创建完整的yellowbrick性能可视化图表"""
     if not YELLOWBRICK_AVAILABLE:
+        print("Yellowbrick不可用，跳过可视化")
         return
     
+    print(f"正在创建SVM模型的性能可视化图表 - {target}")
+    
     try:
-        # 分类报告
-        viz = ClassificationReport(model, title=f"SVM Classification Report - {target}")
-        viz.fit(X_train, y_train)
-        viz.score(X_test, y_test)
-        viz.show(outpath=output_dir / 'Output' / f'SVM_classification_report_{target}.png')
+        # 1. 类别平衡可视化
+        print("创建类别平衡图...")
+        viz = ClassBalance(title=f"SVM Class Balance - {target}")
+        viz.fit(y_train)
+        viz.show(outpath=output_dir / 'Output' / f'SVM_class_balance_{target}.pdf')
         
-        # ROC曲线（仅二分类）
+        # 2. ROC曲线（仅二分类）
         if len(unique_labels) == 2:
+            print("创建ROC曲线...")
             viz = ROCAUC(model, title=f"SVM ROC Curve - {target}")
             viz.fit(X_train, y_train)
             viz.score(X_test, y_test)
-            viz.show(outpath=output_dir / 'Output' / f'SVM_roc_curve_{target}.png')
+            viz.show(outpath=output_dir / 'Output' / f'SVM_roc_curve_{target}.pdf')
+            
+            # 3. 精确率-召回率曲线（仅二分类）
+            print("创建精确率-召回率曲线...")
+            viz = PrecisionRecallCurve(model, title=f"SVM Precision-Recall Curve - {target}")
+            viz.fit(X_train, y_train)
+            viz.score(X_test, y_test)
+            viz.show(outpath=output_dir / 'Output' / f'SVM_precision_recall_{target}.pdf')
+            
+            # 4. 判别阈值可视化（仅二分类）
+            print("创建判别阈值图...")
+            viz = DiscriminationThreshold(model, title=f"SVM Discrimination Threshold - {target}")
+            viz.fit(X_train, y_train)
+            viz.score(X_test, y_test)
+            viz.show(outpath=output_dir / 'Output' / f'SVM_discrimination_threshold_{target}.pdf')
         
-        # 混淆矩阵
+        # 5. 分类报告
+        print("创建分类报告...")
+        viz = ClassificationReport(model, title=f"SVM Classification Report - {target}")
+        viz.fit(X_train, y_train)
+        viz.score(X_test, y_test)
+        viz.show(outpath=output_dir / 'Output' / f'SVM_classification_report_{target}.pdf')
+        
+        # 6. 混淆矩阵
+        print("创建混淆矩阵...")
         viz = ConfusionMatrix(model, classes=unique_labels, title=f"SVM Confusion Matrix - {target}")
         viz.fit(X_train, y_train)
         viz.score(X_test, y_test)
-        viz.show(outpath=output_dir / 'Output' / f'SVM_confusion_matrix_{target}.png')
+        viz.show(outpath=output_dir / 'Output' / f'SVM_confusion_matrix_{target}.pdf')
+        
+        # 7. 类预测错误可视化
+        print("创建类预测错误图...")
+        viz = ClassPredictionError(model, classes=unique_labels, title=f"SVM Class Prediction Error - {target}")
+        viz.fit(X_train, y_train)
+        viz.score(X_test, y_test)
+        viz.show(outpath=output_dir / 'Output' / f'SVM_class_prediction_error_{target}.pdf')
+        
+        print(f"✓ SVM模型所有可视化图表已保存到: {output_dir / 'Output'}")
+        
+    except Exception as e:
+        print(f"❌ SVM可视化创建过程中出现错误: {e}")
+        import traceback
+        traceback.print_exc()
         
         print("可视化图表已保存")
         

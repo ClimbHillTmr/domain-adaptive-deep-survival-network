@@ -107,12 +107,13 @@ def calculate_pressure_change(row, pressure_type="hypertension", first_pressure=
     """
     if pressure_type == "hypertension":
         pressures = convert_to_float_list(row["动脉压"])
-        threshold = 15
+        threshold = 10
         comparator = lambda p, fp: p - fp > threshold
     elif pressure_type == "hypotension":
         pressures = convert_to_float_list(row["透析中收缩压"])
         threshold = 20
-        comparator = lambda p, fp: fp - p >= threshold and min(pressures) <= 90
+        comparator = lambda p, fp: fp - p >= threshold 
+        # comparator = lambda p, fp: fp - p >= threshold and min(pressures) <= 90
     else:
         raise ValueError("Invalid pressure_type. Use 'hypertension' or 'hypotension'.")
 

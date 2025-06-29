@@ -52,7 +52,7 @@ def process_patient_historical_averages(patient_data, mean_columns):
     return pd.DataFrame(result_data)
 
 
-def process_historical_averages_shenyi_parallel(dataset, first_pressure_sd=None, n_threads=20):
+def process_historical_averages_shenyi_parallel(dataset, first_pressure_sd="", n_threads=20):
     """使用多线程处理深医历史平均值计算的函数"""
     mean_columns = [
         "透前体重",
@@ -90,57 +90,65 @@ def process_historical_averages_shenyi_parallel(dataset, first_pressure_sd=None,
     ]
     
     dataset = dataset.sort_values(by=["患者id", "透析日期"])
-    
-    print(f"开始使用 {n_threads} 个线程处理历史平均值计算...")
-    
-    # 按患者分组
-    patient_groups = [group for _, group in dataset.groupby('患者id')]
-    total_patients = len(patient_groups)
-    print(f"总共需要处理 {total_patients} 个患者的数据")
-    
-    # 使用线程池处理
-    result_dfs = []
-    completed_patients = 0
-    lock = threading.Lock()
-    
-    def process_with_progress(patient_data):
-        nonlocal completed_patients
-        result = process_patient_historical_averages(patient_data, mean_columns)
+    optimized_file_path = f"/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/data/深医_result_df.csv"
+    if os.path.exists(optimized_file_path):
+        print(f"发现优化数据文件: {optimized_file_path}")
+        print("跳过中间计算步骤")
+        result_df = pd.read_csv(optimized_file_path)
+    else:
+        print(f"开始使用 {n_threads} 个线程处理历史平均值计算...")
         
-        with lock:
-            completed_patients += 1
-            if completed_patients % 100 == 0 or completed_patients == total_patients:
-                progress = completed_patients / total_patients * 100
-                print(f"历史平均值计算进度: {completed_patients}/{total_patients} ({progress:.1f}%)")
+        # 按患者分组
+        patient_groups = [group for _, group in dataset.groupby('患者id')]
+        total_patients = len(patient_groups)
+        print(f"总共需要处理 {total_patients} 个患者的数据")
         
-        return result
-    
-    with ThreadPoolExecutor(max_workers=n_threads) as executor:
-        # 提交所有任务
-        future_to_patient = {executor.submit(process_with_progress, patient_data): i 
-                           for i, patient_data in enumerate(patient_groups)}
+        # 使用线程池处理
+        result_dfs = []
+        completed_patients = 0
+        lock = threading.Lock()
         
-        # 收集结果
-        for future in as_completed(future_to_patient):
-            try:
-                result_df = future.result()
-                result_dfs.append(result_df)
-            except Exception as exc:
-                patient_idx = future_to_patient[future]
-                print(f'患者 {patient_idx} 处理时发生异常: {exc}')
-    
-    # 合并所有结果
-    print("合并处理结果...")
-    result_df = pd.concat(result_dfs, ignore_index=True)
-    
-    print("保存历史平均值结果...")
-    result_df.to_csv(f"/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/data/深医_result_df{first_pressure_sd}.csv")
+        def process_with_progress(patient_data):
+            nonlocal completed_patients
+            result = process_patient_historical_averages(patient_data, mean_columns)
+            
+            with lock:
+                completed_patients += 1
+                if completed_patients % 100 == 0 or completed_patients == total_patients:
+                    progress = completed_patients / total_patients * 100
+                    print(f"历史平均值计算进度: {completed_patients}/{total_patients} ({progress:.1f}%)")
+            
+            return result
+        
+        with ThreadPoolExecutor(max_workers=n_threads) as executor:
+            # 提交所有任务
+            future_to_patient = {executor.submit(process_with_progress, patient_data): i 
+                            for i, patient_data in enumerate(patient_groups)}
+            
+            # 收集结果
+            for future in as_completed(future_to_patient):
+                try:
+                    result_df = future.result()
+                    result_dfs.append(result_df)
+                except Exception as exc:
+                    patient_idx = future_to_patient[future]
+                    print(f'患者 {patient_idx} 处理时发生异常: {exc}')
+        
+        # 合并所有结果
+        print("合并处理结果...")
+        result_df = pd.concat(result_dfs, ignore_index=True)
+        
+        print("保存历史平均值结果...")
+        result_df.to_csv(f"/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/data/深医_result_df{first_pressure_sd}.csv")
     
     # 合并原始数据和历史平均值数据
     print("合并原始数据和历史平均值数据...")
     whole_data = pd.merge(
         dataset.reset_index(), result_df, on=["患者id", "透析日期"], how="inner"
     )
+    
+    # 重置索引以避免重复标签错误
+    whole_data = whole_data.reset_index(drop=True)
     
     # 计算累积平均值（这部分保持原有逻辑）
     print("计算累积平均值...")
@@ -358,7 +366,7 @@ def process_historical_averages_shenyi(dataset, first_pressure_sd=""):
         result_df["历史平均" + col] = historical_avg_values
 
     print(result_df)
-    result_df.to_csv("/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/data/深医_result_df " + str(first_pressure_sd) + ".csv")
+    result_df.to_csv("/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/data/深医_result_df" + str(first_pressure_sd) + ".csv")
 
     whole_data = pd.merge(
         dataset.reset_index(), result_df, on=["患者id", "透析日期"], how="inner"
@@ -842,6 +850,6 @@ def shengyi_dataset(first_pressure_sd="", use_parallel=True, n_threads=20):
 
 
 # 主执行部分 - 使用20个线程进行并行计算
-for i in ["透前动脉压"]:
-    data = shengyi_dataset(i, use_parallel=True, n_threads=30)
-    print(f"=== {i} 数据处理完成 ===")
+I=""
+data = shengyi_dataset(i, use_parallel=True, n_threads=30)
+print(f"=== {i} 数据处理完成 ===")

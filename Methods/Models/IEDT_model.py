@@ -23,7 +23,7 @@ import psutil
 
 from sklearn.tree import DecisionTreeClassifier, export_text, plot_tree
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import StratifiedKFold, cross_val_score
+from sklearn.model_selection import StratifiedKFold, cross_val_score, RandomizedSearchCV, GridSearchCV
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.metrics import (
     accuracy_score, f1_score, roc_auc_score, roc_curve, auc,
@@ -33,6 +33,18 @@ from sklearn.preprocessing import StandardScaler
 import joblib
 import json
 from datetime import datetime
+
+# Yellowbrick可视化库
+try:
+    from yellowbrick.target import ClassBalance
+    from yellowbrick.classifier import (
+        ROCAUC, PrecisionRecallCurve, ClassificationReport,
+        ClassPredictionError, DiscriminationThreshold, ConfusionMatrix
+    )
+    YELLOWBRICK_AVAILABLE = True
+except ImportError:
+    YELLOWBRICK_AVAILABLE = False
+    print("警告: yellowbrick库未安装，将使用matplotlib进行可视化")
 
 # GPU/CUDA支持检测
 try:
@@ -77,12 +89,11 @@ class InterpretableEnsembleDecisionTrees:
     5. 临床意义解释
     """
     
-    def __init__(self, random_state=42, n_jobs=-1, use_cuda=False, 
-                 max_threads=None, memory_limit_gb=None):
+    def __init__(self, random_state=42, n_jobs=-1, max_threads=None, memory_limit_gb=None):
         self.random_state = random_state
         
         # 多线程和计算资源配置
-        self.use_cuda = use_cuda and CUDA_AVAILABLE
+        self.use_cuda = CUDA_AVAILABLE  # 自动检测CUDA可用性
         self.max_threads = self._configure_threads(max_threads)
         self.n_jobs = self._configure_n_jobs(n_jobs)
         self.memory_limit_gb = memory_limit_gb or self._get_available_memory()
@@ -111,12 +122,11 @@ class InterpretableEnsembleDecisionTrees:
         
     def _create_output_dirs(self, base_path):
         """创建输出目录"""
-        dirs = ['Results/IEDT', 'Results/IEDT/Output', 'Results/IEDT/Importance', 
-                'Results/IEDT/Rules', 'Results/IEDT/Visualizations']
+        dirs = ['Output', 'Importance', 'Rules', 'Visualizations']
         for dir_name in dirs:
             full_path = Path(base_path) / dir_name
             full_path.mkdir(parents=True, exist_ok=True)
-        return Path(base_path) / 'Results/IEDT'
+        return Path(base_path)
     
     def _configure_threads(self, max_threads):
         """配置线程数量"""
@@ -233,9 +243,7 @@ class InterpretableEnsembleDecisionTrees:
         
         # 创建基础模型
         base_model = IEDTEstimator(
-            random_state=self.random_state,
-            use_cuda=self.use_cuda,
-            n_jobs=self.n_jobs
+            random_state=self.random_state
         )
         
         # 获取参数空间
@@ -553,7 +561,16 @@ def IEDT_model(X_train, X_test, y_train, y_test, X_val, y_val,
     
     # 设置基础路径
     if base_path is None:
-        base_path = "/home/cht/Works/PredictionTimeHypotensionDialysis/透前模型"
+        from datetime import datetime
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        模型名称 = "IEDT"
+        base_path = "./"
+        
+    # 创建结果目录
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    模型名称 = "IEDT"
+    results_dir = f"./Results/{模型名称}_{target}_{timestamp}"
+    os.makedirs(results_dir, exist_ok=True)
     
     print(f"\n=== IEDT模型训练: {target} ===")
     print(f"训练集长度: {len(X_train)}, 标签1数量: {np.sum(y_train == 1)}")
@@ -564,7 +581,7 @@ def IEDT_model(X_train, X_test, y_train, y_test, X_val, y_val,
     iedt_classifier = InterpretableEnsembleDecisionTrees()
     
     # 创建输出目录
-    output_dir = iedt_classifier._create_output_dirs(base_path)
+    output_dir = iedt_classifier._create_output_dirs(results_dir)
     
     # 训练模型
     search_result = iedt_classifier.fit(

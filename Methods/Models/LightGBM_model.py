@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import lightgbm as lgb
-from sklearn.model_selection import RandomizedSearchCV, GridSearchCV, StratifiedKFold, cross_val_score
+from sklearn.model_selection import RandomizedSearchCV, GridSearchCV, StratifiedKFold, cross_val_score,train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix, classification_report
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -39,7 +39,8 @@ from sklearn.metrics import (
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.utils.class_weight import compute_class_weight
 from pylab import mpl
-from yellowbrick.classifier import ROCAUC, ClassificationReport, ConfusionMatrix
+from yellowbrick.target import ClassBalance
+from yellowbrick.classifier import ROCAUC, PrecisionRecallCurve, ClassificationReport, ClassPredictionError, DiscriminationThreshold, ConfusionMatrix
 
 mpl.rcParams["font.sans-serif"] = ["Arial Unicode MS"]
 ## mac
@@ -107,40 +108,33 @@ def LightGBM_model(
     # 定义扩展的超参数搜索空间
     if optimization_method == 'bayesian' and BAYESIAN_AVAILABLE:
         # 贝叶斯优化参数空间（连续和离散空间的组合）
+        # 为了避免GOSS与bagging冲突，简化参数空间
         param_space = {
-            'boosting_type': Categorical(['gbdt', 'dart', 'goss']),
-            'num_leaves': Integer(15, 500),
-            'max_depth': Integer(-1, 50),
-            'learning_rate': Real(0.0001, 0.5, prior='log-uniform'),
-            'n_estimators': Integer(50, 2000),
-            'subsample': Real(0.4, 1.0),
-            'colsample_bytree': Real(0.4, 1.0),
-            'reg_alpha': Real(1e-8, 100.0, prior='log-uniform'),
-            'reg_lambda': Real(1e-8, 100.0, prior='log-uniform'),
-            'min_child_samples': Integer(1, 200),
-            'min_child_weight': Real(0.0001, 50, prior='log-uniform'),
-            'min_split_gain': Real(0.0, 2.0),
-            'subsample_freq': Integer(0, 10),
-            'feature_fraction': Real(0.4, 1.0),
-            'bagging_fraction': Real(0.4, 1.0),
-            'bagging_freq': Integer(0, 10),
-            'max_bin': Integer(63, 1023),
-            'min_data_in_leaf': Integer(1, 200),
-            'lambda_l1': Real(1e-8, 100.0, prior='log-uniform'),
-            'lambda_l2': Real(1e-8, 100.0, prior='log-uniform'),
-            'min_gain_to_split': Real(0.0, 2.0),
-            'drop_rate': Real(0.0, 0.8),
-            'max_drop': Integer(10, 200),
-            'skip_drop': Real(0.0, 1.0),
-            'uniform_drop': Categorical([True, False]),
-            'top_rate': Real(0.1, 1.0),
-            'other_rate': Real(0.0, 1.0)
+            'num_leaves': [15, 31, 50, 100, 150, 200, 300, 400, 500],
+            'max_depth': [-1, 3, 5, 7, 10, 15, 20, 30, 40, 50],
+            'learning_rate': [0.0001, 0.001, 0.005, 0.01, 0.02, 0.05, 0.08, 0.1, 0.15, 0.2, 0.3, 0.5],
+            'n_estimators': [50, 100, 200, 300, 500, 800, 1000, 1500, 2000],
+            'subsample': [0.4, 0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.95, 1.0],
+            'colsample_bytree': [0.4, 0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.95, 1.0],
+            'reg_alpha': [0, 0.0001, 0.001, 0.01, 0.03, 0.08, 0.1, 0.3, 0.5, 1.0, 10.0, 100.0],
+            'reg_lambda': [0, 0.0001, 0.001, 0.01, 0.03, 0.08, 0.1, 0.3, 0.5, 1.0, 10.0, 100.0],
+            'min_child_samples': [1, 5, 10, 15, 20, 25, 30, 50, 100, 200],
+            'min_child_weight': [0.0001, 0.001, 0.01, 0.1, 1, 5, 10, 50],
+            'min_split_gain': [0.0, 0.001, 0.01, 0.1, 0.2, 0.5, 1.0, 2.0],
+            'subsample_freq': [0, 1, 2, 3, 5, 7, 10],
+            'feature_fraction': [0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+            'bagging_fraction': [0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+            'bagging_freq': [0, 1, 2, 3, 5, 7, 10],
+            'max_bin': [63, 127, 255, 511, 1023],
+            'min_data_in_leaf': [1, 5, 10, 15, 20, 30, 50, 100, 200],
+            'lambda_l1': [0, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0, 100.0],
+            'lambda_l2': [0, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0, 100.0]
         }
         param_dist = param_space
     elif optimization_method == 'random':
         # 随机搜索参数空间（离散值列表）
         param_dist = {
-            'boosting_type': ['gbdt', 'dart', 'goss'],
+            'boosting_type': ['gbdt', 'dart'],  # 移除goss避免冲突
             'num_leaves': [15, 31, 50, 100, 150, 200, 300, 400, 500],
             'max_depth': [-1, 3, 5, 7, 10, 15, 20, 30, 40, 50],
             'learning_rate': [0.0001, 0.001, 0.005, 0.01, 0.02, 0.05, 0.08, 0.1, 0.15, 0.2, 0.3, 0.5],
@@ -164,45 +158,45 @@ def LightGBM_model(
     else:
         # 网格搜索参数空间（较小但精确的搜索范围）
         param_dist = {
-            'boosting_type': ['gbdt', 'dart'],
-            'num_leaves': [31, 50, 100, 200],
-            'max_depth': [-1, 7, 15, 30],
-            'learning_rate': [0.01, 0.05, 0.1, 0.2],
-            'n_estimators': [100, 300, 500, 1000],
-            'subsample': [0.7, 0.8, 0.9, 1.0],
-            'colsample_bytree': [0.7, 0.8, 0.9, 1.0],
-            'reg_alpha': [0, 0.1, 0.5, 1.0],
-            'reg_lambda': [0, 0.1, 0.5, 1.0],
-            'min_child_samples': [10, 20, 50, 100]
+            'boosting_type': ['gbdt'],
+            # 'num_leaves': [31, 50, 100, 200],
+            # 'max_depth': [7, 15, 30],
+            # 'learning_rate': [0.01, 0.05, 0.1,],
+            # 'n_estimators': [100, 300, 500],
+            # 'subsample': [0.7, 0.8, 0.9, 1.0],
+            # 'colsample_bytree': [0.7, 0.8, 0.9, 1.0],
+            # 'reg_alpha': [0, 0.1, 0.5, 1.0],
+            # 'reg_lambda': [0, 0.1, 0.5, 1.0],
+            # 'min_child_samples': [10, 20, 50, 100]
         }
 
     # 定义更全面的评估指标
     if is_multiclass:
         scoring = {
-            'accuracy': make_scorer(accuracy_score),
-            'f1_macro': make_scorer(f1_score, average='macro'),
+            # 'accuracy': make_scorer(accuracy_score),
+            # 'f1_macro': make_scorer(f1_score, average='macro'),
             'f1_weighted': make_scorer(f1_score, average='weighted'),
-            'f1_micro': make_scorer(f1_score, average='micro'),
-            'precision_macro': make_scorer(precision_score, average='macro'),
-            'precision_weighted': make_scorer(precision_score, average='weighted'),
-            'recall_macro': make_scorer(recall_score, average='macro'),
+            # 'f1_micro': make_scorer(f1_score, average='micro'),
+            # 'precision_macro': make_scorer(precision_score, average='macro'),
+            # 'precision_weighted': make_scorer(precision_score, average='weighted'),
+            # 'recall_macro': make_scorer(recall_score, average='macro'),
             'recall_weighted': make_scorer(recall_score, average='weighted'),
-            'roc_auc_ovr': make_scorer(roc_auc_score, needs_proba=True, 
+            'roc_auc_ovr': make_scorer(roc_auc_score, response_method='predict_proba', 
                                      multi_class='ovr', average='weighted'),
-            'neg_log_loss': make_scorer(log_loss, needs_proba=True, greater_is_better=False)
+            # 'neg_log_loss': make_scorer(log_loss, response_method='predict_proba', greater_is_better=False)
         }
         refit_metric = 'f1_weighted'
     else:
         scoring = {
-            'accuracy': make_scorer(accuracy_score),
-            'f1': make_scorer(f1_score),
+            # 'accuracy': make_scorer(accuracy_score),
+            # 'f1': make_scorer(f1_score),
             'f1_weighted': make_scorer(f1_score, average='weighted'),
-            'precision': make_scorer(precision_score),
-            'recall': make_scorer(recall_score),
-            'roc_auc': make_scorer(roc_auc_score, needs_proba=True),
-            'neg_log_loss': make_scorer(log_loss, needs_proba=True, greater_is_better=False)
+            # 'precision': make_scorer(precision_score),
+            # 'recall': make_scorer(recall_score),
+            'roc_auc': make_scorer(roc_auc_score, response_method='predict_proba'),
+            # 'neg_log_loss': make_scorer(log_loss, response_method='predict_proba', greater_is_better=False)
         }
-        refit_metric = 'f1'
+        refit_metric = 'f1_weighted'
 
     # 选择搜索策略
     if optimization_method == 'bayesian' and BAYESIAN_AVAILABLE:
@@ -217,10 +211,7 @@ def LightGBM_model(
             n_jobs=-1,
             verbose=1,
             random_state=42,
-            return_train_score=True,
-            n_points=3,  # 每次迭代评估的点数
-            acq_func='EI',  # 采集函数：期望改进
-            acq_optimizer='auto'  # 采集函数优化器
+            return_train_score=True
         )
     elif optimization_method == 'random':
         logger.info(f"使用随机搜索，迭代次数: {n_iter}")
@@ -313,9 +304,9 @@ def LightGBM_model(
         # 使用验证集进行早停训练
         final_model.fit(
             X_train, y_train,
-            eval_set=[(X_val, y_val)],
-            eval_names=['validation'],
-            verbose=100
+            eval_set=[(X_train, y_train), (X_val, y_val)],
+            eval_names=['training', 'validation'],
+            callbacks=[lgb.log_evaluation(100)]
         )
         
         model = final_model
@@ -336,12 +327,13 @@ def LightGBM_model(
     
     # 计算各种评估指标
     def calculate_metrics(y_true, y_pred, y_proba, dataset_name):
+        # 在 calculate_metrics 函数中修改
         metrics = {
             f'{dataset_name}_accuracy': accuracy_score(y_true, y_pred),
-            f'{dataset_name}_precision_weighted': precision_score(y_true, y_pred, average='weighted'),
-            f'{dataset_name}_recall_weighted': recall_score(y_true, y_pred, average='weighted'),
-            f'{dataset_name}_f1_weighted': f1_score(y_true, y_pred, average='weighted'),
-        }
+            f'{dataset_name}_precision_weighted': precision_score(y_true, y_pred, average='weighted', zero_division=0),
+            f'{dataset_name}_recall_weighted': recall_score(y_true, y_pred, average='weighted', zero_division=0),
+            f'{dataset_name}_f1_weighted': f1_score(y_true, y_pred, average='weighted', zero_division=0),
+            }
         
         if is_multiclass:
             metrics.update({
@@ -392,34 +384,94 @@ def LightGBM_model(
 
     # 创建结果保存目录
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    results_dir = f"./results/LGBM_{target}_{kinds}_{timestamp}"
+    results_dir = f"./Results/LGBM_{target}_{timestamp}"
     os.makedirs(results_dir, exist_ok=True)
     
     logger.info(f"结果将保存到: {results_dir}")
     
-    # 绘制综合分析图
-    plt.figure(figsize=(15, 10))
-    
-    if not is_multiclass:
-        # 二分类ROC曲线
-        plt.subplot(2, 3, 1)
-        fpr, tpr, _ = roc_curve(y_test, y_test_proba[:, 1])
-        roc_auc = auc(fpr, tpr)
-        plt.plot(fpr, tpr, 'b-', label=f'测试集 AUC = {roc_auc:.3f}')
+    # 使用yellowbrick创建完整的性能可视化图表
+    try:
+        print(f"正在创建LightGBM模型的性能可视化图表 - {target}")
         
-        # 验证集ROC
-        fpr_val, tpr_val, _ = roc_curve(y_val, y_val_proba[:, 1])
-        roc_auc_val = auc(fpr_val, tpr_val)
-        plt.plot(fpr_val, tpr_val, 'g-', label=f'验证集 AUC = {roc_auc_val:.3f}')
+        # 1. 类别平衡可视化
+        print("创建类别平衡图...")
+        viz = ClassBalance(title=f"LightGBM Class Balance - {target}")
+        viz.fit(y_train)
+        viz.show(outpath=f'{results_dir}/lightgbm_class_balance.pdf')
         
-        plt.plot([0, 1], [0, 1], 'r--', label='随机分类器')
-        plt.xlim([0.0, 1.0])
-        plt.ylim([0.0, 1.05])
-        plt.xlabel('假正率 (FPR)')
-        plt.ylabel('真正率 (TPR)')
-        plt.title('ROC曲线')
-        plt.legend(loc="lower right")
-        plt.grid(True, alpha=0.3)
+        # 2. ROC曲线（仅二分类）
+        if not is_multiclass:
+            print("创建ROC曲线...")
+            viz = ROCAUC(model, title=f"LightGBM ROC Curve - {target}")
+            viz.fit(X_train, y_train)
+            viz.score(X_test, y_test)
+            viz.show(outpath=f'{results_dir}/lightgbm_roc_curve.pdf')
+            
+            # 3. 精确率-召回率曲线（仅二分类）
+            print("创建精确率-召回率曲线...")
+            viz = PrecisionRecallCurve(model, title=f"LightGBM Precision-Recall Curve - {target}")
+            viz.fit(X_train, y_train)
+            viz.score(X_test, y_test)
+            viz.show(outpath=f'{results_dir}/lightgbm_precision_recall.pdf')
+            
+            # 4. 判别阈值可视化（仅二分类）
+            print("创建判别阈值图...")
+            viz = DiscriminationThreshold(model, title=f"LightGBM Discrimination Threshold - {target}")
+            viz.fit(X_train, y_train)
+            viz.score(X_test, y_test)
+            viz.show(outpath=f'{results_dir}/lightgbm_discrimination_threshold.pdf')
+            
+        # 5. 分类报告
+        print("创建分类报告...")
+        viz = ClassificationReport(model, title=f"LightGBM Classification Report - {target}")
+        viz.fit(X_train, y_train)
+        viz.score(X_test, y_test)
+        viz.show(outpath=f'{results_dir}/lightgbm_classification_report.pdf')
+        
+        # 6. 混淆矩阵
+        print("创建混淆矩阵...")
+        unique_labels = np.unique(np.concatenate([y_train, y_test]))
+        viz = ConfusionMatrix(model, classes=unique_labels, title=f"LightGBM Confusion Matrix - {target}")
+        viz.fit(X_train, y_train)
+        viz.score(X_test, y_test)
+        viz.show(outpath=f'{results_dir}/lightgbm_confusion_matrix.pdf')
+        
+        # 7. 类预测错误可视化
+        print("创建类预测错误图...")
+        viz = ClassPredictionError(model, classes=unique_labels, title=f"LightGBM Class Prediction Error - {target}")
+        viz.fit(X_train, y_train)
+        viz.score(X_test, y_test)
+        viz.show(outpath=f'{results_dir}/lightgbm_class_prediction_error.pdf')
+        
+        print(f"✓ LightGBM模型所有可视化图表已保存到: {results_dir}")
+        
+    except Exception as e:
+        print(f"❌ LightGBM可视化创建过程中出现错误: {e}")
+        import traceback
+        traceback.print_exc()
+        # 如果yellowbrick失败，回退到matplotlib
+        plt.figure(figsize=(15, 10))
+        
+        if not is_multiclass:
+            # 二分类ROC曲线
+            plt.subplot(2, 3, 1)
+            fpr, tpr, _ = roc_curve(y_test, y_test_proba[:, 1])
+            roc_auc = auc(fpr, tpr)
+            plt.plot(fpr, tpr, 'b-', label=f'测试集 AUC = {roc_auc:.3f}')
+            
+            # 验证集ROC
+            fpr_val, tpr_val, _ = roc_curve(y_val, y_val_proba[:, 1])
+            roc_auc_val = auc(fpr_val, tpr_val)
+            plt.plot(fpr_val, tpr_val, 'g-', label=f'验证集 AUC = {roc_auc_val:.3f}')
+            
+            plt.plot([0, 1], [0, 1], 'r--', label='随机分类器')
+            plt.xlim([0.0, 1.0])
+            plt.ylim([0.0, 1.05])
+            plt.xlabel('假正率 (FPR)')
+            plt.ylabel('真正率 (TPR)')
+            plt.title('ROC曲线')
+            plt.legend(loc="lower right")
+            plt.grid(True, alpha=0.3)
     
     # 特征重要性图
     plt.subplot(2, 3, 2)
@@ -480,33 +532,33 @@ def LightGBM_model(
                 horizontalalignment="center",
                 color="white" if cm[i, j] > thresh else "black")
     
-    # 性能指标对比
-    plt.subplot(2, 3, 6)
-    metrics_names = ['Accuracy', 'Precision', 'Recall', 'F1']
-    train_scores = [train_metrics['train_accuracy'], train_metrics['train_precision_weighted'], 
-                   train_metrics['train_recall_weighted'], train_metrics['train_f1_weighted']]
-    val_scores = [val_metrics['validation_accuracy'], val_metrics['validation_precision_weighted'], 
-                 val_metrics['validation_recall_weighted'], val_metrics['validation_f1_weighted']]
-    test_scores = [test_metrics['test_accuracy'], test_metrics['test_precision_weighted'], 
-                  test_metrics['test_recall_weighted'], test_metrics['test_f1_weighted']]
-    
-    x = np.arange(len(metrics_names))
-    width = 0.25
-    
-    plt.bar(x - width, train_scores, width, label='训练集')
-    plt.bar(x, val_scores, width, label='验证集')
-    plt.bar(x + width, test_scores, width, label='测试集')
-    
-    plt.xlabel('评估指标')
-    plt.ylabel('分数')
-    plt.title('模型性能对比')
-    plt.xticks(x, metrics_names)
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-    
-    plt.tight_layout()
-    plt.savefig(f'{results_dir}/model_analysis.png', dpi=300, bbox_inches='tight')
-    plt.show()
+        # 性能指标对比
+        plt.subplot(2, 3, 6)
+        metrics_names = ['Accuracy', 'Precision', 'Recall', 'F1']
+        train_scores = [train_metrics['train_accuracy'], train_metrics['train_precision_weighted'], 
+                       train_metrics['train_recall_weighted'], train_metrics['train_f1_weighted']]
+        val_scores = [val_metrics['validation_accuracy'], val_metrics['validation_precision_weighted'], 
+                     val_metrics['validation_recall_weighted'], val_metrics['validation_f1_weighted']]
+        test_scores = [test_metrics['test_accuracy'], test_metrics['test_precision_weighted'], 
+                      test_metrics['test_recall_weighted'], test_metrics['test_f1_weighted']]
+        
+        x = np.arange(len(metrics_names))
+        width = 0.25
+        
+        plt.bar(x - width, train_scores, width, label='训练集')
+        plt.bar(x, val_scores, width, label='验证集')
+        plt.bar(x + width, test_scores, width, label='测试集')
+        
+        plt.xlabel('评估指标')
+        plt.ylabel('分数')
+        plt.title('模型性能对比')
+        plt.xticks(x, metrics_names)
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        plt.savefig(f'{results_dir}/model_analysis.pdf', dpi=300, bbox_inches='tight')
+        plt.show()
     
     # 单独绘制详细的特征重要性图
     plt.figure(figsize=(12, 8))
@@ -518,7 +570,7 @@ def LightGBM_model(
         title='LightGBM特征重要性 (Gain)'
     )
     plt.tight_layout()
-    plt.savefig(f'{results_dir}/feature_importance_gain.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'{results_dir}/feature_importance_gain.pdf', dpi=300, bbox_inches='tight')
     plt.show()
     
     plt.figure(figsize=(12, 8))
@@ -530,7 +582,7 @@ def LightGBM_model(
         title='LightGBM特征重要性 (Split)'
     )
     plt.tight_layout()
-    plt.savefig(f'{results_dir}/feature_importance_split.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'{results_dir}/feature_importance_split.pdf', dpi=300, bbox_inches='tight')
     plt.show()
 
     # 保存模型
@@ -688,3 +740,24 @@ def LightGBM_model(
         }
     
     return return_dict
+
+if __name__ == "__main__":
+    # 测试代码
+    from sklearn.datasets import make_classification
+    
+    # 生成测试数据
+    X, y = make_classification(n_samples=1000, n_features=20, n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
+    
+    # 计算类别权重
+    class_weights = dict(zip(np.unique(y_train), 
+                           compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)))
+    
+    # 测试模型
+    model, scores = LightGBM_model(
+        X_train, X_test, y_train, y_test, X_val, y_val,
+        class_weights, "test_target", "test_model",optimization_method='grid'
+    )
+    
+    print("测试完成!")

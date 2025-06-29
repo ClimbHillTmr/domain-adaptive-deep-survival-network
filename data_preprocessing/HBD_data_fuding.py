@@ -944,11 +944,11 @@ def process_historical_averages(dataset, first_pressure_sd='', use_parallel=True
 # 主执行部分 - 使用20个线程进行并行计算
 if __name__ == "__main__":
     print("开始使用20个线程处理福鼎数据集...")
-    for i in ["透前动脉压"]:
-        print(f"处理参数: {i}")
-        result = fuding_dataset(i, use_parallel=True, n_threads=20)
-        print(f"参数 {i} 处理完成")
-    print("所有数据处理完成！")
+    i="透前动脉压"
+    print(f"处理参数: {i}")
+    result = fuding_dataset(i, use_parallel=True, n_threads=30)
+    print(f"参数 {i} 处理完成")
+print("所有数据处理完成！")
 
 # 保留原有的调用方式作为备份
 # for i in ["透前动脉压"]:

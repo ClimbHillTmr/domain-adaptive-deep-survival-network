@@ -51,8 +51,11 @@ from Method_Utils.train_untils import (
     calculate_class_weights,
 )
 
+# 导入配置管理器
+from Method_Utils.model_config import get_config, apply_preset, setup_environment, config_manager
+
 # 导入高级缺失值填补和类别不平衡处理模块
-from Method_Utils.advanced_imputation import AdvancedImputationPipeline
+from Method_Utils.advanced_imputation import AdvancedImputationPipeline, create_reproducible_imputer
 from Method_Utils.class_imbalance_handler import (
     ClassImbalanceHandler,
     data_resampling,
@@ -73,7 +76,7 @@ from sklearn import preprocessing
 
 
 
-def train_multiple_models(X_train, X_val, X_test, y_train, y_val, y_test, class_weights, target, kinds):
+def train_multiple_models(X_train, X_val, X_test, y_train, y_val, y_test, class_weights, target, kinds,optimization_method='bayesian',cv=5):
     """训练和比较多个模型"""
     results = {}
     
@@ -96,10 +99,10 @@ def train_multiple_models(X_train, X_val, X_test, y_train, y_val, y_test, class_
             class_weights=class_weights,
             target=target,
             kinds=kinds,
-            optimization_method='bayesian',
+            optimization_method=optimization_method,
             use_early_stopping=True,
             n_iter=50,
-            cv_folds=5,
+            cv_folds=cv,
             use_validation_in_training=True
         )
         results['LightGBM'] = lgb_result
@@ -122,7 +125,7 @@ def train_multiple_models(X_train, X_val, X_test, y_train, y_val, y_test, class_
             target=target,
             kinds=kinds,
             n_iter=50,
-            cv_folds=5,
+            cv_folds=cv,
             use_validation_in_training=True
         )
         results['SVM'] = {'model': svm_model, 'scores': svm_scores}
@@ -131,30 +134,30 @@ def train_multiple_models(X_train, X_val, X_test, y_train, y_val, y_test, class_
         print(f"SVM 训练失败: {e}")
         results['SVM'] = None
     
-    # 3. TabNet模型
-    print(f"\n--- 训练 TabNet 模型 ---")
-    try:
-        tabnet_model, tabnet_opt_results = TabNet_model_optimized(
-            X_train=X_train,
-            X_test=X_test,
-            y_train=y_train,
-            y_test=y_test,
-            X_val=X_val,
-            y_val=y_val,
-            class_weights=class_weights,
-            target=target,
-            kinds=kinds,
-            optimize=True,
-            search_type='bayesian',
-            n_iter=50,
-            cv_folds=5,
-            use_validation_in_training=True
-        )
-        results['TabNet'] = {'model': tabnet_model, 'optimization_results': tabnet_opt_results}
-        print(f"TabNet 训练完成!")
-    except Exception as e:
-        print(f"TabNet 训练失败: {e}")
-        results['TabNet'] = None
+    # # 3. TabNet模型
+    # print(f"\n--- 训练 TabNet 模型 ---")
+    # try:
+    #     tabnet_model, tabnet_opt_results = TabNet_model_optimized(
+    #         X_train=X_train,
+    #         X_test=X_test,
+    #         y_train=y_train,
+    #         y_test=y_test,
+    #         X_val=X_val,
+    #         y_val=y_val,
+    #         class_weights=class_weights,
+    #         target=target,
+    #         kinds=kinds,
+    #         optimize=True,
+    #         search_type=optimization_method,
+    #         n_iter=50,
+    #         cv_folds=cv,
+    #         use_validation_in_training=True
+    #     )
+    #     results['TabNet'] = {'model': tabnet_model, 'optimization_results': tabnet_opt_results}
+    #     print(f"TabNet 训练完成!")
+    # except Exception as e:
+    #     print(f"TabNet 训练失败: {e}")
+    #     results['TabNet'] = None
     
     # 4. IEDT模型 (可解释性集成决策树)
     print(f"\n--- 训练 IEDT 模型 ---")
@@ -169,9 +172,9 @@ def train_multiple_models(X_train, X_val, X_test, y_train, y_val, y_test, class_
             class_weights=class_weights,
             target=target,
             kinds=kinds,
-            optimization_method='bayesian',
+            optimization_method=optimization_method,
             n_iter=50,
-            cv_folds=5
+            cv_folds=cv
         )
         results['IEDT'] = {'model': iedt_model, 'scores': iedt_scores}
         print(f"IEDT 训练完成!")
@@ -285,18 +288,37 @@ def main():
     dataset = pd.read_csv(
         "/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/data/深医_final_data.csv"
     )
+    # dataset = pd.read_csv(
+    #     "/home/cht/Works/PredictionTimeHypotensionDialysis/透前模型/test_data_1.csv"
+    # )
     
     test_set = fuding_test()
+    # test_set = pd.read_csv(
+    #     "/home/cht/Works/PredictionTimeHypotensionDialysis/透前模型/test_data_1.csv"
+    # )
     
     # 数据预处理
+    print(f"原始数据形状 - 训练集: {dataset.shape}, 测试集: {test_set.shape}")
+    
     dataset = Align_standard(dataset)
     test_set = Align_standard(test_set)
+    print(f"Align_standard处理后 - 训练集: {dataset.shape}, 测试集: {test_set.shape}")
+    
     dataset = quantile_99(dataset)
     test_set = quantile_99(test_set)
+    print(f"quantile_99处理后 - 训练集: {dataset.shape}, 测试集: {test_set.shape}")
     
     # 移除重复较少的行
     dataset = remove_rows_with_few_duplicates(dataset)
     test_set = remove_rows_with_few_duplicates(test_set)
+    print(f"remove_rows_with_few_duplicates处理后 - 训练集: {dataset.shape}, 测试集: {test_set.shape}")
+    
+    # 检查目标变量分布
+    for target in ["透中低血压_计算", "降幅时间点比值区间", "降幅时间点差值区间"]:
+        if target in dataset.columns:
+            print(f"训练集 {target} 分布: {dataset[target].value_counts().to_dict()}")
+        if target in test_set.columns:
+            print(f"测试集 {target} 分布: {test_set[target].value_counts().to_dict()}")
     
     # 特征定义
     base_features = [
@@ -415,8 +437,14 @@ def main():
         "history_LBP_times_2", "history_LBP_times_3", "history_LBP_times_4"
     ]
     
-    # 初始化模型管道
-    pipeline = OptimizedModelPipeline(imputation_strategy='iterative')
+    # 初始化模型管道 - 使用配置管理器
+    config = get_config()
+    imputation_config = config_manager.get_imputation_config()
+    
+    pipeline = OptimizedModelPipeline(
+        imputation_strategy=imputation_config['strategy'],
+        random_state=imputation_config['random_state']
+    )
     
     # 对每个目标变量进行建模
     for target in targets:
@@ -468,7 +496,10 @@ def main():
         X_train, X_val, X_test, y_train, y_val, y_test = pipeline.prepare_data(
             X, y, X_external_test, y_external_test
         )
-        
+        # 在数据预处理后确保特征名称一致性
+        X_train = pd.DataFrame(X_train, columns=current_features)
+        X_val = pd.DataFrame(X_val, columns=current_features)
+        X_test = pd.DataFrame(X_test, columns=current_features)
         # 计算类别权重
         class_weights = calculate_class_weights(y_train)
         print(f"类别权重: {class_weights}")
@@ -528,106 +559,6 @@ def main():
             except Exception as e:
                 print(f"保存模型时出错: {e}")
     
-    # 添加多分类时间预测（来自原始文件的逻辑）
-    print(f"\n{'='*60}")
-    print("开始多分类时间预测")
-    print(f"{'='*60}")
-    
-    # 在确认有高血压之后，再次预测发生时机
-    time_targets = [
-        "降幅时间点比值区间",
-        "降幅时间点差值区间",
-    ]
-    
-    for target in time_targets:
-        print(f"\n--- 处理时间目标: {target} ---")
-        
-        # 选择特征
-        current_features = features_based.copy()
-        if target in ["降幅时间点比值区间"]:
-            current_features.extend(history_rate_proportion)
-        elif target in ["降幅时间点差值区间"]:
-            current_features.extend(history_rate_diff)
-        
-        # 过滤数据
-        train_data_filtered = dataset[dataset[target] != 0]
-        test_data_filtered = test_set[test_set[target] != 0]
-        
-        if len(train_data_filtered) == 0 or len(test_data_filtered) == 0:
-            print(f"警告: {target} 的有效数据不足，跳过")
-            continue
-        
-        X = train_data_filtered[current_features]
-        y = train_data_filtered[target]
-        X_test = test_data_filtered[current_features]
-        y_test = test_data_filtered[target]
-        
-        print(f"训练数据形状: {X.shape}")
-        print(f"测试数据形状: {X_test.shape}")
-        
-        # 计算类别权重
-        class_weights = calculate_class_weights(y)
-        print(f"类别权重: {class_weights}")
-        
-        # 数据准备
-        pipeline_time = OptimizedModelPipeline(imputation_strategy='iterative')
-        X_train, X_val, X_test_final, y_train, y_val, y_test_final = pipeline_time.prepare_data(
-            X, y, X_test, y_test
-        )
-        
-        # 处理类别不平衡
-        unique_labels = np.unique(y)
-        n_classes = len(unique_labels)
-        if n_classes > 2:
-            print(f"检测到多分类问题 ({n_classes}类)，应用重采样...")
-            X_train_resampled, y_train_resampled = pipeline_time.handle_class_imbalance(
-                X_train, y_train, method='smotetomek'
-            )
-        else:
-            X_train_resampled, y_train_resampled = X_train, y_train
-        
-        # 训练多个模型进行时间预测
-        print(f"\n开始训练 {target} 的所有模型...")
-        time_model_results = train_multiple_models(
-            X_train_resampled, X_val, X_test_final, 
-            y_train_resampled, y_val, y_test_final,
-            class_weights, target, "透前模型_完全优化版_时间预测"
-        )
-        
-        # 输出时间预测模型比较结果
-        print(f"\n=== 时间预测模型训练结果汇总 ===")
-        
-        # 创建时间预测性能比较表格
-        time_performance_summary = []
-        for model_name, result in time_model_results.items():
-            if result is not None:
-                print(f"{model_name}: 训练成功")
-                if isinstance(result, dict) and 'scores' in result:
-                    scores = result['scores']
-                    if isinstance(scores, dict):
-                        row = {'模型': model_name}
-                        for metric, value in scores.items():
-                            print(f"  {metric}: {value:.4f}")
-                            row[metric] = f"{value:.4f}"
-                        time_performance_summary.append(row)
-            else:
-                print(f"{model_name}: 训练失败")
-        
-        # 显示时间预测性能比较表格
-        if time_performance_summary:
-            print(f"\n=== 时间预测模型性能比较表 ===")
-            time_performance_df = pd.DataFrame(time_performance_summary)
-            print(time_performance_df.to_string(index=False))
-            print()
-        
-        # 保存时间预测模型结果和生成报告
-        if SAVE_MODELS:
-            try:
-                save_model_results(time_model_results, '时间预测', MODEL_SAVE_DIR)
-                generate_model_report(time_model_results, '时间预测', MODEL_SAVE_DIR)
-            except Exception as e:
-                print(f"保存时间预测模型时出错: {e}")
-    
     print(f"\n{'='*60}")
     print("所有模型训练完成!")
     print(f"{'='*60}")
@@ -636,4 +567,15 @@ def main():
         print(f"\n模型结果已保存到目录: {MODEL_SAVE_DIR}")
 
 if __name__ == "__main__":
+    print("开始透析低血压预测模型训练...")
+    print("=" * 50)
+    
+    # 应用可重复性配置预设
+    apply_preset('reproducible')
+    setup_environment()
+    
+    # 获取配置
+    config = get_config()
+    print(f"使用配置: 填补策略={config.imputation_strategy}, 随机种子={config.random_state }")
+    
     main()

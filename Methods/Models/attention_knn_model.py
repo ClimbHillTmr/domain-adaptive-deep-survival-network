@@ -33,6 +33,20 @@ import warnings
 from pathlib import Path
 import joblib
 
+# Yellowbrick 可视化库导入
+try:
+    from yellowbrick.target import ClassBalance
+    from yellowbrick.classifier import ROCAUC
+    from yellowbrick.classifier import PrecisionRecallCurve
+    from yellowbrick.classifier import ClassificationReport
+    from yellowbrick.classifier import ClassPredictionError
+    from yellowbrick.classifier import DiscriminationThreshold
+    from yellowbrick.classifier import ConfusionMatrix
+    YELLOWBRICK_AVAILABLE = True
+except ImportError:
+    YELLOWBRICK_AVAILABLE = False
+    warnings.warn("Yellowbrick 库未安装，将使用 matplotlib 进行可视化")
+
 # 检查CUDA可用性
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"使用设备: {device}")
@@ -621,6 +635,132 @@ class AttentionKNN(BaseEstimator, ClassifierMixin):
         
         plt.tight_layout()
         plt.show()
+    
+    def create_performance_visualizations(self, X_test, y_test, output_dir=None, target='hypotension'):
+        """
+        创建性能可视化图表
+        
+        Args:
+            X_test: 测试特征
+            y_test: 测试标签
+            output_dir: 输出目录
+            target: 目标变量名称
+        """
+        if output_dir is None:
+            output_dir = './visualizations'
+        
+        import os
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # 获取预测结果
+        y_pred = self.predict(X_test)
+        y_pred_proba = self.predict_proba(X_test)
+        
+        if YELLOWBRICK_AVAILABLE:
+            print("使用 Yellowbrick 创建可视化...")
+            
+            try:
+                # 1. 类别平衡可视化
+                print("创建类别平衡可视化...")
+                visualizer = ClassBalance(labels=self.classes_)
+                visualizer.fit(y_test)
+                visualizer.show(outpath=os.path.join(output_dir, f'{target}_class_balance.png'))
+                plt.close()
+                
+                # 2. ROC曲线
+                print("创建ROC曲线...")
+                visualizer = ROCAUC(self, classes=self.classes_)
+                visualizer.fit(X_test, y_test)
+                visualizer.score(X_test, y_test)
+                visualizer.show(outpath=os.path.join(output_dir, f'{target}_roc_curve.png'))
+                plt.close()
+                
+                # 3. 精确率-召回率曲线
+                print("创建精确率-召回率曲线...")
+                visualizer = PrecisionRecallCurve(self, classes=self.classes_)
+                visualizer.fit(X_test, y_test)
+                visualizer.score(X_test, y_test)
+                visualizer.show(outpath=os.path.join(output_dir, f'{target}_precision_recall.png'))
+                plt.close()
+                
+                # 4. 判别阈值
+                print("创建判别阈值可视化...")
+                visualizer = DiscriminationThreshold(self)
+                visualizer.fit(X_test, y_test)
+                visualizer.show(outpath=os.path.join(output_dir, f'{target}_discrimination_threshold.png'))
+                plt.close()
+                
+                # 5. 分类报告
+                print("创建分类报告可视化...")
+                visualizer = ClassificationReport(self, classes=self.classes_, support=True)
+                visualizer.fit(X_test, y_test)
+                visualizer.score(X_test, y_test)
+                visualizer.show(outpath=os.path.join(output_dir, f'{target}_classification_report.png'))
+                plt.close()
+                
+                # 6. 混淆矩阵
+                print("创建混淆矩阵可视化...")
+                visualizer = ConfusionMatrix(self, classes=self.classes_)
+                visualizer.fit(X_test, y_test)
+                visualizer.score(X_test, y_test)
+                visualizer.show(outpath=os.path.join(output_dir, f'{target}_confusion_matrix.png'))
+                plt.close()
+                
+                # 7. 类预测错误
+                print("创建类预测错误可视化...")
+                visualizer = ClassPredictionError(self, classes=self.classes_)
+                visualizer.fit(X_test, y_test)
+                visualizer.score(X_test, y_test)
+                visualizer.show(outpath=os.path.join(output_dir, f'{target}_class_prediction_error.png'))
+                plt.close()
+                
+                print(f"Yellowbrick 可视化已保存到: {output_dir}")
+                
+            except Exception as e:
+                print(f"Yellowbrick 可视化创建失败: {e}")
+                print("回退到 matplotlib 可视化...")
+                self._create_matplotlib_visualizations(X_test, y_test, y_pred, y_pred_proba, output_dir, target)
+        else:
+            print("使用 matplotlib 创建可视化...")
+            self._create_matplotlib_visualizations(X_test, y_test, y_pred, y_pred_proba, output_dir, target)
+    
+    def _create_matplotlib_visualizations(self, X_test, y_test, y_pred, y_pred_proba, output_dir, target):
+        """
+        使用 matplotlib 创建基础可视化
+        """
+        try:
+            # 混淆矩阵
+            plt.figure(figsize=(8, 6))
+            cm = confusion_matrix(y_test, y_pred)
+            sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+                       xticklabels=self.classes_, yticklabels=self.classes_)
+            plt.title(f'{target} - 混淆矩阵')
+            plt.ylabel('真实标签')
+            plt.xlabel('预测标签')
+            plt.tight_layout()
+            plt.savefig(os.path.join(output_dir, f'{target}_confusion_matrix_matplotlib.png'), dpi=300, bbox_inches='tight')
+            plt.close()
+            
+            # ROC曲线（仅适用于二分类）
+            if len(self.classes_) == 2:
+                plt.figure(figsize=(8, 6))
+                fpr, tpr, _ = roc_curve(y_test, y_pred_proba[:, 1])
+                auc_score = roc_auc_score(y_test, y_pred_proba[:, 1])
+                plt.plot(fpr, tpr, label=f'ROC Curve (AUC = {auc_score:.3f})')
+                plt.plot([0, 1], [0, 1], 'k--', label='Random')
+                plt.xlabel('假正率 (FPR)')
+                plt.ylabel('真正率 (TPR)')
+                plt.title(f'{target} - ROC曲线')
+                plt.legend()
+                plt.grid(True)
+                plt.tight_layout()
+                plt.savefig(os.path.join(output_dir, f'{target}_roc_curve_matplotlib.png'), dpi=300, bbox_inches='tight')
+                plt.close()
+            
+            print(f"Matplotlib 可视化已保存到: {output_dir}")
+            
+        except Exception as e:
+            print(f"创建 matplotlib 可视化时出错: {e}")
     
     def save_model(self, filepath: str):
         """

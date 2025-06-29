@@ -1,7 +1,6 @@
 *.pyc
-*.pkl
-*.log
 *.out
+
 data_preprocessing/updated_dataset_fuding.csv
 data_preprocessing/updated_dataset_shenyi.csv
 data_preprocessing/data/福鼎_optimized_data透前动脉压.csv
@@ -13,3 +12,60 @@ data_preprocessing/data_10_20_90/福鼎_optimized_data透前动脉压.csv
 data_preprocessing/data_10_20_90/深医_optimized_data.csv
 data_preprocessing/data_10_20_90/深医_result_df.csv
 data_preprocessing/data_10_20_90/福鼎_result_df透前动脉压.csv
+
+# 临时文件和目录
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 日志文件
+logs/
+*.log
+
+# 输出目录
+output/
+results/
+reports/
+
+# 缓存目录
+.cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# 虚拟环境
+venv/
+env/
+ENV/
+
+# IDE文件
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# 系统文件
+.DS_Store
+Thumbs.db
+data_preprocessing/data_10_20_90/福鼎_final_data.csv
+data_preprocessing/data_10_20_90/深医_final_data.csv

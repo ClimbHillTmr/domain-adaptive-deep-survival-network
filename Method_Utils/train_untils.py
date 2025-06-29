@@ -110,9 +110,15 @@ def Align_standard(dataset):
     missing_percentage = dataset.isnull().mean()
     # print(missing_percentage)
 
-    # 选择缺失值比例小于等于20%的列
+    # 选择缺失值比例小于等于35%的列
     selected_columns = missing_percentage[missing_percentage <= 0.35].index
     # print(missing_percentage[missing_percentage > 0.2])
+    
+    # # 确保重要的目标列不被删除
+    # important_columns = ['透中低血压_计算', '透中高血压_计算', '降幅时间点比值区间', '降幅时间点差值区间']
+    # for col in important_columns:
+    #     if col in dataset.columns and col not in selected_columns:
+    #         selected_columns = selected_columns.union([col])
 
     # 仅保留选择的列
     df = dataset[selected_columns]
@@ -123,21 +129,25 @@ def Align_standard(dataset):
 
 def quantile_99(dataset, up=0.99, down=0.01):
     for col in dataset.columns:
-        if dataset[col].dtype == "float64":
-            factor = dataset[col]
-            mean = factor.mean()
-            std = factor.std()
+        try:
+            if str(dataset[col].dtype) == "float64":
+                factor = dataset[col]
+                mean = factor.mean()
+                std = factor.std()
 
-            # 计算上下限的数据
-            up_scale = mean + 3 * std
-            down_scale = mean - 3 * std
+                # 计算上下限的数据
+                up_scale = mean + 3 * std
+                down_scale = mean - 3 * std
 
-            # up_scale = np.percentile(factor, up)
-            # down_scale = np.percentile(factor, down)
+                # up_scale = np.percentile(factor, up)
+                # down_scale = np.percentile(factor, down)
 
-            factor = np.where(factor > up_scale, up_scale, factor)
-            factor = np.where(factor < down_scale, down_scale, factor)
-            dataset[col] = factor
+                factor = np.where(factor > up_scale, up_scale, factor)
+                factor = np.where(factor < down_scale, down_scale, factor)
+                dataset[col] = factor
+        except Exception as e:
+            print(f"处理列 {col} 时出错: {e}")
+            continue
     return dataset
     # X = X.astype('float64')
 
@@ -226,7 +236,11 @@ features_based = [
     "历史平均透前舒张压",
     "历史平均涨幅时间点比值区间",
     "历史平均涨幅时间点差值区间",
+    "历史平均涨幅时间点差值",
     "历史平均透中高血压_计算",
+    "历史平均透中低血压_计算",
+    "历史平均降幅时间点比值区间",
+    "历史平均降幅时间点差值区间",
     "历史平均透析中收缩压_mean",
     "历史平均透析中舒张压_mean",
     "历史平均透析中脉搏_mean",
@@ -237,10 +251,14 @@ features_based = [
     "历史平均透析液温度_mean",
     "历史平均跨膜压_mean",
     "透中高血压_计算",
+    "透中低血压_计算",
+    "历史平均透中低血压_计算",
     "涨幅时间点比值",
     "涨幅时间点比值区间",
     "涨幅时间点差值",
     "涨幅时间点差值区间",
+    "降幅时间点比值区间",
+    "降幅时间点差值区间",
 ]
 
 features = [
@@ -269,10 +287,13 @@ features = [
     "瘘管使用时间",
     "首次透析年龄",
     "透中高血压_计算",
+    "透中低血压_计算",
     "涨幅时间点比值",
     "涨幅时间点比值区间",
     "涨幅时间点差值",
     "涨幅时间点差值区间",
+    "降幅时间点比值区间",
+    "降幅时间点差值区间",
     "透析中收缩压_mean",
     "透析中收缩压_std",
     "透析中舒张压_mean",

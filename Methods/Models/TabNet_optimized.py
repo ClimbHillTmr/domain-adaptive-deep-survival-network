@@ -17,6 +17,15 @@ from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
 import multiprocessing
 
+# 尝试导入yellowbrick
+try:
+    from yellowbrick.target import ClassBalance
+    from yellowbrick.classifier import ROCAUC, PrecisionRecallCurve, ClassificationReport, ClassPredictionError, DiscriminationThreshold, ConfusionMatrix
+    YELLOWBRICK_AVAILABLE = True
+except ImportError:
+    print("Warning: yellowbrick not available. Falling back to matplotlib.")
+    YELLOWBRICK_AVAILABLE = False
+
 # 尝试导入贝叶斯优化库
 try:
     from skopt import BayesSearchCV
@@ -38,6 +47,11 @@ except ImportError:
 if __name__ == '__main__':
     multiprocessing.set_start_method('spawn', force=True)
 
+# 导入配置管理器
+import sys
+sys.path.append('/home/cht/Works/PredictionTimeHypotensionDialysis')
+from Method_Utils.model_config import get_config, config_manager
+
 
 class OptimizedTabNetClassifier:
     """优化的TabNet分类器类"""
@@ -57,11 +71,11 @@ class OptimizedTabNetClassifier:
         
     def _create_output_dirs(self, base_path):
         """创建输出目录"""
-        dirs = ['Results/TabNet', 'Results/TabNet/Output', 'Results/TabNet/Importance']
+        dirs = ['Output', 'Importance']
         for dir_name in dirs:
             full_path = Path(base_path) / dir_name
             full_path.mkdir(parents=True, exist_ok=True)
-        return Path(base_path) / 'Results/TabNet'
+        return Path(base_path)
     
     def get_param_grid(self, search_type='bayesian'):
         """获取参数网格"""
@@ -100,16 +114,16 @@ class OptimizedTabNetClassifier:
                 'batch_size': [512, 1024, 2048],
                 'max_epochs': [50, 100, 150]
             }
-        else:  # 快速测试
+        else:  # 简化快速搜索
             return {
-                'n_d': [32],
-                'n_a': [32, 64],
-                'n_steps': [3, 4],
-                'gamma': [1.3, 1.5],
-                'lambda_sparse': [1e-4],
-                'lr': [2e-3],
-                'batch_size': [1024],
-                'max_epochs': [50]
+                'n_d': [16, 32],  # 减少维度选择
+                'n_a': [16, 32],  # 减少维度选择
+                'n_steps': [3],   # 固定步数
+                'gamma': [1.3],   # 固定gamma值
+                'lambda_sparse': [1e-4],  # 固定稀疏正则化
+                'lr': [2e-3],     # 固定学习率
+                'batch_size': [512, 1024],  # 减少批次大小选择
+                'max_epochs': [50, 100]     # 减少训练轮数选择
             }
     
     def create_model(self, params, n_classes=2):
@@ -127,17 +141,23 @@ class OptimizedTabNetClassifier:
             else:
                 return float(value) if value is not None else default
         
+        # 简化的TabNet参数配置
         model_params = {
-            'n_d': int(extract_scalar(params.get('n_d'), 32)),
-            'n_a': int(extract_scalar(params.get('n_a'), 32)),
-            'n_steps': int(extract_scalar(params.get('n_steps'), 3)),
-            'gamma': extract_scalar(params.get('gamma'), 1.3),
-            'lambda_sparse': extract_scalar(params.get('lambda_sparse'), 1e-4),
+            # 核心架构参数
+            'n_d': int(extract_scalar(params.get('n_d'), 32)),  # 决策层维度
+            'n_a': int(extract_scalar(params.get('n_a'), 32)),  # 注意力层维度
+            'n_steps': int(extract_scalar(params.get('n_steps'), 3)),  # 决策步数
+            
+            # 正则化参数
+            'gamma': extract_scalar(params.get('gamma'), 1.3),  # 特征重用惩罚
+            'lambda_sparse': extract_scalar(params.get('lambda_sparse'), 1e-4),  # 稀疏正则化
+            
+            # 优化器配置（简化）
             'optimizer_fn': torch.optim.Adam,
             'optimizer_params': {'lr': extract_scalar(params.get('lr'), 2e-3)},
-            'mask_type': 'entmax',
-            'scheduler_params': {'step_size': 10, 'gamma': 0.9},
-            'scheduler_fn': torch.optim.lr_scheduler.StepLR,
+            
+            # 基础配置
+            'mask_type': 'entmax',  # 注意力掩码类型
             'seed': self.random_state,
             'verbose': 1,
             'device_name': self.device_name
@@ -288,13 +308,18 @@ class OptimizedTabNetClassifier:
             
             # 使用贝叶斯优化
             wrapper = TabNetWrapper(self)
+            
+            # 使用配置管理器获取搜索配置
+            search_config = config_manager.get_search_config()
+            n_jobs_search = search_config['n_jobs']
+            
             search = BayesSearchCV(
                 estimator=wrapper,
                 search_spaces=param_grid,
                 n_iter=n_iter,
                 cv=cv_strategy,
                 scoring=scoring,
-                n_jobs=1,  # TabNet不支持并行
+                n_jobs=n_jobs_search,
                 random_state=42,
                 refit=True,
                 verbose=1
@@ -333,7 +358,9 @@ class OptimizedTabNetClassifier:
                 print(f"\n测试参数组合 {i+1}/{n_iter}: {params}")
                 
                 try:
-                    cv_result = self.cross_validate(X, y, params, cv_folds, scoring)
+                    # 确保cv_folds不为None
+                    cv_folds_safe = cv_folds if cv_folds is not None else 5
+                    cv_result = self.cross_validate(X, y, params, cv_folds_safe, scoring)
                     all_results.append(cv_result)
                     
                     if cv_result['mean_score'] > best_score:
@@ -365,7 +392,9 @@ class OptimizedTabNetClassifier:
                 print(f"\n测试参数组合 {i+1}/{len(param_combinations)}: {params}")
                 
                 try:
-                    cv_result = self.cross_validate(X, y, params, cv_folds, scoring)
+                    # 确保cv_folds不为None
+                    cv_folds_safe = cv_folds if cv_folds is not None else 5
+                    cv_result = self.cross_validate(X, y, params, cv_folds_safe, scoring)
                     all_results.append(cv_result)
                     
                     if cv_result['mean_score'] > best_score:
@@ -424,19 +453,33 @@ class OptimizedTabNetClassifier:
         print(f"训练集形状: {X_train.shape}")
         print(f"类别分布: {pd.Series(y_train).value_counts().to_dict()}")
         
+        # 并行数据预处理
+        from joblib import Parallel, delayed
+        
+        def preprocess_data(X, y=None):
+            """并行数据预处理函数"""
+            if hasattr(X, 'columns'):
+                X = X.values
+            X = X.astype(np.float32)
+            if y is not None:
+                y = y.astype(np.int64)
+                return X, y
+            return X
+        
         # 保存特征名称
         if hasattr(X_train, 'columns'):
             self.feature_names = X_train.columns.tolist()
-            X_train = X_train.values
-        if X_val is not None and hasattr(X_val, 'columns'):
-            X_val = X_val.values
         
-        # 数据类型转换
-        X_train = X_train.astype(np.float32)
-        y_train = y_train.astype(np.int64)
+        # 并行处理训练和验证数据
         if X_val is not None:
-            X_val = X_val.astype(np.float32)
-            y_val = y_val.astype(np.int64)
+            results = Parallel(n_jobs=2, backend='threading')(
+                [delayed(preprocess_data)(X_train, y_train),
+                 delayed(preprocess_data)(X_val, y_val)]
+            )
+            X_train, y_train = results[0]
+            X_val, y_val = results[1]
+        else:
+            X_train, y_train = preprocess_data(X_train, y_train)
         
         # 检查分类数量
         n_classes = len(np.unique(y_train))
@@ -479,6 +522,11 @@ class OptimizedTabNetClassifier:
         max_epochs_val = extract_scalar(params.get('max_epochs'), 100)
         batch_size_val = extract_scalar(params.get('batch_size'), 1024)
         
+        # 使用配置管理器获取优化的线程配置
+        config = get_config()
+        tabnet_config = config_manager.get_tabnet_config()
+        num_workers = tabnet_config['num_workers']
+        
         self.model.fit(
             X_train, y_train,
             eval_set=eval_set,
@@ -488,7 +536,7 @@ class OptimizedTabNetClassifier:
             patience=15,
             batch_size=batch_size_val,
             virtual_batch_size=batch_size_val,
-            num_workers=0,
+            num_workers=num_workers,
             weights=1,
             drop_last=False,
             augmentations=None,
@@ -584,7 +632,12 @@ def TabNet_model_optimized(X_train, X_test, y_train, y_test, class_weights,
     
     # 设置基础路径
     if base_path is None:
-        base_path = "/home/cht/Works/PredictionTimeHypotensionDialysis/透前模型"
+        from datetime import datetime
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        模型名称 = "TabNet"
+        results_dir = f"./Results/{模型名称}_{target}_{timestamp}"
+        os.makedirs(results_dir, exist_ok=True)
+        base_path = results_dir
     
     print(f"\n=== TabNet模型训练: {target} ===")
     print(f"训练集长度: {len(X_train)}, 标签1数量: {np.sum(y_train == 1)}")
@@ -734,30 +787,100 @@ def TabNet_model_optimized(X_train, X_test, y_train, y_test, class_weights,
     except Exception as e:
         print(f"特征重要性分析失败: {str(e)}")
     
-    # 绘制ROC曲线（仅二分类）
+    # 绘制可视化图表
     if len(np.unique(y_train_values)) == 2:
         try:
-            y_proba_test = tabnet_classifier.predict_proba(X_test_values)[:, 1]
-            fpr, tpr, thresholds = roc_curve(y_test_values, y_proba_test)
-            roc_auc = auc(fpr, tpr)
-            
-            plt.figure(figsize=(8, 6))
-            plt.title(f'ROC Curve - TabNet (Target: {target})')
-            plt.plot(fpr, tpr, 'b', label=f'AUC = {roc_auc:.4f}')
-            plt.legend(loc='lower right')
-            plt.plot([0, 1], [0, 1], 'r--')
-            plt.xlim([0.0, 1.0])
-            plt.ylim([0.0, 1.0])
-            plt.ylabel('True Positive Rate')
-            plt.xlabel('False Positive Rate')
-            
-            roc_path = output_dir / 'Output' / f'TabNet_ROC_curve_target_{target}.png'
-            plt.savefig(roc_path, dpi=300, bbox_inches='tight')
-            plt.close()
-            print(f"ROC曲线已保存到: {roc_path}")
+            if YELLOWBRICK_AVAILABLE:
+                print(f"正在创建TabNet模型的性能可视化图表 - {target}")
+                
+                # 1. 类别平衡可视化
+                print("创建类别平衡图...")
+                viz = ClassBalance(title=f"TabNet Class Balance - {target}")
+                viz.fit(y_train_values)
+                balance_path = output_dir / 'Output' / f'TabNet_class_balance_target_{target}.pdf'
+                viz.show(outpath=balance_path)
+                print(f"类别平衡图已保存到: {balance_path}")
+                
+                # 2. ROC曲线（仅二分类）
+                unique_labels = np.unique(np.concatenate([y_train_values, y_test_values]))
+                if len(unique_labels) == 2:
+                    print("创建ROC曲线...")
+                    viz = ROCAUC(tabnet_classifier.model, title=f"TabNet ROC Curve - {target}")
+                    viz.fit(X_train_values, y_train_values)
+                    viz.score(X_test_values, y_test_values)
+                    roc_path = output_dir / 'Output' / f'TabNet_ROC_curve_target_{target}.pdf'
+                    viz.show(outpath=roc_path)
+                    print(f"ROC曲线已保存到: {roc_path}")
+                    
+                    # 3. 精确率-召回率曲线（仅二分类）
+                    print("创建精确率-召回率曲线...")
+                    viz = PrecisionRecallCurve(tabnet_classifier.model, title=f"TabNet Precision-Recall Curve - {target}")
+                    viz.fit(X_train_values, y_train_values)
+                    viz.score(X_test_values, y_test_values)
+                    pr_path = output_dir / 'Output' / f'TabNet_precision_recall_target_{target}.pdf'
+                    viz.show(outpath=pr_path)
+                    print(f"精确率-召回率曲线已保存到: {pr_path}")
+                    
+                    # 4. 判别阈值可视化（仅二分类）
+                    print("创建判别阈值图...")
+                    viz = DiscriminationThreshold(tabnet_classifier.model, title=f"TabNet Discrimination Threshold - {target}")
+                    viz.fit(X_train_values, y_train_values)
+                    viz.score(X_test_values, y_test_values)
+                    dt_path = output_dir / 'Output' / f'TabNet_discrimination_threshold_target_{target}.pdf'
+                    viz.show(outpath=dt_path)
+                    print(f"判别阈值图已保存到: {dt_path}")
+                
+                # 5. 分类报告
+                print("创建分类报告...")
+                viz = ClassificationReport(tabnet_classifier.model, title=f"TabNet Classification Report - {target}")
+                viz.fit(X_train_values, y_train_values)
+                viz.score(X_test_values, y_test_values)
+                report_path = output_dir / 'Output' / f'TabNet_classification_report_target_{target}.pdf'
+                viz.show(outpath=report_path)
+                print(f"分类报告已保存到: {report_path}")
+                
+                # 6. 混淆矩阵
+                print("创建混淆矩阵...")
+                viz = ConfusionMatrix(tabnet_classifier.model, classes=unique_labels, title=f"TabNet Confusion Matrix - {target}")
+                viz.fit(X_train_values, y_train_values)
+                viz.score(X_test_values, y_test_values)
+                cm_path = output_dir / 'Output' / f'TabNet_confusion_matrix_target_{target}.pdf'
+                viz.show(outpath=cm_path)
+                print(f"混淆矩阵已保存到: {cm_path}")
+                
+                # 7. 类预测错误可视化
+                print("创建类预测错误图...")
+                viz = ClassPredictionError(tabnet_classifier.model, classes=unique_labels, title=f"TabNet Class Prediction Error - {target}")
+                viz.fit(X_train_values, y_train_values)
+                viz.score(X_test_values, y_test_values)
+                cpe_path = output_dir / 'Output' / f'TabNet_class_prediction_error_target_{target}.pdf'
+                viz.show(outpath=cpe_path)
+                print(f"类预测错误图已保存到: {cpe_path}")
+                
+                print(f"✓ TabNet模型所有可视化图表已保存到: {output_dir / 'Output'}")
+            else:
+                # 回退到matplotlib
+                y_proba_test = tabnet_classifier.predict_proba(X_test_values)[:, 1]
+                fpr, tpr, thresholds = roc_curve(y_test_values, y_proba_test)
+                roc_auc = auc(fpr, tpr)
+                
+                plt.figure(figsize=(8, 6))
+                plt.title(f'ROC Curve - TabNet (Target: {target})')
+                plt.plot(fpr, tpr, 'b', label=f'AUC = {roc_auc:.4f}')
+                plt.legend(loc='lower right')
+                plt.plot([0, 1], [0, 1], 'r--')
+                plt.xlim([0.0, 1.0])
+                plt.ylim([0.0, 1.0])
+                plt.ylabel('True Positive Rate')
+                plt.xlabel('False Positive Rate')
+                
+                roc_path = output_dir / 'Output' / f'TabNet_ROC_curve_target_{target}.pdf'
+                plt.savefig(roc_path, dpi=300, bbox_inches='tight')
+                plt.close()
+                print(f"ROC曲线已保存到: {roc_path}")
             
         except Exception as e:
-            print(f"ROC曲线绘制失败: {str(e)}")
+            print(f"可视化图表绘制失败: {str(e)}")
     
     return tabnet_classifier.model, eval_scores, optimization_results
 

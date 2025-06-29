@@ -21,7 +21,7 @@ MAIN_LOG="/home/cht/Works/PredictionTimeHypotensionDialysis/model_run_all.log"
 echo "[$(date)] 开始运行所有模型脚本" >> "$MAIN_LOG"
 
 # 运行函数
-run_script_with_retry() {
+run_script() {
     local script_path="$1"
     local model_name="$2"
     local log_file="/home/cht/Works/PredictionTimeHypotensionDialysis/model_run_${model_name}.log"
@@ -31,27 +31,22 @@ run_script_with_retry() {
     echo "[$(date)] 日志文件: ${log_file}" >> "$MAIN_LOG"
     echo "[$(date)] 错误日志: ${error_log}" >> "$MAIN_LOG"
     
-    # 无限循环，直到成功运行
-    while true; do
-        echo "[$(date)] 尝试运行脚本: $script_path" >> "$log_file"
-        echo "[$(date)] 尝试运行 ${model_name}: $script_path" >> "$MAIN_LOG"
-        
-        # 运行Python脚本
-        cd "/home/cht/Works/PredictionTimeHypotensionDialysis"
-        python3 "$script_path" >> "$log_file" 2>> "$error_log"
-        
-        # 检查退出状态
-        if [ $? -eq 0 ]; then
-            echo "[$(date)] ${model_name} 脚本成功完成" >> "$log_file"
-            echo "[$(date)] ${model_name} 脚本成功完成" >> "$MAIN_LOG"
-            break
-        else
-            echo "[$(date)] ${model_name} 脚本运行失败，30秒后重试" >> "$log_file"
-            echo "[$(date)] ${model_name} 脚本运行失败，30秒后重试" >> "$MAIN_LOG"
-            echo "[$(date)] 错误详情请查看: $error_log" >> "$log_file"
-            sleep 30
-        fi
-    done
+    echo "[$(date)] 运行脚本: $script_path" >> "$log_file"
+    echo "[$(date)] 运行 ${model_name}: $script_path" >> "$MAIN_LOG"
+    
+    # 运行Python脚本
+    cd "/home/cht/Works/PredictionTimeHypotensionDialysis"
+    python3 "$script_path" >> "$log_file" 2>> "$error_log"
+    
+    # 检查退出状态
+    if [ $? -eq 0 ]; then
+        echo "[$(date)] ${model_name} 脚本成功完成" >> "$log_file"
+        echo "[$(date)] ${model_name} 脚本成功完成" >> "$MAIN_LOG"
+    else
+        echo "[$(date)] ${model_name} 脚本运行失败" >> "$log_file"
+        echo "[$(date)] ${model_name} 脚本运行失败" >> "$MAIN_LOG"
+        echo "[$(date)] 错误详情请查看: $error_log" >> "$log_file"
+    fi
 }
 
 # 顺序运行所有脚本
@@ -62,7 +57,7 @@ for i in "${!SCRIPT_PATHS[@]}"; do
     echo "[$(date)] ========== 开始运行 ${model_name} =========="
     echo "[$(date)] ========== 开始运行 ${model_name} ==========" >> "$MAIN_LOG"
     
-    run_script_with_retry "$script_path" "$model_name"
+    run_script "$script_path" "$model_name"
     
     echo "[$(date)] ========== ${model_name} 完成 ==========" >> "$MAIN_LOG"
     echo "[$(date)] ========== ${model_name} 完成 =========="
