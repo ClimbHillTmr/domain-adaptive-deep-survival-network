@@ -77,57 +77,106 @@ class OptimizedTabNetClassifier:
             full_path.mkdir(parents=True, exist_ok=True)
         return Path(base_path)
     
-    def get_param_grid(self, search_type='bayesian'):
-        """获取参数网格"""
-        if search_type == 'bayesian' and BAYESIAN_AVAILABLE:
-            return {
-                'n_d': Integer(8, 256),
-                'n_a': Integer(8, 256),
-                'n_steps': Integer(3, 15),
-                'gamma': Real(1.0, 3.0),
-                'lambda_sparse': Real(1e-8, 1e-1, prior='log-uniform'),
-                'lr': Real(0.005, 0.1, prior='log-uniform'),
-                'batch_size': Categorical([128, 256, 512, 1024, 2048]),
-                'max_epochs': Integer(50, 300),
-                'momentum': Real(0.02, 0.4),
-                'clip_value': Real(0.5, 2.0)
-            }
-        elif search_type == 'random':
-            return {
-                'n_d': [8, 16, 24, 32, 48, 64, 96, 128, 192, 256],
-                'n_a': [8, 16, 24, 32, 48, 64, 96, 128, 192, 256],
-                'n_steps': [3, 4, 5, 6, 7, 8, 9, 10, 12, 15],
-                'gamma': [1.0, 1.2, 1.3, 1.5, 1.8, 2.0, 2.5, 3.0],
-                'lambda_sparse': [0, 1e-8, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1],
-                'lr': [5e-4, 1e-3, 2e-3, 5e-3, 1e-2, 2e-2, 5e-2, 1e-1],
-                'batch_size': [128, 256, 512, 1024, 2048, 4096],
-                'max_epochs': [50, 75, 100, 125, 150, 200, 250, 300]
-            }
-        elif search_type == 'grid':
-            return {
-                'n_d': [16, 32, 64],
-                'n_a': [16, 32, 64, 128],
-                'n_steps': [3, 4, 5],
-                'gamma': [1.0, 1.3, 1.5, 2.0],
-                'lambda_sparse': [1e-6, 1e-5, 1e-4, 1e-3],
-                'lr': [1e-3, 2e-3, 5e-3, 1e-2],
-                'batch_size': [512, 1024, 2048],
-                'max_epochs': [50, 100, 150]
-            }
-        else:  # 简化快速搜索
-            return {
-                'n_d': [16, 32],  # 减少维度选择
-                'n_a': [16, 32],  # 减少维度选择
-                'n_steps': [3],   # 固定步数
-                'gamma': [1.3],   # 固定gamma值
-                'lambda_sparse': [1e-4],  # 固定稀疏正则化
-                'lr': [2e-3],     # 固定学习率
-                'batch_size': [512, 1024],  # 减少批次大小选择
-                'max_epochs': [50, 100]     # 减少训练轮数选择
-            }
+    def get_param_grid(self, search_type='bayesian', n_samples=None):
+        """获取针对透析数据优化的参数网格"""
+        # 根据数据规模动态调整参数空间
+        if n_samples is None:
+            n_samples = 100000  # 默认假设中等规模数据
+        
+        # 大规模透析数据优化（15万+样本）
+        if n_samples >= 150000:
+            if search_type == 'bayesian' and BAYESIAN_AVAILABLE:
+                return {
+                    # 核心架构参数 - 针对大规模透析数据优化
+                    'n_d': Integer(32, 128),  # 决策层维度，适中范围避免过拟合
+                    'n_a': Integer(32, 128),  # 注意力层维度，与决策层匹配
+                    'n_steps': Integer(3, 6),  # 决策步数，透析数据特征相对简单
+                    
+                    # 正则化参数 - 透析医学数据特化
+                    'gamma': Real(1.2, 2.5),  # 特征重用惩罚，适度正则化
+                    'lambda_sparse': Real(1e-6, 1e-3, prior='log-uniform'),  # 稀疏正则化
+                    
+                    # 优化器参数 - 大数据集稳定训练
+                    'lr': Real(1e-3, 2e-2, prior='log-uniform'),  # 学习率范围
+                    'batch_size': Categorical([1024, 2048, 4096]),  # 大批次提升效率
+                    'max_epochs': Integer(50, 150),  # 适度训练轮数
+                    
+                    # 透析特定优化参数
+                    'momentum': Real(0.02, 0.3),  # 动量参数
+                    'clip_value': Real(1.0, 2.0)  # 梯度裁剪
+                }
+            elif search_type == 'random':
+                return {
+                    'n_d': [32, 48, 64, 96, 128],  # 精选维度
+                    'n_a': [32, 48, 64, 96, 128],  # 精选维度
+                    'n_steps': [3, 4, 5, 6],  # 透析数据适用步数
+                    'gamma': [1.2, 1.5, 1.8, 2.0, 2.5],  # 特征重用控制
+                    'lambda_sparse': [1e-6, 1e-5, 1e-4, 1e-3],  # 稀疏正则化
+                    'lr': [1e-3, 2e-3, 5e-3, 1e-2, 2e-2],  # 学习率选择
+                    'batch_size': [1024, 2048, 4096],  # 大批次训练
+                    'max_epochs': [50, 75, 100, 125, 150]  # 训练轮数
+                }
+            elif search_type == 'grid':
+                return {
+                    'n_d': [32, 64, 96],  # 核心维度选择
+                    'n_a': [32, 64, 96],  # 注意力维度
+                    'n_steps': [3, 4, 5],  # 决策步数
+                    'gamma': [1.3, 1.8, 2.0],  # 特征重用
+                    'lambda_sparse': [1e-5, 1e-4, 1e-3],  # 稀疏化
+                    'lr': [2e-3, 5e-3, 1e-2],  # 学习率
+                    'batch_size': [1024, 2048],  # 批次大小
+                    'max_epochs': [75, 100, 125]  # 训练轮数
+                }
+            else:  # 快速搜索 - 透析数据优化
+                return {
+                    'n_d': [64],  # 固定适中维度
+                    'n_a': [64],  # 匹配决策层
+                    'n_steps': [4],  # 透析数据最优步数
+                    'gamma': [1.5],  # 平衡特征重用
+                    'lambda_sparse': [1e-4],  # 适度稀疏化
+                    'lr': [5e-3],  # 稳定学习率
+                    'batch_size': [2048],  # 大批次训练
+                    'max_epochs': [100]  # 充分训练
+                }
+        
+        # 中等规模数据（5万-15万样本）
+        else:
+            if search_type == 'bayesian' and BAYESIAN_AVAILABLE:
+                return {
+                    'n_d': Integer(16, 96),
+                    'n_a': Integer(16, 96),
+                    'n_steps': Integer(3, 8),
+                    'gamma': Real(1.0, 3.0),
+                    'lambda_sparse': Real(1e-7, 1e-2, prior='log-uniform'),
+                    'lr': Real(5e-4, 5e-2, prior='log-uniform'),
+                    'batch_size': Categorical([512, 1024, 2048]),
+                    'max_epochs': Integer(75, 200)
+                }
+            elif search_type == 'random':
+                return {
+                    'n_d': [16, 24, 32, 48, 64, 96],
+                    'n_a': [16, 24, 32, 48, 64, 96],
+                    'n_steps': [3, 4, 5, 6, 7, 8],
+                    'gamma': [1.0, 1.3, 1.5, 2.0, 2.5, 3.0],
+                    'lambda_sparse': [1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2],
+                    'lr': [5e-4, 1e-3, 2e-3, 5e-3, 1e-2, 2e-2, 5e-2],
+                    'batch_size': [512, 1024, 2048],
+                    'max_epochs': [75, 100, 125, 150, 175, 200]
+                }
+            else:  # 简化搜索
+                return {
+                    'n_d': [32, 48],
+                    'n_a': [32, 48],
+                    'n_steps': [4, 5],
+                    'gamma': [1.3, 1.8],
+                    'lambda_sparse': [1e-5, 1e-4],
+                    'lr': [2e-3, 5e-3],
+                    'batch_size': [1024, 2048],
+                    'max_epochs': [100, 150]
+                }
     
     def create_model(self, params, n_classes=2):
-        """创建TabNet模型"""
+        """创建TabNet模型，针对透析数据优化"""
         import torch
         
         # 确保所有参数都是标量值，而不是numpy数组
@@ -141,26 +190,33 @@ class OptimizedTabNetClassifier:
             else:
                 return float(value) if value is not None else default
         
-        # 简化的TabNet参数配置
+        # 针对透析数据优化的TabNet参数配置
         model_params = {
-            # 核心架构参数
-            'n_d': int(extract_scalar(params.get('n_d'), 32)),  # 决策层维度
-            'n_a': int(extract_scalar(params.get('n_a'), 32)),  # 注意力层维度
-            'n_steps': int(extract_scalar(params.get('n_steps'), 3)),  # 决策步数
+            # 核心架构参数 - 针对透析数据特征优化
+            'n_d': int(extract_scalar(params.get('n_d'), 48)),  # 决策层维度，适中增加
+            'n_a': int(extract_scalar(params.get('n_a'), 48)),  # 注意力层维度，匹配决策层
+            'n_steps': int(extract_scalar(params.get('n_steps'), 4)),  # 决策步数，透析数据适用
             
-            # 正则化参数
-            'gamma': extract_scalar(params.get('gamma'), 1.3),  # 特征重用惩罚
+            # 正则化参数 - 透析医学数据特化
+            'gamma': extract_scalar(params.get('gamma'), 1.4),  # 特征重用惩罚，适度增强
             'lambda_sparse': extract_scalar(params.get('lambda_sparse'), 1e-4),  # 稀疏正则化
             
-            # 优化器配置（简化）
+            # 优化器配置 - 透析数据稳定训练
             'optimizer_fn': torch.optim.Adam,
-            'optimizer_params': {'lr': extract_scalar(params.get('lr'), 2e-3)},
+            'optimizer_params': {
+                'lr': extract_scalar(params.get('lr'), 0.015),  # 学习率适度提升
+                'weight_decay': 1e-5  # 添加权重衰减
+            },
             
             # 基础配置
             'mask_type': 'entmax',  # 注意力掩码类型
             'seed': self.random_state,
             'verbose': 1,
-            'device_name': self.device_name
+            'device_name': self.device_name,
+            
+            # 透析数据特定优化
+            'momentum': extract_scalar(params.get('momentum'), 0.02),  # 动量参数
+            'clip_value': extract_scalar(params.get('clip_value'), 1.0)  # 梯度裁剪
         }
         
         return TabNetClassifier(**model_params)
@@ -173,10 +229,12 @@ class OptimizedTabNetClassifier:
         n_classes = len(np.unique(y))
         is_binary = n_classes == 2
         
-        # 根据分类数量调整评估指标
+        # 根据分类数量调整评估指标，针对透析低血压预测优化
         if scoring == 'roc_auc' and not is_binary:
             scoring = 'f1_weighted'
             print(f"多分类任务，评估指标改为: {scoring}")
+        elif is_binary and scoring == 'roc_auc':
+            print("透析低血压预测交叉验证：使用AUC评估（优化召回率）")
         
         skf = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=self.random_state)
         scores = []
@@ -267,7 +325,10 @@ class OptimizedTabNetClassifier:
     
     def grid_search(self, X, y, cv_folds=5, scoring='roc_auc', search_type='bayesian', n_iter=100):
         """网格搜索、随机搜索或贝叶斯优化最优参数"""
-        param_grid = self.get_param_grid(search_type)
+        # 获取数据规模并传递给参数网格生成函数
+        n_samples = len(X)
+        print(f"数据规模: {n_samples} 样本，针对透析数据优化参数空间")
+        param_grid = self.get_param_grid(search_type, n_samples)
         
         # 设置交叉验证策略
         cv_strategy = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=42)
@@ -486,21 +547,41 @@ class OptimizedTabNetClassifier:
         is_binary = n_classes == 2
         print(f"任务类型: {'二分类' if is_binary else f'{n_classes}分类'}")
         
-        # 使用提供的参数或默认参数
+        # 获取数据规模用于参数优化
+        n_samples = len(X_train)
+        print(f"训练数据规模: {n_samples} 样本")
+        
+        # 使用提供的参数或针对透析数据优化的默认参数
         if params is None:
-            params = {
-                'n_d': 32, 'n_a': 32, 'n_steps': 3, 'gamma': 1.3,
-                'lambda_sparse': 1e-4, 'lr': 2e-3, 'batch_size': 1024, 'max_epochs': 100
-            }
+            # 根据数据规模优化默认参数，针对透析低血压预测
+            if n_samples >= 150000:  # 大规模透析数据
+                params = {
+                    'n_d': 64, 'n_a': 64, 'n_steps': 5,
+                    'gamma': 1.5, 'lambda_sparse': 1e-4,
+                    'lr': 0.012, 'batch_size': 2048, 'max_epochs': 120,
+                    'momentum': 0.02, 'clip_value': 1.0
+                }
+                print("使用大规模透析数据优化参数（低血压预测特化）")
+            else:
+                params = {
+                    'n_d': 48, 'n_a': 48, 'n_steps': 4,
+                    'gamma': 1.4, 'lambda_sparse': 1e-4,
+                    'lr': 0.015, 'batch_size': 1536, 'max_epochs': 150,
+                    'momentum': 0.02, 'clip_value': 1.0
+                }
+                print("使用中等规模透析数据优化参数")
         
         # 创建模型
         self.model = self.create_model(params, n_classes)
         
-        # 根据分类数量选择评估指标
+        # 根据分类数量选择评估指标，针对透析低血压预测优化
         if is_binary:
+            # 透析低血压预测：优先考虑召回率，减少漏诊
             eval_metrics = ['auc', 'balanced_accuracy']
+            print("二分类任务：使用AUC和平衡准确率评估（透析低血压预测优化）")
         else:
             eval_metrics = ['logloss', 'accuracy']
+            print("多分类任务：使用对数损失和准确率评估")
         
         # 训练模型
         if X_val is not None:
@@ -519,13 +600,26 @@ class OptimizedTabNetClassifier:
             else:
                 return int(value) if value is not None else default
         
-        max_epochs_val = extract_scalar(params.get('max_epochs'), 100)
-        batch_size_val = extract_scalar(params.get('batch_size'), 1024)
+        # 针对透析数据优化训练参数
+        max_epochs_val = extract_scalar(params.get('max_epochs'), 120)
+        batch_size_val = extract_scalar(params.get('batch_size'), 1536)
+        
+        # 根据数据规模调整训练策略
+        if n_samples >= 150000:
+            virtual_batch_size = min(batch_size_val // 2, 1024)  # 大规模数据使用更大虚拟批
+            patience = 25  # 大数据集需要更多耐心
+            print(f"大规模透析数据训练策略：虚拟批大小={virtual_batch_size}, 耐心值={patience}")
+        else:
+            virtual_batch_size = min(batch_size_val // 4, 512)  # 中等规模数据
+            patience = 20  # 标准耐心值
+            print(f"中等规模透析数据训练策略：虚拟批大小={virtual_batch_size}, 耐心值={patience}")
         
         # 使用配置管理器获取优化的线程配置
         config = get_config()
         tabnet_config = config_manager.get_tabnet_config()
         num_workers = tabnet_config['num_workers']
+        
+        print(f"训练配置 - 批大小: {batch_size_val}, 虚拟批大小: {virtual_batch_size}, 最大轮次: {max_epochs_val}, 早停耐心: {patience}")
         
         self.model.fit(
             X_train, y_train,
@@ -533,9 +627,9 @@ class OptimizedTabNetClassifier:
             eval_name=eval_name,
             eval_metric=eval_metrics,
             max_epochs=max_epochs_val,
-            patience=15,
+            patience=patience,
             batch_size=batch_size_val,
-            virtual_batch_size=batch_size_val,
+            virtual_batch_size=virtual_batch_size,
             num_workers=num_workers,
             weights=1,
             drop_last=False,
@@ -630,12 +724,31 @@ def TabNet_model_optimized(X_train, X_test, y_train, y_test, class_weights,
     if not TABNET_AVAILABLE:
         raise ImportError("pytorch_tabnet is required for TabNet models")
     
-    # 设置基础路径
+    # 设置基础路径 - 使用调用脚本所在目录
     if base_path is None:
+        import inspect
+        
+        # 获取调用栈，找到调用脚本的目录
+        frame = inspect.currentframe()
+        try:
+            # 向上查找调用栈，找到非模型文件的调用者
+            caller_frame = frame.f_back
+            while caller_frame:
+                caller_file = caller_frame.f_code.co_filename
+                if not caller_file.endswith(('C_SVM_model.py', 'LightGBM_model.py', 'TabNet_optimized.py', 'IEDT_model.py', 'dialysis_gnn_model.py', 'attention_knn_model.py')):
+                    caller_base_path = os.path.dirname(caller_file)
+                    break
+                caller_frame = caller_frame.f_back
+            else:
+                # 如果没找到，使用当前工作目录
+                caller_base_path = os.getcwd()
+        finally:
+            del frame
+        
         from datetime import datetime
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         模型名称 = "TabNet"
-        results_dir = f"./Results/{模型名称}_{target}_{timestamp}"
+        results_dir = os.path.join(caller_base_path, f"Results/{模型名称}_{target}_{timestamp}")
         os.makedirs(results_dir, exist_ok=True)
         base_path = results_dir
     
@@ -692,9 +805,15 @@ def TabNet_model_optimized(X_train, X_test, y_train, y_test, class_weights,
             y_combined = y_train_values
             print(f"仅使用原始训练集，大小: {X_combined.shape}")
         
-        # 根据分类数量选择评估指标
+        # 根据分类数量选择评估指标，针对透析低血压预测优化
         n_classes = len(np.unique(y_combined))
-        scoring = 'roc_auc' if n_classes == 2 else 'f1_weighted'
+        if n_classes == 2:
+            # 透析低血压预测：优先使用召回率相关指标
+            scoring = 'recall'  # 减少漏诊风险
+            print("透析低血压预测优化：使用召回率作为优化目标")
+        else:
+            scoring = 'f1_weighted'
+            print("多分类任务：使用加权F1分数作为优化目标")
         
         optimization_results = tabnet_classifier.grid_search(
             X_combined, y_combined, cv_folds=cv_folds, scoring=scoring,
@@ -711,12 +830,13 @@ def TabNet_model_optimized(X_train, X_test, y_train, y_test, class_weights,
         print(f"优化结果已保存到: {results_path}")
         
     else:
-        # 使用默认参数
+        # 使用针对透析数据优化的默认参数
         best_params = {
-            'n_d': 32, 'n_a': 32, 'n_steps': 3, 'gamma': 1.3,
-            'lambda_sparse': 1e-4, 'lr': 2e-3, 'batch_size': 1024, 'max_epochs': 100
+            'n_d': 48, 'n_a': 48, 'n_steps': 4, 'gamma': 1.4,
+            'lambda_sparse': 1e-4, 'lr': 0.015, 'batch_size': 1536, 'max_epochs': 120,
+            'momentum': 0.02, 'clip_value': 1.0
         }
-        print(f"使用默认参数: {best_params}")
+        print(f"使用透析数据优化的默认参数: {best_params}")
     
     # 使用最优参数训练最终模型
     tabnet_classifier.fit(X_train_values, y_train_values, X_val_values, y_val_values, best_params)

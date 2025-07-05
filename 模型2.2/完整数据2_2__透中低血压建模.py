@@ -63,6 +63,7 @@ from Method_Utils.class_imbalance_handler import (
     ClassImbalanceHandler,
     OptimizedModelPipeline
 )
+from Method_Utils.data_standardization import *
 
 sys.path.append("..")
 from Methods.utils import calculate_class_weights
@@ -87,6 +88,12 @@ if SAVE_MODELS and not os.path.exists(MODEL_SAVE_DIR):
 
 # 设置随机种子
 np.random.seed(42)
+
+def log_with_timestamp(message):
+    """带时间戳的日志输出"""
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print(f"[{timestamp}] {message}")
+    logger.info(message)
 
 def save_model_results(model_results, target_name, save_dir):
     """
@@ -604,11 +611,22 @@ for target in targets:
         
         print(f"重采样后训练数据形状: {X_train_resampled.shape}")
         
-        # 特征标准化
-        scaler = StandardScaler()
-        X_train_scaled = scaler.fit_transform(X_train_resampled)
-        X_val_scaled = scaler.transform(X_val)
-        X_test_scaled = scaler.transform(X_test_final) if X_test_final is not None else None
+        # 特征标准化 - 使用专用的透析数据标准化函数
+        log_with_timestamp(f"开始对 {target} 的数据进行标准化...")
+        
+        # 创建标准化器保存目录
+        scaler_dir = "./scalers"
+        os.makedirs(scaler_dir, exist_ok=True)
+        
+        # 使用透析数据专用标准化函数
+        X_train_scaled, X_val_scaled, X_test_scaled, scaler_info = standardize_dialysis_data(
+            X_train_resampled, X_val, X_test_final,
+            scaler_type='standard',
+            save_path=os.path.join(scaler_dir, f"scaler_{target}.joblib")
+        )
+        
+        log_with_timestamp(f"数据标准化完成，标准化器已保存")
+        log_with_timestamp(f"标准化统计信息: {scaler_info}")
         
         # 训练多个模型
         print(f"\n开始训练 {target} 的所有模型...")

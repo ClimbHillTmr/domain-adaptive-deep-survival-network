@@ -114,11 +114,15 @@ def Align_standard(dataset):
     selected_columns = missing_percentage[missing_percentage <= 0.35].index
     # print(missing_percentage[missing_percentage > 0.2])
     
-    # # 确保重要的目标列不被删除
-    # important_columns = ['透中低血压_计算', '透中高血压_计算', '降幅时间点比值区间', '降幅时间点差值区间']
-    # for col in important_columns:
-    #     if col in dataset.columns and col not in selected_columns:
-    #         selected_columns = selected_columns.union([col])
+    # 确保重要的目标列和历史特征列不被删除
+    important_columns = [
+        '透中低血压_计算', '透中高血压_计算', '降幅时间点比值区间', '降幅时间点差值区间',
+        'history_HBP', 'history_LBP_times_0', 'history_LBP_times_1',
+        'history_LBP_times_2', 'history_LBP_times_3', 'history_LBP_times_4'
+    ]
+    for col in important_columns:
+        if col in dataset.columns and col not in selected_columns:
+            selected_columns = selected_columns.union([col])
 
     # 仅保留选择的列
     df = dataset[selected_columns]

@@ -51,6 +51,7 @@ from Method_Utils.train_untils import (
     Iterate_columns,
     calculate_class_weights,
 )
+from Method_Utils.data_standardization import *
 
 # 导入高级缺失值填补和类别不平衡处理模块
 from Method_Utils.advanced_imputation import AdvancedImputationPipeline
@@ -397,6 +398,26 @@ def main():
             X_train, X_val, X_test, y_train, y_val, y_test = pipeline.prepare_data(
                 X, y, X_external_test, y_external_test
             )
+            
+            # 特征标准化 - 使用专用的透析数据标准化函数
+            print(f"开始对 {target} 的数据进行标准化...")
+            
+            # 创建标准化器保存目录
+            scaler_dir = "./scalers"
+            os.makedirs(scaler_dir, exist_ok=True)
+            
+            # 使用透析数据专用标准化函数
+            X_train_scaled, X_val_scaled, X_test_scaled, scaler_info = standardize_dialysis_data(
+                X_train, X_val, X_test,
+                scaler_type='standard',
+                save_path=os.path.join(scaler_dir, f"scaler_{target}.joblib")
+            )
+            
+            print(f"数据标准化完成，标准化器已保存")
+            print(f"标准化统计信息: {scaler_info}")
+            
+            # 更新数据变量
+            X_train, X_val, X_test = X_train_scaled, X_val_scaled, X_test_scaled
             
             # 计算类别权重
             class_weights = calculate_class_weights(y_train)

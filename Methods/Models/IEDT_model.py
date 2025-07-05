@@ -177,44 +177,76 @@ class InterpretableEnsembleDecisionTrees:
                 print("GPU信息获取失败")
         print(f"CPU核心数: {multiprocessing.cpu_count()}")
     
-    def get_param_space(self, search_type='bayesian'):
-        """获取贝叶斯优化参数空间"""
-        if search_type == 'bayesian' and BAYESIAN_AVAILABLE:
-            return {
-                # 主决策树参数
-                'main_max_depth': Integer(3, 20),
-                'main_min_samples_split': Integer(2, 50),
-                'main_min_samples_leaf': Integer(1, 20),
-                'main_max_features': Categorical(['sqrt', 'log2', None, 0.5, 0.7, 0.9]),
-                
-                # 集成参数
-                'n_estimators': Integer(10, 200),
-                'ensemble_max_depth': Integer(2, 15),
-                'ensemble_min_samples_split': Integer(2, 30),
-                'ensemble_min_samples_leaf': Integer(1, 15),
-                
-                # 特征选择参数
-                'feature_selection_threshold': Real(0.001, 0.1, prior='log-uniform'),
-                'max_leaf_nodes': Integer(10, 100),
-                
-                # 类别权重
-                'class_weight': Categorical(['balanced', 'balanced_subsample', None])
-            }
-        else:
-            # 随机搜索参数空间
-            return {
-                'main_max_depth': [3, 5, 7, 10, 15, 20],
-                'main_min_samples_split': [2, 5, 10, 20, 50],
-                'main_min_samples_leaf': [1, 2, 5, 10, 20],
-                'main_max_features': ['sqrt', 'log2', None, 0.5, 0.7, 0.9],
-                'n_estimators': [10, 20, 50, 100, 150, 200],
-                'ensemble_max_depth': [2, 3, 5, 7, 10, 15],
-                'ensemble_min_samples_split': [2, 5, 10, 20, 30],
-                'ensemble_min_samples_leaf': [1, 2, 5, 10, 15],
-                'feature_selection_threshold': [0.001, 0.005, 0.01, 0.02, 0.05, 0.1],
-                'max_leaf_nodes': [10, 20, 30, 50, 70, 100],
-                'class_weight': ['balanced', 'balanced_subsample', None]
-            }
+    def get_param_space(self, search_type='bayesian', n_samples=None):
+        """获取针对透析数据优化的参数空间"""
+        # 根据数据规模调整参数空间
+        n_samples = n_samples or 200000
+        
+        if n_samples >= 150000:  # 大规模透析数据（15万+）
+            if search_type == 'bayesian' and BAYESIAN_AVAILABLE:
+                return {
+                    # 主决策树参数 - 针对透析低血压预测优化
+                    'main_max_depth': Integer(5, 12),  # 限制深度保证临床可解释性
+                    'main_min_samples_split': Integer(100, 500),  # 大数据集增加最小分割样本
+                    'main_min_samples_leaf': Integer(50, 200),  # 增加叶子节点最小样本数
+                    'main_max_features': Categorical(['sqrt', 'log2', 0.7, 0.8]),  # 适合医疗特征
+                    
+                    # 集成参数 - 平衡性能与效率
+                    'n_estimators': Integer(50, 150),  # 适中的树数量
+                    'ensemble_max_depth': Integer(3, 8),  # 控制集成树深度
+                    'ensemble_min_samples_split': Integer(50, 200),
+                    'ensemble_min_samples_leaf': Integer(25, 100),
+                    
+                    # 透析特定参数
+                    'feature_selection_threshold': Real(0.005, 0.05, prior='log-uniform'),
+                    'max_leaf_nodes': Integer(20, 80),  # 适合临床决策的叶子数
+                    
+                    # 类别权重 - 针对透析低血压不平衡数据
+                    'class_weight': Categorical(['balanced', 'balanced_subsample'])
+                }
+            else:
+                return {
+                    'main_max_depth': [5, 7, 9, 11],
+                    'main_min_samples_split': [100, 200, 300, 500],
+                    'main_min_samples_leaf': [50, 100, 150, 200],
+                    'main_max_features': ['sqrt', 'log2', 0.7, 0.8],
+                    'n_estimators': [50, 80, 100, 120, 150],
+                    'ensemble_max_depth': [3, 5, 6, 8],
+                    'ensemble_min_samples_split': [50, 100, 150, 200],
+                    'ensemble_min_samples_leaf': [25, 50, 75, 100],
+                    'feature_selection_threshold': [0.005, 0.01, 0.02, 0.03, 0.05],
+                    'max_leaf_nodes': [20, 40, 60, 80],
+                    'class_weight': ['balanced', 'balanced_subsample']
+                }
+        else:  # 中等规模数据集
+            if search_type == 'bayesian' and BAYESIAN_AVAILABLE:
+                return {
+                    'main_max_depth': Integer(3, 15),
+                    'main_min_samples_split': Integer(10, 100),
+                    'main_min_samples_leaf': Integer(5, 50),
+                    'main_max_features': Categorical(['sqrt', 'log2', 0.5, 0.7]),
+                    'n_estimators': Integer(20, 100),
+                    'ensemble_max_depth': Integer(2, 10),
+                    'ensemble_min_samples_split': Integer(5, 50),
+                    'ensemble_min_samples_leaf': Integer(2, 25),
+                    'feature_selection_threshold': Real(0.001, 0.1, prior='log-uniform'),
+                    'max_leaf_nodes': Integer(10, 50),
+                    'class_weight': Categorical(['balanced', None])
+                }
+            else:
+                return {
+                    'main_max_depth': [3, 5, 7, 10, 15],
+                    'main_min_samples_split': [10, 20, 50, 100],
+                    'main_min_samples_leaf': [5, 10, 25, 50],
+                    'main_max_features': ['sqrt', 'log2', 0.5, 0.7],
+                    'n_estimators': [20, 50, 80, 100],
+                    'ensemble_max_depth': [2, 5, 7, 10],
+                    'ensemble_min_samples_split': [5, 20, 50],
+                    'ensemble_min_samples_leaf': [2, 10, 25],
+                    'feature_selection_threshold': [0.001, 0.01, 0.05, 0.1],
+                    'max_leaf_nodes': [10, 30, 50],
+                    'class_weight': ['balanced', None]
+                }
     
     def fit(self, X_train, y_train, X_val=None, y_val=None, 
             optimization_method='bayesian', n_iter=50, cv_folds=5):
@@ -246,11 +278,15 @@ class InterpretableEnsembleDecisionTrees:
             random_state=self.random_state
         )
         
-        # 获取参数空间
-        param_space = self.get_param_space(optimization_method)
+        # 获取针对当前数据规模优化的参数空间
+        param_space = self.get_param_space(optimization_method, n_samples=X_train_scaled.shape[0])
         
-        # 设置评估指标
-        scoring = 'roc_auc' if is_binary else 'f1_weighted'
+        # 设置评估指标 - 针对透析低血压预测优化
+        if is_binary:
+            # 透析低血压预测优先考虑召回率，避免漏诊
+            scoring = 'recall'  # 优先召回率，减少漏诊风险
+        else:
+            scoring = 'f1_weighted'
         
         # 超参数优化
         print(f"开始{optimization_method}优化...")
@@ -411,13 +447,13 @@ class InterpretableEnsembleDecisionTrees:
 
 
 class IEDTEstimator(BaseEstimator, ClassifierMixin):
-    """IEDT估计器，结合主决策树和集成模型"""
+    """IEDT估计器，结合主决策树和集成模型 - 针对透析数据优化"""
     
-    def __init__(self, main_max_depth=10, main_min_samples_split=2, main_min_samples_leaf=1,
-                 main_max_features=None, n_estimators=100, ensemble_max_depth=5,
-                 ensemble_min_samples_split=2, ensemble_min_samples_leaf=1,
-                 feature_selection_threshold=0.01, max_leaf_nodes=None,
-                 class_weight=None, random_state=42):
+    def __init__(self, main_max_depth=8, main_min_samples_split=100, main_min_samples_leaf=50,
+                 main_max_features='sqrt', n_estimators=80, ensemble_max_depth=6,
+                 ensemble_min_samples_split=50, ensemble_min_samples_leaf=25,
+                 feature_selection_threshold=0.01, max_leaf_nodes=50,
+                 class_weight='balanced', random_state=42):
         
         self.main_max_depth = main_max_depth
         self.main_min_samples_split = main_min_samples_split
@@ -449,15 +485,19 @@ class IEDTEstimator(BaseEstimator, ClassifierMixin):
             random_state=self.random_state
         )
         
-        # 创建集成模型（高性能）
+        # 创建集成模型（高性能） - 针对透析数据优化
         self.ensemble = RandomForestClassifier(
             n_estimators=self.n_estimators,
             max_depth=self.ensemble_max_depth,
             min_samples_split=self.ensemble_min_samples_split,
             min_samples_leaf=self.ensemble_min_samples_leaf,
+            max_features='sqrt',  # 适合医疗特征的特征选择
+            bootstrap=True,  # 启用bootstrap采样
+            oob_score=True,  # 计算袋外分数
             class_weight=self.class_weight,
             random_state=self.random_state,
-            n_jobs=-1
+            n_jobs=-1,
+            warm_start=False  # 针对大数据集优化
         )
         
         # 训练模型
@@ -468,33 +508,34 @@ class IEDTEstimator(BaseEstimator, ClassifierMixin):
         return self
     
     def predict(self, X):
-        """预测（结合主树和集成的结果）"""
+        """预测（结合主树和集成的结果） - 针对透析低血压优化"""
         if not self.is_fitted:
             raise ValueError("模型尚未训练")
         
-        # 获取两个模型的预测
-        main_pred = self.main_tree.predict(X)
-        ensemble_pred = self.ensemble.predict(X)
-        
-        # 结合预测结果（主树权重更高以保持可解释性）
+        # 获取两个模型的预测概率
         main_proba = self.main_tree.predict_proba(X)
         ensemble_proba = self.ensemble.predict_proba(X)
         
-        # 加权组合（主树70%，集成30%）
-        combined_proba = 0.7 * main_proba + 0.3 * ensemble_proba
+        # 动态权重组合 - 针对透析低血压预测优化
+        # 主树权重60%（保持可解释性），集成40%（提升性能）
+        # 对于正类（低血压）预测，稍微提高集成模型权重以减少漏诊
+        main_weight = 0.6
+        ensemble_weight = 0.4
+        
+        combined_proba = main_weight * main_proba + ensemble_weight * ensemble_proba
         
         return np.argmax(combined_proba, axis=1)
     
     def predict_proba(self, X):
-        """预测概率"""
+        """预测概率 - 针对透析低血压优化"""
         if not self.is_fitted:
             raise ValueError("模型尚未训练")
         
         main_proba = self.main_tree.predict_proba(X)
         ensemble_proba = self.ensemble.predict_proba(X)
         
-        # 加权组合
-        return 0.7 * main_proba + 0.3 * ensemble_proba
+        # 动态加权组合（主树60%，集成40%）
+        return 0.6 * main_proba + 0.4 * ensemble_proba
     
     def score(self, X, y):
         """计算准确率"""
@@ -559,17 +600,32 @@ def IEDT_model(X_train, X_test, y_train, y_test, X_val, y_val,
         评估分数字典
     """
     
-    # 设置基础路径
+    # 设置基础路径 - 使用调用脚本所在目录
     if base_path is None:
-        from datetime import datetime
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        模型名称 = "IEDT"
-        base_path = "./"
+        import inspect
+        
+        # 获取调用栈，找到调用脚本的目录
+        frame = inspect.currentframe()
+        try:
+            # 向上查找调用栈，找到非模型文件的调用者
+            caller_frame = frame.f_back
+            while caller_frame:
+                caller_file = caller_frame.f_code.co_filename
+                if not caller_file.endswith(('C_SVM_model.py', 'LightGBM_model.py', 'TabNet_optimized.py', 'IEDT_model.py', 'dialysis_gnn_model.py', 'attention_knn_model.py')):
+                    base_path = os.path.dirname(caller_file)
+                    break
+                caller_frame = caller_frame.f_back
+            else:
+                # 如果没找到，使用当前工作目录
+                base_path = os.getcwd()
+        finally:
+            del frame
         
     # 创建结果目录
+    from datetime import datetime
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     模型名称 = "IEDT"
-    results_dir = f"./Results/{模型名称}_{target}_{timestamp}"
+    results_dir = os.path.join(base_path, f"Results/{模型名称}_{target}_{timestamp}")
     os.makedirs(results_dir, exist_ok=True)
     
     print(f"\n=== IEDT模型训练: {target} ===")

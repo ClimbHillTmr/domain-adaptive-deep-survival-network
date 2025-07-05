@@ -1,6 +1,7 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-透析患者透中高血压预测模型 - 完全优化版
+透析患者透中高血压预测模型
 
 支持的机器学习模型:
 1. LightGBM - 梯度提升决策树，支持贝叶斯优化
@@ -35,6 +36,7 @@ import pickle
 import joblib
 import os
 from datetime import datetime
+import time
 
 import sys
 sys.path.append("..")
@@ -61,6 +63,7 @@ from Method_Utils.class_imbalance_handler import (
     data_resampling,
     OptimizedModelPipeline
 )
+from Method_Utils.data_standardization import *
 
 # 导入所有模型
 from Methods.Models.LightGBM_model import LightGBM_model
@@ -75,19 +78,54 @@ from Methods.date_method import split_dataset_by_date
 from sklearn import preprocessing
 
 
+def log_with_timestamp(message):
+    """
+    带时间戳的日志输出函数
+    
+    参数:
+    - message: 要输出的消息
+    """
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print(f"[{timestamp}] {message}")
+
+
+def save_model_results(model_results, target_name, save_dir):
+    """
+    保存模型结果到文件
+    
+    参数:
+    - model_results: 模型结果字典
+    - target_name: 目标变量名称
+    - save_dir: 保存目录
+    """
+    try:
+        # 创建保存目录
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        
+        # 保存模型结果
+        results_file = os.path.join(save_dir, f"{target_name}_model_results.pkl")
+        with open(results_file, 'wb') as f:
+            pickle.dump(model_results, f)
+        
+        log_with_timestamp(f"模型结果已保存到: {results_file}")
+        
+    except Exception as e:
+        log_with_timestamp(f"保存模型结果时出错: {e}")
+
 
 def train_multiple_models(X_train, X_val, X_test, y_train, y_val, y_test, class_weights, target, kinds,optimization_method='bayesian',cv=5):
     """训练和比较多个模型"""
     results = {}
-    
-    print(f"\n=== 开始训练多个模型 ===")
-    print(f"目标变量: {target}")
-    print(f"训练集大小: {X_train.shape}")
-    print(f"验证集大小: {X_val.shape}")
-    print(f"测试集大小: {X_test.shape}")
-    
+
+    log_with_timestamp(f"\n=== 开始训练多个模型 ===")
+    log_with_timestamp(f"目标变量: {target}")
+    log_with_timestamp(f"训练集大小: {X_train.shape}")
+    log_with_timestamp(f"验证集大小: {X_val.shape}")
+    log_with_timestamp(f"测试集大小: {X_test.shape}")
+
     # 1. LightGBM模型
-    print(f"\n--- 训练 LightGBM 模型 ---")
+    log_with_timestamp(f"\n--- 训练 LightGBM 模型 ---")
     try:
         lgb_result = LightGBM_model(
             X_train=X_train,
@@ -106,13 +144,13 @@ def train_multiple_models(X_train, X_val, X_test, y_train, y_val, y_test, class_
             use_validation_in_training=True
         )
         results['LightGBM'] = lgb_result
-        print(f"LightGBM 训练完成!")
+        log_with_timestamp(f"LightGBM 训练完成!")
     except Exception as e:
-        print(f"LightGBM 训练失败: {e}")
+        log_with_timestamp(f"LightGBM 训练失败: {e}")
         results['LightGBM'] = None
-    
+
     # 2. SVM模型
-    print(f"\n--- 训练 SVM 模型 ---")
+    log_with_timestamp(f"\n--- 训练 SVM 模型 ---")
     try:
         svm_model, svm_scores = C_SVM_model(
             X_train=X_train,
@@ -129,38 +167,38 @@ def train_multiple_models(X_train, X_val, X_test, y_train, y_val, y_test, class_
             use_validation_in_training=True
         )
         results['SVM'] = {'model': svm_model, 'scores': svm_scores}
-        print(f"SVM 训练完成!")
+        log_with_timestamp(f"SVM 训练完成!")
     except Exception as e:
-        print(f"SVM 训练失败: {e}")
+        log_with_timestamp(f"SVM 训练失败: {e}")
         results['SVM'] = None
-    
-    # # 3. TabNet模型
-    # print(f"\n--- 训练 TabNet 模型 ---")
-    # try:
-    #     tabnet_model, tabnet_opt_results = TabNet_model_optimized(
-    #         X_train=X_train,
-    #         X_test=X_test,
-    #         y_train=y_train,
-    #         y_test=y_test,
-    #         X_val=X_val,
-    #         y_val=y_val,
-    #         class_weights=class_weights,
-    #         target=target,
-    #         kinds=kinds,
-    #         optimize=True,
-    #         search_type=optimization_method,
-    #         n_iter=50,
-    #         cv_folds=cv,
-    #         use_validation_in_training=True
-    #     )
-    #     results['TabNet'] = {'model': tabnet_model, 'optimization_results': tabnet_opt_results}
-    #     print(f"TabNet 训练完成!")
-    # except Exception as e:
-    #     print(f"TabNet 训练失败: {e}")
-    #     results['TabNet'] = None
-    
+
+    # 3. TabNet模型
+    log_with_timestamp(f"\n--- 训练 TabNet 模型 ---")
+    try:
+        tabnet_model, tabnet_opt_results = TabNet_model_optimized(
+            X_train=X_train,
+            X_test=X_test,
+            y_train=y_train,
+            y_test=y_test,
+            X_val=X_val,
+            y_val=y_val,
+            class_weights=class_weights,
+            target=target,
+            kinds=kinds,
+            optimize=True,
+            search_type=optimization_method,
+            n_iter=50,
+            cv_folds=cv,
+            use_validation_in_training=True
+        )
+        results['TabNet'] = {'model': tabnet_model, 'optimization_results': tabnet_opt_results}
+        log_with_timestamp(f"TabNet 训练完成!")
+    except Exception as e:
+        log_with_timestamp(f"TabNet 训练失败: {e}")
+        results['TabNet'] = None
+
     # 4. IEDT模型 (可解释性集成决策树)
-    print(f"\n--- 训练 IEDT 模型 ---")
+    log_with_timestamp(f"\n--- 训练 IEDT 模型 ---")
     try:
         iedt_model, iedt_scores = IEDT_model(
             X_train=X_train,
@@ -177,18 +215,18 @@ def train_multiple_models(X_train, X_val, X_test, y_train, y_val, y_test, class_
             cv_folds=cv
         )
         results['IEDT'] = {'model': iedt_model, 'scores': iedt_scores}
-        print(f"IEDT 训练完成!")
+        log_with_timestamp(f"IEDT 训练完成!")
     except Exception as e:
-        print(f"IEDT 训练失败: {e}")
+        log_with_timestamp(f"IEDT 训练失败: {e}")
         results['IEDT'] = None
-    
+
     # 5. 图神经网络模型 (Dialysis GNN)
-    print(f"\n--- 训练 图神经网络 模型 ---")
+    log_with_timestamp(f"\n--- 训练 图神经网络 模型 ---")
     try:
         # 合并训练集和验证集用于GNN训练
         X_gnn_train = np.vstack([X_train, X_val])
         y_gnn_train = np.hstack([y_train, y_val])
-        
+
         gnn_model = DialysisGNNClassifier(
             hidden_dim=128,
             num_layers=3,
@@ -199,39 +237,44 @@ def train_multiple_models(X_train, X_val, X_test, y_train, y_val, y_test, class_
             batch_size=32,
             early_stopping_patience=10,
             random_state=42,
-            verbose=True
+            verbose=True,
+            # 启用临床优化功能
+            use_clinical_features=True,
+            use_edge_attr=True,
+            handle_class_imbalance=True,
+            interpretability_mode=True,
         )
-        
+
         # 训练模型
         gnn_model.fit(X_gnn_train, y_gnn_train)
-        
+
         # 预测和评估
         y_pred_gnn = gnn_model.predict(X_test)
         y_proba_gnn = gnn_model.predict_proba(X_test)
-        
+
         gnn_scores = {
             'accuracy': accuracy_score(y_test, y_pred_gnn),
             'precision': precision_score(y_test, y_pred_gnn, average='weighted'),
             'recall': recall_score(y_test, y_pred_gnn, average='weighted'),
             'f1': f1_score(y_test, y_pred_gnn, average='weighted')
         }
-        
+
         if y_proba_gnn.shape[1] == 2:  # 二分类
             gnn_scores['auc'] = roc_auc_score(y_test, y_proba_gnn[:, 1])
-        
+
         results['GNN'] = {'model': gnn_model, 'scores': gnn_scores, 'predictions': y_pred_gnn, 'probabilities': y_proba_gnn}
-        print(f"图神经网络 训练完成! AUC: {gnn_scores.get('auc', 'N/A'):.4f}")
+        log_with_timestamp(f"图神经网络 训练完成! AUC: {gnn_scores.get('auc', 'N/A'):.4f}")
     except Exception as e:
-        print(f"图神经网络 训练失败: {e}")
+        log_with_timestamp(f"图神经网络 训练失败: {e}")
         results['GNN'] = None
-    
+
     # 6. 注意力KNN模型 (Attention KNN)
-    print(f"\n--- 训练 注意力KNN 模型 ---")
+    log_with_timestamp(f"\n--- 训练 注意力KNN 模型 ---")
     try:
         # 合并训练集和验证集用于AttentionKNN训练
         X_aknn_train = np.vstack([X_train, X_val])
         y_aknn_train = np.hstack([y_train, y_val])
-        
+
         aknn_model = AttentionKNN(
             n_neighbors=5,
             attention_hidden_dim=64,
@@ -245,30 +288,30 @@ def train_multiple_models(X_train, X_val, X_test, y_train, y_val, y_test, class_
             random_state=42,
             verbose=True
         )
-        
+
         # 训练模型
         aknn_model.fit(X_aknn_train, y_aknn_train)
-        
+
         # 预测和评估
         y_pred_aknn = aknn_model.predict(X_test)
         y_proba_aknn = aknn_model.predict_proba(X_test)
-        
+
         aknn_scores = {
             'accuracy': accuracy_score(y_test, y_pred_aknn),
             'precision': precision_score(y_test, y_pred_aknn, average='weighted'),
             'recall': recall_score(y_test, y_pred_aknn, average='weighted'),
             'f1': f1_score(y_test, y_pred_aknn, average='weighted')
         }
-        
+
         if y_proba_aknn.shape[1] == 2:  # 二分类
             aknn_scores['auc'] = roc_auc_score(y_test, y_proba_aknn[:, 1])
-        
+
         results['AttentionKNN'] = {'model': aknn_model, 'scores': aknn_scores, 'predictions': y_pred_aknn, 'probabilities': y_proba_aknn}
-        print(f"注意力KNN 训练完成! AUC: {aknn_scores.get('auc', 'N/A'):.4f}")
+        log_with_timestamp(f"注意力KNN 训练完成! AUC: {aknn_scores.get('auc', 'N/A'):.4f}")
     except Exception as e:
-        print(f"注意力KNN 训练失败: {e}")
+        log_with_timestamp(f"注意力KNN 训练失败: {e}")
         results['AttentionKNN'] = None
-    
+
     return results
 
 
@@ -428,8 +471,12 @@ def main():
     
     # 历史特征
     history_rate_proportion = [
-        "history_HBP_rate", "history_LBP_times_0_rate", "history_LBP_times_1_rate",
-        "history_LBP_times_2_rate", "history_LBP_times_3_rate", "history_LBP_times_4_rate"
+        "history_HBP_rate",
+    "history_LBP_times_0_rate",
+    "history_LBP_times_1_rate",
+    "history_LBP_times_2_rate",
+    "history_LBP_times_3_rate",
+    "history_LBP_times_4_rate",
     ]
     
     history_rate_diff = [
@@ -448,9 +495,9 @@ def main():
     
     # 对每个目标变量进行建模
     for target in targets:
-        print(f"\n{'='*60}")
-        print(f"目标变量: {target}")
-        print(f"{'='*60}")
+        log_with_timestamp(f"\n{'='*60}")
+        log_with_timestamp(f"目标变量: {target}")
+        log_with_timestamp(f"{'='*60}")
         
         # 选择特征
         current_features = base_features.copy()
@@ -470,7 +517,7 @@ def main():
             test_data = test_set.copy()
         
         if len(train_data) == 0 or len(test_data) == 0:
-            print(f"警告: {target} 的有效数据不足，跳过")
+            log_with_timestamp(f"警告: {target} 的有效数据不足，跳过")
             continue
         
         # 准备特征和标签
@@ -484,13 +531,13 @@ def main():
         n_classes = len(unique_labels)
         is_binary = n_classes == 2
         
-        print(f"任务类型: {'二分类' if is_binary else f'{n_classes}分类'}")
-        print(f"特征数量: {len(current_features)}")
-        print(f"类别标签: {unique_labels}")
+        log_with_timestamp(f"任务类型: {'二分类' if is_binary else f'{n_classes}分类'}")
+        log_with_timestamp(f"特征数量: {len(current_features)}")
+        log_with_timestamp(f"类别标签: {unique_labels}")
         
         # 显示数据信息
-        print(f"\n训练数据形状: {X.shape}")
-        print(f"测试数据形状: {X_external_test.shape}")
+        log_with_timestamp(f"\n训练数据形状: {X.shape}")
+        log_with_timestamp(f"测试数据形状: {X_external_test.shape}")
         
         # 数据准备（使用高级缺失值填补）
         X_train, X_val, X_test, y_train, y_val, y_test = pipeline.prepare_data(
@@ -500,13 +547,34 @@ def main():
         X_train = pd.DataFrame(X_train, columns=current_features)
         X_val = pd.DataFrame(X_val, columns=current_features)
         X_test = pd.DataFrame(X_test, columns=current_features)
+        
+        # 数据标准化处理
+        log_with_timestamp(f"\n开始数据标准化处理...")
+        standardization_results = standardize_dialysis_data(
+            X_train=X_train,
+            X_val=X_val, 
+            X_test=X_test,
+            method='standard',  # 使用标准化方法
+            save_dir='./scalers',
+            target_name=target,
+            verbose=True
+        )
+        
+        # 使用标准化后的数据
+        X_train = standardization_results['X_train_scaled']
+        X_val = standardization_results['X_val_scaled']
+        X_test = standardization_results['X_test_scaled']
+        scaler_path = standardization_results['scaler_path']
+        
+        log_with_timestamp(f"数据标准化完成，标准化器已保存到: {scaler_path}")
+        log_with_timestamp(f"标准化统计信息: {standardization_results['feature_stats']}")
         # 计算类别权重
         class_weights = calculate_class_weights(y_train)
-        print(f"类别权重: {class_weights}")
+        log_with_timestamp(f"类别权重: {class_weights}")
         
         # 处理多分类的类别不平衡
         if not is_binary and n_classes > 2:
-            print(f"\n检测到多分类问题，应用重采样...")
+            log_with_timestamp(f"\n检测到多分类问题，应用重采样...")
             X_train_resampled, y_train_resampled = pipeline.handle_class_imbalance(
                 X_train, y_train, method='smotetomek'
             )
@@ -514,9 +582,9 @@ def main():
             X_train_resampled, y_train_resampled = X_train, y_train
         
         # 打印数据集大小信息
-        print(f"\n训练集总长度: {len(X_train_resampled)}, label 为 1 的长度: {np.sum(y_train_resampled == 1)}")
-        print(f"验证集总长度: {len(X_val)}, label 为 1 的长度: {np.sum(y_val == 1)}")
-        print(f"测试集总长度: {len(X_test)}, label 为 1 的长度: {np.sum(y_test == 1)}")
+        log_with_timestamp(f"\n训练集总长度: {len(X_train_resampled)}, label 为 1 的长度: {np.sum(y_train_resampled == 1)}")
+        log_with_timestamp(f"验证集总长度: {len(X_val)}, label 为 1 的长度: {np.sum(y_val == 1)}")
+        log_with_timestamp(f"测试集总长度: {len(X_test)}, label 为 1 的长度: {np.sum(y_test == 1)}")
         
         # 训练多个模型
         model_results = train_multiple_models(
@@ -526,30 +594,30 @@ def main():
         )
         
         # 输出模型比较结果
-        print(f"\n=== {target} 模型训练结果汇总 ===")
+        log_with_timestamp(f"\n=== {target} 模型训练结果汇总 ===")
         
         # 创建性能比较表格
         performance_summary = []
         for model_name, result in model_results.items():
             if result is not None:
-                print(f"{model_name}: 训练成功")
+                log_with_timestamp(f"{model_name}: 训练成功")
                 if isinstance(result, dict) and 'scores' in result:
                     scores = result['scores']
                     if isinstance(scores, dict):
                         row = {'模型': model_name}
                         for metric, value in scores.items():
-                            print(f"  {metric}: {value:.4f}")
+                            log_with_timestamp(f"  {metric}: {value:.4f}")
                             row[metric] = f"{value:.4f}"
                         performance_summary.append(row)
             else:
-                print(f"{model_name}: 训练失败")
+                log_with_timestamp(f"{model_name}: 训练失败")
         
         # 显示性能比较表格
         if performance_summary:
-            print(f"\n=== {target} 模型性能比较表 ===")
+            log_with_timestamp(f"\n=== {target} 模型性能比较表 ===")
             performance_df = pd.DataFrame(performance_summary)
-            print(performance_df.to_string(index=False))
-            print()
+            log_with_timestamp(performance_df.to_string(index=False))
+            log_with_timestamp("")
         
         # 保存模型结果和生成报告
         if SAVE_MODELS:
@@ -557,18 +625,18 @@ def main():
                 save_model_results(model_results, target, MODEL_SAVE_DIR)
                 generate_model_report(model_results, target, MODEL_SAVE_DIR)
             except Exception as e:
-                print(f"保存模型时出错: {e}")
+                log_with_timestamp(f"保存模型时出错: {e}")
     
-    print(f"\n{'='*60}")
-    print("所有模型训练完成!")
-    print(f"{'='*60}")
+    log_with_timestamp(f"\n{'='*60}")
+    log_with_timestamp("所有模型训练完成!")
+    log_with_timestamp(f"{'='*60}")
     
     if SAVE_MODELS:
-        print(f"\n模型结果已保存到目录: {MODEL_SAVE_DIR}")
+        log_with_timestamp(f"\n模型结果已保存到目录: {MODEL_SAVE_DIR}")
 
 if __name__ == "__main__":
-    print("开始透析低血压预测模型训练...")
-    print("=" * 50)
+    log_with_timestamp("开始透析低血压预测模型训练...")
+    log_with_timestamp("=" * 50)
     
     # 应用可重复性配置预设
     apply_preset('reproducible')
@@ -576,6 +644,6 @@ if __name__ == "__main__":
     
     # 获取配置
     config = get_config()
-    print(f"使用配置: 填补策略={config.imputation_strategy}, 随机种子={config.random_state }")
+    log_with_timestamp(f"使用配置: 填补策略={config.imputation_strategy}, 随机种子={config.random_state }")
     
     main()
