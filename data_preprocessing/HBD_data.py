@@ -329,7 +329,7 @@ def shengyi_dataset(first_pressure_sd="透前动脉压", use_parallel=True, n_th
         "透析结束时间",
         "涨幅时间点比值",
         "涨幅时间点比值区间",
-        '涨幅时间点差值区间',
+        "涨幅时间点差值区间",
         "降幅时间点",
         "降幅时间点比值",
         "降幅时间点比值区间",
@@ -363,6 +363,14 @@ def shengyi_dataset(first_pressure_sd="透前动脉压", use_parallel=True, n_th
         "透析液温度_std",
         "跨膜压_mean",
         "跨膜压_std",
+        "透中出汗",
+        "透中呼吸困难",
+        "透中头晕",
+        "透中头痛",
+        "透中心悸",
+        "透中恶心",
+        "透中肌肉痉挛",
+        "透中胸闷",
     ]
 
     # Save the resulting DataFrame

@@ -39,7 +39,7 @@ def convert_to_float_list(input_list):
 
 
 def replace_extremes_with_percentiles(
-    dataset, list_columns, lower_percentile=1, upper_percentile=99
+    dataset, list_columns, lower_percentile=5, upper_percentile=95
 ):
     # 计算整个列的1%和99%分位数
     all_values = [
@@ -111,12 +111,14 @@ def calculate_pressure_change(row, pressure_type="hypertension", first_pressure=
         comparator = lambda p, fp: p - fp > threshold
     elif pressure_type == "hypotension":
         pressures = convert_to_float_list(row["透析中收缩压"])
-        threshold = 20
-        comparator = lambda p, fp: fp - p >= threshold 
-        # comparator = lambda p, fp: fp - p >= threshold and min(pressures) <= 90
-    else:
-        raise ValueError("Invalid pressure_type. Use 'hypertension' or 'hypotension'.")
+        threshold = 30
+        comparator = lambda p, fp: (fp - p >= threshold) or p<=90
+    # elif pressure_type == "hypotension":
+    #     pressures = convert_to_float_list(row["动脉压"])
+    #     threshold = 20
+    #     comparator = lambda p, fp: (fp - p >= threshold)
 
+    # first_pressure = pressures[0]
     if first_pressure is None:
         first_pressure = pressures[0]
     else:
@@ -140,8 +142,11 @@ def calculate_time_points(row, pressure_type="hypertension", first_pressure=None
     Returns:
     - The time point when the specified condition is met, otherwise None.
     """
-    if row["透中高血压_计算"] == 0:
-        return None
+    # 根据pressure_type检查相应的计算结果
+    if pressure_type == "hypertension" and row.get("透中高血压_计算", 0) == 0:
+        return row["透中数据记录时间节点"][0]
+    elif pressure_type == "hypotension" and row.get("透中低血压_计算", 0) == 0:
+        return row["透中数据记录时间节点"][0]
 
     if pressure_type == "hypertension":
         pressures = convert_to_float_list(row["动脉压"])
@@ -149,11 +154,14 @@ def calculate_time_points(row, pressure_type="hypertension", first_pressure=None
         comparator = lambda p, fp: p - fp > threshold
     elif pressure_type == "hypotension":
         pressures = convert_to_float_list(row["透析中收缩压"])
-        threshold = 20
-        comparator = lambda p, fp: fp - p >= threshold and min(pressures) <= 90
-    else:
-        raise ValueError("Invalid pressure_type. Use 'hypertension' or 'hypotension'.")
-
+        threshold = 30
+        comparator = lambda p, fp: (fp - p > threshold) or p<90
+    # elif pressure_type == "hypotension":
+    #     pressures = convert_to_float_list(row["动脉压"])
+    #     threshold = 10
+    #     comparator = lambda p, fp: (fp - p >= threshold)
+        
+    # first_pressure = pressures[0]
     if first_pressure is None:
         first_pressure = pressures[0]
     else:
@@ -162,8 +170,7 @@ def calculate_time_points(row, pressure_type="hypertension", first_pressure=None
     for i, pressure in enumerate(pressures):
         if comparator(pressure, first_pressure):
             return row["透中数据记录时间节点"][i]
-    return None
-
+    return row["透中数据记录时间节点"][0]
 
 # Usage example:
 # row = {

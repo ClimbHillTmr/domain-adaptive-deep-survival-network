@@ -18,10 +18,62 @@ import os
 import pickle
 import joblib
 from datetime import datetime
+from pathlib import Path
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.base import BaseEstimator, TransformerMixin
 import warnings
 warnings.filterwarnings('ignore')
+
+
+class PathManager:
+    """统一的路径管理器"""
+    
+    def __init__(self, base_path=None):
+        self.base_path = self._determine_base_path(base_path)
+        
+    def _determine_base_path(self, base_path):
+        """确定基础路径"""
+        if base_path is not None:
+            return Path(base_path)
+            
+        # 自动检测调用脚本的目录
+        import inspect
+        frame = inspect.currentframe()
+        try:
+            caller_frame = frame.f_back.f_back
+            while caller_frame:
+                caller_file = caller_frame.f_code.co_filename
+                # 排除工具文件，找到真正的调用脚本
+                util_files = ('data_standardization.py', 'advanced_imputation.py', 'class_imbalance_handler.py', 
+                             'data_process.py', 'train_untils.py', 'model_config.py')
+                if not any(caller_file.endswith(uf) for uf in util_files):
+                    return Path(caller_file).parent
+                caller_frame = caller_frame.f_back
+            # 如果没找到，使用当前工作目录
+            return Path.cwd()
+        finally:
+            del frame
+    
+    def create_scaler_dirs(self, target_name='default', timestamp=None):
+        """为标准化器创建目录结构"""
+        if timestamp is None:
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            
+        # 创建主目录
+        main_dir = self.base_path / "scalers" / f"scaler_{target_name}_{timestamp}"
+        
+        # 创建子目录
+        subdirs = {
+            'main': main_dir,
+            'scalers': main_dir / 'scalers',
+            'reports': main_dir / 'reports',
+            'logs': main_dir / 'logs'
+        }
+        
+        for dir_path in subdirs.values():
+            dir_path.mkdir(parents=True, exist_ok=True)
+            
+        return subdirs
 
 
 class DialysisDataStandardizer(BaseEstimator, TransformerMixin):
@@ -35,7 +87,7 @@ class DialysisDataStandardizer(BaseEstimator, TransformerMixin):
     - 透析数据的特殊处理
     """
     
-    def __init__(self, method='standard', exclude_columns=None, save_dir='./scalers', 
+    def __init__(self, method='standard', exclude_columns=None, save_dir=None, 
                  target_name='default', verbose=True):
         """
         初始化标准化器
@@ -43,13 +95,12 @@ class DialysisDataStandardizer(BaseEstimator, TransformerMixin):
         参数:
         - method: 标准化方法 ('standard', 'minmax', 'robust')
         - exclude_columns: 不需要标准化的列名列表
-        - save_dir: 标准化器保存目录
+        - save_dir: 标准化器保存目录 (可选，如果为None则使用PathManager自动管理)
         - target_name: 目标变量名称，用于文件命名
         - verbose: 是否输出详细信息
         """
         self.method = method
         self.exclude_columns = exclude_columns or []
-        self.save_dir = save_dir
         self.target_name = target_name
         self.verbose = verbose
         self.scaler = None
@@ -57,9 +108,18 @@ class DialysisDataStandardizer(BaseEstimator, TransformerMixin):
         self.standardized_features = None
         self.is_fitted = False
         
-        # 创建保存目录
-        if not os.path.exists(self.save_dir):
-            os.makedirs(self.save_dir)
+        # 初始化路径管理器
+        self.path_manager = PathManager()
+        
+        # 设置保存目录
+        if save_dir is not None:
+            self.save_dir = Path(save_dir)
+            # 创建保存目录
+            self.save_dir.mkdir(parents=True, exist_ok=True)
+        else:
+            # 使用PathManager创建目录结构
+            self.dirs = self.path_manager.create_scaler_dirs(target_name)
+            self.save_dir = self.dirs['scalers']
     
     def _get_scaler(self):
         """根据方法选择标准化器"""
@@ -241,7 +301,7 @@ class DialysisDataStandardizer(BaseEstimator, TransformerMixin):
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"scaler_{self.method}_{self.target_name}_{timestamp}.pkl"
         
-        save_path = os.path.join(self.save_dir, filename)
+        save_path = self.save_dir / filename
         
         # 保存标准化器和相关信息
         scaler_data = {
@@ -270,7 +330,8 @@ class DialysisDataStandardizer(BaseEstimator, TransformerMixin):
         返回:
         - self
         """
-        if not os.path.exists(filepath):
+        filepath = Path(filepath)
+        if not filepath.exists():
             raise FileNotFoundError(f"标准化器文件不存在: {filepath}")
         
         with open(filepath, 'rb') as f:
@@ -324,7 +385,7 @@ class DialysisDataStandardizer(BaseEstimator, TransformerMixin):
 
 
 def create_dialysis_standardizer(method='standard', exclude_columns=None, 
-                                save_dir='./scalers', target_name='default', 
+                                save_dir=None, target_name='default', 
                                 verbose=True):
     """
     创建透析数据标准化器的便捷函数
@@ -332,7 +393,7 @@ def create_dialysis_standardizer(method='standard', exclude_columns=None,
     参数:
     - method: 标准化方法 ('standard', 'minmax', 'robust')
     - exclude_columns: 不需要标准化的列名列表
-    - save_dir: 标准化器保存目录
+    - save_dir: 标准化器保存目录 (可选，如果为None则使用PathManager自动管理)
     - target_name: 目标变量名称
     - verbose: 是否输出详细信息
     
@@ -535,6 +596,103 @@ def standardize_dialysis_data(X_train, X_val=None, X_test=None, method='standard
     return results
 
 
+def add_gaussian_noise_to_features(X_train, X_val=None, X_test=None, 
+                                   noise_std=0.01, exclude_columns=None, 
+                                   random_state=42, verbose=True):
+    """
+    为训练数据的数值特征添加高斯噪声
+    
+    参数:
+    - X_train: 训练集特征 (DataFrame)
+    - X_val: 验证集特征 (DataFrame, 可选)
+    - X_test: 测试集特征 (DataFrame, 可选) - 注意：测试集通常不添加噪声
+    - noise_std: 高斯噪声的标准差
+    - exclude_columns: 不添加噪声的列名列表
+    - random_state: 随机种子
+    - verbose: 是否输出详细信息
+    
+    返回:
+    - results: 包含添加噪声后数据的字典
+    """
+    if verbose:
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print(f"[{timestamp}] [GaussianNoise] 开始为训练数据添加高斯噪声...")
+    
+    # 设置随机种子
+    np.random.seed(random_state)
+    
+    # 获取默认排除列名
+    default_exclude = get_dialysis_exclude_columns()
+    if exclude_columns:
+        exclude_columns = list(set(default_exclude + exclude_columns))
+    else:
+        exclude_columns = default_exclude
+    
+    # 复制数据
+    X_train_noisy = X_train.copy()
+    results = {'X_train_noisy': X_train_noisy}
+    
+    # 确定需要添加噪声的数值特征
+    if isinstance(X_train, pd.DataFrame):
+        # 过滤实际存在的排除列
+        exclude_columns = [col for col in exclude_columns if col in X_train.columns]
+        
+        # 选择数值特征且不在排除列表中的特征
+        numerical_features = X_train.select_dtypes(include=[np.number]).columns.tolist()
+        features_to_noise = [col for col in numerical_features if col not in exclude_columns]
+        
+        if verbose:
+            print(f"[{timestamp}] [GaussianNoise] 总特征数: {len(X_train.columns)}")
+            print(f"[{timestamp}] [GaussianNoise] 数值特征数: {len(numerical_features)}")
+            print(f"[{timestamp}] [GaussianNoise] 排除特征数: {len(exclude_columns)}")
+            print(f"[{timestamp}] [GaussianNoise] 添加噪声的特征数: {len(features_to_noise)}")
+            print(f"[{timestamp}] [GaussianNoise] 噪声标准差: {noise_std}")
+        
+        # 为训练集添加高斯噪声
+        if features_to_noise:
+            for feature in features_to_noise:
+                # 生成与特征值相同形状的高斯噪声
+                noise = np.random.normal(0, noise_std, size=X_train[feature].shape)
+                X_train_noisy[feature] = X_train[feature] + noise
+            
+            if verbose:
+                print(f"[{timestamp}] [GaussianNoise] 训练集噪声添加完成")
+        
+        # 验证集通常也添加噪声（用于数据增强）
+        if X_val is not None:
+            X_val_noisy = X_val.copy()
+            if features_to_noise:
+                for feature in features_to_noise:
+                    noise = np.random.normal(0, noise_std, size=X_val[feature].shape)
+                    X_val_noisy[feature] = X_val[feature] + noise
+            results['X_val_noisy'] = X_val_noisy
+            if verbose:
+                print(f"[{timestamp}] [GaussianNoise] 验证集噪声添加完成")
+        
+        # 测试集通常不添加噪声，保持原始数据用于真实评估
+        if X_test is not None:
+            results['X_test_original'] = X_test.copy()
+            if verbose:
+                print(f"[{timestamp}] [GaussianNoise] 测试集保持原始数据（未添加噪声）")
+        
+        # 添加噪声统计信息
+        results['noise_info'] = {
+            'noise_std': noise_std,
+            'features_with_noise': features_to_noise,
+            'excluded_features': exclude_columns,
+            'random_state': random_state
+        }
+        
+        if verbose:
+            print(f"[{timestamp}] [GaussianNoise] 高斯噪声添加完成!")
+    
+    else:
+        if verbose:
+            print(f"[{timestamp}] [GaussianNoise] 警告: 输入不是DataFrame，跳过噪声添加")
+    
+    return results
+
+
 if __name__ == "__main__":
     # 测试代码
     print("透析数据标准化模块测试")
@@ -571,6 +729,17 @@ if __name__ == "__main__":
     print("\n标准化完成!")
     print(f"标准化器保存路径: {results['scaler_path']}")
     print(f"特征统计信息: {results['feature_stats']}")
+    
+    # 测试高斯噪声添加
+    print("\n测试高斯噪声添加...")
+    noise_results = add_gaussian_noise_to_features(
+        X_train=results['X_train_scaled'],
+        X_test=results['X_test_scaled'],
+        noise_std=0.01,
+        verbose=True
+    )
+    
+    print(f"噪声信息: {noise_results['noise_info']}")
     
     # 测试加载标准化器
     X_test_scaled_loaded = apply_saved_standardizer(

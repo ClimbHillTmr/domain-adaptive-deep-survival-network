@@ -14,24 +14,9 @@ import threading
 
 dataset = pd.read_csv("/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/updated_dataset_fuding.csv")
 dataset["患者id"].nunique()
-# ['Unnamed: 0', '患者id', '透析记录id', '姓名', '性别', '年龄', '出生日期', '传染病',
-#        '首次透析日期', '诊断', '患者状态', '终止日期', '透析日期', '透析器', '瘘管位置', '瘘管类型', '瘘管置管时间',
-#        '瘘管使用时间', '透析方式', '透前体重', '透前呼吸频率', '透前体温', '干体重', '透析液钙浓度', '透析液电导率',
-#        '透析液温度', '透析液流量', '抗凝剂类型', 'CONCAT(MA.FIRST_HEPARIN,ST2.IT',
-#        'CONCAT(MA.DOSIS_SUSTENTATIVA,S', '(MA.FIRST_HEPARIN+MA.DOSIS_SUS',
-#        '透中用药', '透中用药的用药途径', 'WM_CONCAT(CLINICAL_MANIFESTATI', '透中低血压', '透中高血压',
-#        '透中心悸', '透中胸闷', '透中肌肉痉挛', '透中头痛', '透中头晕', '透中恶心', '透中出汗', '透中呼吸困难',
-#        '透析后体重', '实际透析时长', '超滤量', '透析器凝血', 'DISPLACEMENT_LIQUID',
-#        'COAGULATION_IN_DIALYSER.1', '透中数据记录时间节点', '静脉压', '跨膜压', '血流速', '透中体温',
-#        '透析中脉搏', '透中呼吸频率', '透中血压', '透中指脉氧', '超滤率', 'VASCULAR_ACCESS_ERRHYISIS',
-#        'VASCULAR_ACCESS_GLIDE', 'CLINICAL_MANIFESTATION', 'RECIPE_ID', '透前收缩压',
-#        '透前舒张压', '透后收缩压', '透后舒张压']
-
-# '透中低血压', '透中高血压','透中心悸', '透中胸闷', '透中肌肉痉挛', '透中头痛', '透中头晕', '透中恶心', '透中出汗', '透中呼吸困难'
 
 
-
-def fuding_dataset(first_pressure_sd="", use_parallel=True, n_threads=30):
+def fuding_dataset(first_pressure_sd="透前动脉压", use_parallel=True, n_threads=30):
     # 检查是否存在福鼎_optimized_data_透前动脉压.csv文件
     target_file = "/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/data/福鼎_optimized_data.csv"
     if os.path.exists(target_file):
@@ -116,6 +101,20 @@ def fuding_dataset(first_pressure_sd="", use_parallel=True, n_threads=30):
         #     (dataset["干体重"] > 0) & dataset["动脉压"].notna() & (dataset["实际透析时长"] > 0)
         # ]
 
+        # 处理透前动脉压的极值
+        q5_pre = dataset['透前动脉压'].quantile(0.05)
+        q95_pre = dataset['透前动脉压'].quantile(0.95)
+        dataset['透前动脉压'] = dataset['透前动脉压'].apply(
+            lambda x: q5_pre if x < q5_pre else (q95_pre if x > q95_pre else x)
+        )
+
+        # 处理透前动脉压的极值
+        q5_pre = dataset['透前收缩压'].quantile(0.05)
+        q95_pre = dataset['透前收缩压'].quantile(0.95)
+        dataset['透前收缩压'] = dataset['透前收缩压'].apply(
+            lambda x: q5_pre if x < q5_pre else (q95_pre if x > q95_pre else x)
+        )
+
         # # 处理列表数据
         list_columns = [
             "透析中收缩压",
@@ -153,6 +152,12 @@ def fuding_dataset(first_pressure_sd="", use_parallel=True, n_threads=30):
         dataset["透中数据记录时间节点"] = (
             dataset["透中数据记录时间节点"].str.strip("[]").str.split(",")
         )
+
+        # # 去除透中数据记录时间节点中的重复值，保持原有顺序
+        # dataset["透中数据记录时间节点"] = dataset["透中数据记录时间节点"].apply(
+        #     lambda lst: list(dict.fromkeys(lst)) if lst else lst
+        # )
+
         dataset = dataset[dataset["动脉压"].apply(lambda lst: len(lst) > 0)]
 
         # Calculate derived features
@@ -179,6 +184,9 @@ def fuding_dataset(first_pressure_sd="", use_parallel=True, n_threads=30):
         label_encoder = LabelEncoder()
         dataset["性别"] = label_encoder.fit_transform(dataset["性别"])
 
+        # 统计删除前的数据集大小
+        print(f"删除不一致行前的数据集大小: {len(dataset)}")
+
         # 找到元素长度不一致的行的索引
         rows_to_remove = dataset[
             dataset.apply(
@@ -186,8 +194,26 @@ def fuding_dataset(first_pressure_sd="", use_parallel=True, n_threads=30):
             )
         ].index
 
+        # 统计要删除的行数
+        print(f"发现不一致的行数: {len(rows_to_remove)}")
+
+        # 保存被删除的行到CSV文件
+        if len(rows_to_remove) > 0:
+            removed_rows = dataset.loc[rows_to_remove]
+            removed_rows_file = "/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/data/removed_inconsistent_rows.csv"
+            removed_rows.to_csv(removed_rows_file, index=True)
+            print(f"被删除的行已保存到: {removed_rows_file}")
+
         # 从DataFrame中删除对应的行
         dataset.drop(rows_to_remove, inplace=True)
+
+        # 统计删除后的数据集大小
+        print(f"删除不一致行后的数据集大小: {len(dataset)}")
+        print(f"删除的行数: {len(rows_to_remove)}")
+        if len(dataset) > 0:
+            print(f"删除的百分比: {len(rows_to_remove)/(len(dataset)+len(rows_to_remove))*100:.2f}%")
+        else:
+            print("删除的百分比: 100.00%")
 
         dataset["透中高血压_计算"] = dataset.apply(
             lambda row: calculate_pressure_change(
@@ -199,7 +225,10 @@ def fuding_dataset(first_pressure_sd="", use_parallel=True, n_threads=30):
 
         dataset["透中低血压_计算"] = dataset.apply(
             lambda row: calculate_pressure_change(
-                row=row, first_pressure=first_pressure_sd, pressure_type="hypotension"
+                row=row, first_pressure='透前收缩压', pressure_type="hypotension"
+                # row=row,
+                # first_pressure=first_pressure_sd,
+                # pressure_type="hypotension",
             ),
             axis=1,
         )
@@ -218,7 +247,7 @@ def fuding_dataset(first_pressure_sd="", use_parallel=True, n_threads=30):
         )
         dataset["降幅时间点"] = dataset.apply(
             lambda row: calculate_time_points(
-                row=row, first_pressure=first_pressure_sd, pressure_type="hypotension"
+                row=row, first_pressure='透前收缩压', pressure_type="hypotension"
             ),
             axis=1,
         )
@@ -228,10 +257,15 @@ def fuding_dataset(first_pressure_sd="", use_parallel=True, n_threads=30):
         dataset["透析结束时间"] = dataset["透中数据记录时间节点"].apply(lambda lst: lst[-1])
 
         # # Convert time strings to datetime objects
-        dataset["涨幅时间点"] = pd.to_datetime(dataset["涨幅时间点"], format='%H:%M', errors='coerce')
-        dataset["降幅时间点"] = pd.to_datetime(dataset["降幅时间点"], format='%H:%M', errors='coerce')
-        dataset["透析开始时间"] = pd.to_datetime(dataset["透析开始时间"], format='%H:%M', errors='coerce')
-        dataset["透析结束时间"] = pd.to_datetime(dataset["透析结束时间"], format='%H:%M', errors='coerce')
+        # dataset["涨幅时间点"] = pd.to_datetime(dataset["涨幅时间点"], format='%H:%M', errors='coerce')
+        # dataset["降幅时间点"] = pd.to_datetime(dataset["降幅时间点"], format='%H:%M', errors='coerce')
+        # dataset["透析开始时间"] = pd.to_datetime(dataset["透析开始时间"], format='%H:%M', errors='coerce')
+        # dataset["透析结束时间"] = pd.to_datetime(da
+
+        dataset["涨幅时间点"] = pd.to_datetime(dataset["涨幅时间点"])
+        dataset["降幅时间点"] = pd.to_datetime(dataset["降幅时间点"])
+        dataset["透析开始时间"] = pd.to_datetime(dataset["透析开始时间"])
+        dataset["透析结束时间"] = pd.to_datetime(dataset["透析结束时间"])
 
         # Calculate '涨幅时间点区间' and '涨幅时间点差值' columns
         time_diff_minutes = (
@@ -243,7 +277,7 @@ def fuding_dataset(first_pressure_sd="", use_parallel=True, n_threads=30):
         dataset["涨幅时间点比值区间"] = dataset["涨幅时间点比值"].apply(
             lambda x: (
                 0
-                if x < 0
+                if x <= 0
                 else (1 if x <= 0.25 else (2 if x <= 0.5 else (3 if x <= 0.75 else 4)))
             )
         )
@@ -252,7 +286,7 @@ def fuding_dataset(first_pressure_sd="", use_parallel=True, n_threads=30):
         )
         dataset["涨幅时间点差值区间"] = dataset["涨幅时间点差值"].apply(
             lambda x: (
-                0 if x < 0 else (1 if x <= 1 else (2 if x <= 2 else (3 if x <= 3 else 4)))
+                0 if x <= 0 else (1 if x <= 1 else (2 if x <= 2 else (3 if x <= 3 else 4)))
             )
         )
         # Calculate '降幅时间点比值' and '降幅时间点差值' columns
@@ -262,7 +296,7 @@ def fuding_dataset(first_pressure_sd="", use_parallel=True, n_threads=30):
         dataset["降幅时间点比值区间"] = dataset["降幅时间点比值"].apply(
             lambda x: (
                 0
-                if x < 0
+                if x <= 0
                 else (1 if x <= 0.25 else (2 if x <= 0.5 else (3 if x <= 0.75 else 4)))
             )
         )
@@ -271,13 +305,13 @@ def fuding_dataset(first_pressure_sd="", use_parallel=True, n_threads=30):
         )
         dataset["降幅时间点差值区间"] = dataset["降幅时间点差值"].apply(
             lambda x: (
-                0 if x < 0 else (1 if x <= 1 else (2 if x <= 2 else (3 if x <= 3 else 4)))
+                0 if x <= 0 else (1 if x <= 1 else (2 if x <= 2 else (3 if x <= 3 else 4)))
             )
         )
 
         dataset["透前体重-干体重"] = dataset["透前体重"] - dataset["干体重"]
 
-        dataset.to_csv("/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/data/福鼎_based_data" + str(first_pressure_sd) + "_HDH.csv")
+        # dataset.to_csv("/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/data/福鼎_based_data" + str(first_pressure_sd) + "_HDH.csv")
 
         # Process mean and standard deviation of list columns
         for col in list_columns:
@@ -376,7 +410,7 @@ def fuding_dataset(first_pressure_sd="", use_parallel=True, n_threads=30):
         dataset.to_csv("/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/data/福鼎_optimized_data" + str(first_pressure_sd) + ".csv")
         # del X['涨幅时间点区间']
         # del X['透中高血压_计算']
-    
+
     # 继续执行历史平均值计算
     return process_historical_averages(dataset, first_pressure_sd=first_pressure_sd, use_parallel=use_parallel, n_threads=n_threads)
 
@@ -602,12 +636,11 @@ def process_historical_averages(dataset, first_pressure_sd='', use_parallel=True
         "透前舒张压",
         "涨幅时间点比值区间",
         "涨幅时间点差值区间",
-        # "降幅时间点比值",
         "降幅时间点比值区间",
         "降幅时间点差值区间",
         "降幅时间点比值",
         "降幅时间点差值",
-                "涨幅时间点比值",
+        "涨幅时间点比值",
         "涨幅时间点差值",
         "透中高血压_计算",
         "透中低血压_计算",
@@ -799,14 +832,14 @@ def process_historical_averages(dataset, first_pressure_sd='', use_parallel=True
                     0,
                 ]
                 continue
-                y_rate = [
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                ]
+                # y_rate = [
+                #     0,
+                #     0,
+                #     0,
+                #     0,
+                #     0,
+                #     0,
+                # ]
             Y_rate.append(y_rate)
 
         Y_rate = pd.DataFrame(
@@ -935,7 +968,7 @@ def process_historical_averages(dataset, first_pressure_sd='', use_parallel=True
     # final_data = pd.concat([whole_data, Y_rate], axis=1)
 
     final_data.to_csv(
-        path_or_buf=("/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/data/福鼎_final_data" + str(first_pressure_sd) + ".csv")
+        path_or_buf=("/home/cht/Works/PredictionTimeHypotensionDialysis/data_preprocessing/data/福鼎_final_data.csv")
     )
     
     return final_data

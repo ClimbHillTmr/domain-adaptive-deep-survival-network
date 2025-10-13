@@ -28,12 +28,6 @@ from .data_process import *
 # 导入高级缺失值填补管道
 from .advanced_imputation import AdvancedImputationPipeline
 
-# 导入类别不平衡处理
-from .class_imbalance_handler import (
-    ClassImbalanceHandler,
-    data_resampling,
-    OptimizedModelPipeline
-)
 
 __all__ = [
     # 训练工具
@@ -49,8 +43,4 @@ __all__ = [
     # 高级缺失值填补
     'AdvancedImputationPipeline',
     
-    # 类别不平衡处理
-    'ClassImbalanceHandler',
-    'data_resampling',
-    'OptimizedModelPipeline'
 ]

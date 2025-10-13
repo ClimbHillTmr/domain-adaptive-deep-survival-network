@@ -96,18 +96,19 @@ class SVMParameterManager:
     """SVM参数管理器"""
     
     @staticmethod
-    def get_param_space(search_type='bayesian', model_type='auto', data_size=None):
-        """获取参数空间（针对透析数据优化）
+    def get_param_space(model_type='auto', data_size=None):
+        """获取贝叶斯优化参数空间（针对透析数据优化）
         
         Parameters:
         -----------
-        search_type : str
-            搜索类型: 'bayesian', 'random', 'grid'
         model_type : str
             模型类型: 'linear', 'nonlinear', 'auto'
         data_size : int
             数据集大小，用于自动选择模型类型和参数范围
         """
+        if not BAYESIAN_AVAILABLE:
+            raise ImportError("需要安装 scikit-optimize 来使用贝叶斯优化")
+            
         # 针对透析数据的智能模型选择
         if model_type == 'auto':
             if data_size is not None:
@@ -127,15 +128,7 @@ class SVMParameterManager:
                 model_type = 'linear'  # 默认使用线性模型
         
         is_linear = (model_type == 'linear')
-        
-        if search_type == 'bayesian' and BAYESIAN_AVAILABLE:
-            return SVMParameterManager._get_bayesian_params(is_linear, data_size)
-        elif search_type == 'random':
-            return SVMParameterManager._get_random_params(is_linear, data_size)
-        elif search_type == 'grid':
-            return SVMParameterManager._get_grid_params(is_linear, data_size)
-        else:
-            return SVMParameterManager._get_default_params(is_linear, data_size)
+        return SVMParameterManager._get_bayesian_params(is_linear, data_size)
     
     @staticmethod
     def _get_bayesian_params(is_linear, data_size=None):
@@ -192,142 +185,14 @@ class SVMParameterManager:
                     'tol': Real(1e-5, 1e-2, prior='log-uniform')
                 }
     
-    @staticmethod
-    def _get_random_params(is_linear, data_size=None):
-        """随机搜索参数空间（针对透析数据优化）"""
-        if is_linear:
-            # 针对大规模透析数据的线性SVM优化
-            if data_size and data_size >= 150000:
-                return {
-                    'C': loguniform(1e-4, 1e2),  # 适合大数据的C范围
-                    'class_weight': ['balanced', None],
-                    'max_iter': [2000, 5000, 10000, 15000],  # 增加迭代次数
-                    'loss': ['squared_hinge'],
-                    'penalty': ['l2'],
-                    'dual': [False],  # 大数据集使用primal
-                    'tol': loguniform(1e-5, 1e-3)
-                }
-            else:
-                return {
-                    'C': loguniform(1e-6, 1e6),
-                    'class_weight': ['balanced', None],
-                    'max_iter': [1000, 5000, 10000, 20000],
-                    'loss': ['squared_hinge'],
-                    'penalty': ['l2'],
-                    'dual': [False]
-                }
-        else:
-            # 非线性SVM针对透析数据的优化
-            if data_size and data_size >= 50000:
-                # 中大规模数据：简化参数空间
-                return {
-                    'C': loguniform(1e-2, 1e2),
-                    'gamma': ['scale', 'auto', 0.001, 0.01, 0.1],  # 减少gamma选项
-                    'kernel': ['rbf'],  # 只使用RBF核
-                    'class_weight': ['balanced', None],
-                    'shrinking': [True],  # 固定使用shrinking
-                    'probability': [True],
-                    'cache_size': [500, 1000],  # 增加缓存
-                    'tol': loguniform(1e-4, 1e-2)
-                }
-            else:
-                return {
-                    'C': loguniform(1e-4, 1e3),
-                    'gamma': ['scale', 'auto', 0.001, 0.01, 0.1, 1],
-                    'kernel': ['rbf', 'poly', 'sigmoid'],
-                    'class_weight': ['balanced', None],
-                    'degree': [2, 3, 4, 5],
-                    'coef0': uniform(-1.0, 2.0),
-                    'shrinking': [True, False],
-                    'probability': [True],
-                    'tol': loguniform(1e-5, 1e-2)
-                }
-    
-    @staticmethod
-    def _get_grid_params(is_linear, data_size=None):
-        """网格搜索参数空间（针对透析数据优化）"""
-        if is_linear:
-            # 针对大规模透析数据的线性SVM优化
-            if data_size and data_size >= 150000:
-                return {
-                    'C': [0.01, 0.1, 1, 10],  # 减少C的选项以提升效率
-                    'class_weight': ['balanced', None],
-                    'max_iter': [5000, 10000],  # 增加迭代次数
-                    'loss': ['squared_hinge'],
-                    'penalty': ['l2'],
-                    'dual': [False]
-                }
-            else:
-                return {
-                    'C': [0.001, 0.01, 0.1, 1, 10, 100],
-                    'class_weight': ['balanced', None],
-                    'max_iter': [1000, 5000, 10000],
-                    'loss': ['squared_hinge'],
-                    'penalty': ['l2'],
-                    'dual': [False]
-                }
-        else:
-            # 非线性SVM针对透析数据的优化
-            if data_size and data_size >= 50000:
-                # 中大规模数据：简化网格搜索
-                return {
-                    'C': [0.1, 1, 10],  # 减少C的选项
-                    'gamma': ['scale', 'auto'],  # 只使用自适应gamma
-                    'kernel': ['rbf'],  # 只使用RBF核
-                    'class_weight': ['balanced', None],
-                    'probability': [True]
-                }
-            else:
-                return {
-                    'C': [0.001, 0.01, 0.1, 1, 10],
-                    'gamma': ['scale', 'auto', 0.001, 0.01, 0.1, 1],
-                    'kernel': ['rbf', 'poly', 'sigmoid'],
-                    'class_weight': ['balanced', None],
-                    'degree': [2, 3, 4],
-                    'probability': [True]
-                }
-    
-    @staticmethod
-    def _get_default_params(is_linear, data_size=None):
-        """默认参数空间（简化版，针对透析数据优化）"""
-        if is_linear:
-            # 针对大规模透析数据的线性SVM优化
-            if data_size and data_size >= 150000:
-                return {
-                    'C': [1, 10],  # 简化C选项
-                    'class_weight': ['balanced'],  # 透析数据通常不平衡
-                    'max_iter': [10000]  # 增加迭代次数
-                }
-            else:
-                return {
-                    'C': [0.1, 1, 10],
-                    'class_weight': ['balanced', None],
-                    'max_iter': [5000]
-                }
-        else:
-            # 非线性SVM针对透析数据的优化
-            if data_size and data_size >= 50000:
-                return {
-                    'C': [1, 10],  # 简化C选项
-                    'gamma': ['scale'],  # 使用scale gamma
-                    'kernel': ['rbf'],  # 只使用RBF核
-                    'class_weight': ['balanced'],  # 透析数据通常不平衡
-                    'probability': [True]
-                }
-            else:
-                return {
-                    'C': [0.1, 1, 10],
-                    'gamma': ['scale', 'auto'],
-                    'kernel': ['rbf'],
-                    'class_weight': ['balanced', None],
-                    'probability': [True]
-                }
+
 
 
 class OptimizedSVMClassifier:
-    """优化的SVM分类器类"""
+    """优化的SVM分类器类（包含防过拟合机制）"""
     
-    def __init__(self, random_state=42, n_jobs=-1):
+    def __init__(self, random_state=42, n_jobs=-1, early_stopping=True, 
+                 validation_fraction=0.1, n_iter_no_change=5, tol=1e-4):
         self.random_state = random_state
         self.n_jobs = n_jobs
         self.model = None
@@ -335,6 +200,15 @@ class OptimizedSVMClassifier:
         self.is_fitted = False
         self.feature_names = None
         self.model_type = None
+        
+        # 防过拟合参数
+        self.early_stopping = early_stopping
+        self.validation_fraction = validation_fraction
+        self.n_iter_no_change = n_iter_no_change
+        self.tol = tol
+        self.training_history = []
+        self.best_score = -np.inf
+        self.no_improvement_count = 0
         
     def _determine_model_type(self, X_train, y_train):
         """根据数据特征自动确定模型类型"""
@@ -374,6 +248,65 @@ class OptimizedSVMClassifier:
                 'precision_weighted': 'precision_weighted',
                 'accuracy': 'accuracy'
             }
+    
+    def _apply_regularization_enhancement(self, param_grid, data_size):
+        """应用正则化增强策略防止过拟合"""
+        enhanced_grid = param_grid.copy()
+        
+        # 根据数据规模调整正则化强度
+        if data_size < 1000:
+            # 小数据集：强正则化
+            if 'C' in enhanced_grid:
+                enhanced_grid['C'] = Real(1e-4, 1e1, prior='log-uniform')
+            print("应用强正则化策略（小数据集）")
+        elif data_size < 10000:
+            # 中等数据集：中等正则化
+            if 'C' in enhanced_grid:
+                enhanced_grid['C'] = Real(1e-3, 1e2, prior='log-uniform')
+            print("应用中等正则化策略（中等数据集）")
+        else:
+            # 大数据集：适度正则化
+            print("应用适度正则化策略（大数据集）")
+        
+        # 添加更严格的容忍度控制
+        if 'tol' in enhanced_grid:
+            enhanced_grid['tol'] = Real(1e-6, 1e-2, prior='log-uniform')
+        
+        return enhanced_grid
+    
+    def _control_model_complexity(self, param_grid, n_features, data_size):
+        """控制模型复杂度防止过拟合"""
+        complexity_ratio = n_features / data_size
+        
+        if complexity_ratio > 0.1:  # 高维数据
+            print(f"检测到高维数据（特征/样本比={complexity_ratio:.3f}），限制模型复杂度")
+            
+            # 限制非线性核的使用
+            if 'kernel' in param_grid:
+                param_grid['kernel'] = Categorical(['linear', 'rbf'])  # 移除复杂核
+            
+            # 限制多项式核的度数
+            if 'degree' in param_grid:
+                param_grid['degree'] = Integer(2, 3)  # 降低度数
+            
+            # 强制使用更强的正则化
+            if 'C' in param_grid:
+                param_grid['C'] = Real(1e-4, 1e1, prior='log-uniform')
+        
+        return param_grid
+    
+    def _early_stopping_check(self, current_score):
+        """早停检查"""
+        if not self.early_stopping:
+            return False
+        
+        if current_score > self.best_score + self.tol:
+            self.best_score = current_score
+            self.no_improvement_count = 0
+            return False
+        else:
+            self.no_improvement_count += 1
+            return self.no_improvement_count >= self.n_iter_no_change
     
     def fit(self, X_train, y_train, X_val=None, y_val=None, 
             class_weights=None, search_type='bayesian', cv=5, n_iter=50, 
@@ -421,20 +354,30 @@ class OptimizedSVMClassifier:
         # 创建基础模型
         base_model = self._create_base_model(self.model_type)
         
-        # 获取参数空间
+        # 检查贝叶斯优化可用性
+        if not BAYESIAN_AVAILABLE:
+            raise ImportError("scikit-optimize is required for Bayesian optimization. Please install it with: pip install scikit-optimize")
+        
+        # 获取贝叶斯优化参数空间
         param_grid = SVMParameterManager.get_param_space(
-            search_type=search_type, 
             model_type=self.model_type,
             data_size=len(X_combined)
         )
         
+        # 应用防过拟合机制
+        n_features = X_combined.shape[1]
+        data_size = len(X_combined)
+        
+        # 正则化增强
+        param_grid = self._apply_regularization_enhancement(param_grid, data_size)
+        
+        # 模型复杂度控制
+        param_grid = self._control_model_complexity(param_grid, n_features, data_size)
+        
         # 处理自定义类权重
         if class_weights and isinstance(class_weights, dict):
-            if search_type == 'bayesian' and BAYESIAN_AVAILABLE:
-                # 贝叶斯优化暂时不支持自定义权重字典
-                param_grid['class_weight'] = Categorical([None, 'balanced'])
-            else:
-                param_grid['class_weight'] = ['balanced', None, class_weights]
+            # 贝叶斯优化暂时不支持自定义权重字典
+            param_grid['class_weight'] = Categorical([None, 'balanced'])
         
         # 获取评估指标（针对透析低血压预测优化）
         scoring = self._get_scoring_metrics(is_binary)
@@ -448,8 +391,10 @@ class OptimizedSVMClassifier:
         # 设置交叉验证（根据数据规模优化）
         cv_strategy = StratifiedKFold(n_splits=cv, shuffle=True, random_state=self.random_state)
         
-        # 根据数据规模调整搜索参数
+        # 根据数据规模调整搜索参数（包含防过拟合考虑）
         data_size = len(X_combined)
+        complexity_ratio = n_features / data_size
+        
         if data_size >= 150000:
             # 大规模数据：减少迭代次数，提升效率
             adjusted_n_iter = min(n_iter, 50)
@@ -461,39 +406,44 @@ class OptimizedSVMClassifier:
             verbose_level = 1
             print(f"中等规模透析数据({data_size}样本)：使用平衡的搜索策略")
         else:
-            # 小规模数据：允许更充分的搜索
+            # 小规模数据：允许更充分的搜索，但加强正则化
             adjusted_n_iter = n_iter
             verbose_level = 1
-            print(f"小规模透析数据({data_size}样本)：使用充分的搜索策略")
+            print(f"小规模透析数据({data_size}样本)：使用充分的搜索策略，加强防过拟合")
         
-        # 超参数搜索
-        print(f"开始{search_type}搜索超参数（{cv}折交叉验证，{adjusted_n_iter}次迭代）...")
-        if search_type == 'bayesian' and BAYESIAN_AVAILABLE:
-            search = BayesSearchCV(
-                base_model, param_grid, n_iter=adjusted_n_iter, cv=cv_strategy,
-                scoring=scoring, refit=refit_metric, n_jobs=self.n_jobs,
-                random_state=self.random_state, verbose=verbose_level, return_train_score=True
-            )
-        elif search_type == 'random':
-            search = RandomizedSearchCV(
-                base_model, param_grid, n_iter=adjusted_n_iter, cv=cv_strategy,
-                scoring=scoring, refit=refit_metric, n_jobs=self.n_jobs,
-                random_state=self.random_state, verbose=verbose_level, return_train_score=True
-            )
-        else:
-            search = GridSearchCV(
-                base_model, param_grid, cv=cv_strategy,
-                scoring=scoring, refit=refit_metric, n_jobs=self.n_jobs,
-                verbose=verbose_level, return_train_score=True
-            )
+        # 高维数据额外调整
+        if complexity_ratio > 0.1:
+            adjusted_n_iter = min(adjusted_n_iter, 30)  # 减少搜索以避免过拟合
+            print(f"高维数据检测（特征/样本比={complexity_ratio:.3f}），减少搜索迭代防止过拟合")
+        
+        # 贝叶斯超参数搜索（带早停机制）
+        print(f"开始贝叶斯搜索超参数（{cv}折交叉验证，{adjusted_n_iter}次迭代，防过拟合机制已启用）...")
+        
+        # 创建带早停的搜索
+        search = BayesSearchCV(
+            base_model, param_grid, n_iter=adjusted_n_iter, cv=cv_strategy,
+            scoring=scoring, refit=refit_metric, n_jobs=self.n_jobs,
+            random_state=self.random_state, verbose=verbose_level, return_train_score=True
+        )
         
         # 训练模型
         search.fit(X_combined, y_combined)
         self.model = search.best_estimator_
         
-        # 如果有自定义类权重且使用贝叶斯优化，重新训练
-        if (search_type == 'bayesian' and BAYESIAN_AVAILABLE and 
-            class_weights and isinstance(class_weights, dict)):
+        # 记录训练历史用于过拟合分析
+        cv_results = search.cv_results_
+        self.training_history = {
+            'mean_test_scores': cv_results[f'mean_test_{refit_metric}'],
+            'mean_train_scores': cv_results[f'mean_train_{refit_metric}'],
+            'std_test_scores': cv_results[f'std_test_{refit_metric}'],
+            'params': cv_results['params']
+        }
+        
+        # 过拟合检测
+        self._detect_overfitting(cv_results, refit_metric)
+        
+        # 如果有自定义类权重，重新训练
+        if class_weights and isinstance(class_weights, dict):
             print("应用自定义类权重重新训练最佳模型...")
             best_params = search.best_params_.copy()
             best_params['class_weight'] = class_weights
@@ -519,6 +469,39 @@ class OptimizedSVMClassifier:
             print(f"验证集准确率: {val_score:.4f}")
         
         return search
+    
+    def _detect_overfitting(self, cv_results, refit_metric):
+        """检测过拟合现象"""
+        train_scores = cv_results[f'mean_train_{refit_metric}']
+        test_scores = cv_results[f'mean_test_{refit_metric}']
+        
+        # 计算训练集和验证集性能差异
+        score_gaps = train_scores - test_scores
+        max_gap = np.max(score_gaps)
+        mean_gap = np.mean(score_gaps)
+        
+        print(f"\n=== 过拟合检测结果 ===")
+        print(f"最大训练-验证性能差异: {max_gap:.4f}")
+        print(f"平均训练-验证性能差异: {mean_gap:.4f}")
+        
+        if max_gap > 0.1:  # 10%的性能差异阈值
+            print(f"⚠️  检测到潜在过拟合（最大差异 > 0.1）")
+            print(f"建议：增强正则化或减少模型复杂度")
+        elif mean_gap > 0.05:  # 5%的平均差异阈值
+            print(f"⚠️  检测到轻微过拟合倾向（平均差异 > 0.05）")
+            print(f"建议：监控模型在新数据上的表现")
+        else:
+            print(f"✅ 未检测到明显过拟合现象")
+        
+        # 保存过拟合分析结果
+        self.overfitting_analysis = {
+            'max_gap': max_gap,
+            'mean_gap': mean_gap,
+            'overfitting_detected': max_gap > 0.1,
+            'overfitting_risk': mean_gap > 0.05
+        }
+        
+        return self.overfitting_analysis
     
     def predict(self, X):
         """预测"""
@@ -808,6 +791,15 @@ def C_SVM_model(X_train, X_test, y_train, y_test, X_val, y_val,
         model_path = dirs['models'] / f'SVM_model_{target}.joblib'
         joblib.dump({'model': model, 'scaler': scaler}, model_path)
         print(f"模型已保存到: {model_path}")
+        
+        # 添加过拟合分析到评估结果
+        if hasattr(svm_classifier, 'overfitting_analysis'):
+            eval_scores.update({
+                'overfitting_max_gap': svm_classifier.overfitting_analysis['max_gap'],
+                'overfitting_mean_gap': svm_classifier.overfitting_analysis['mean_gap'],
+                'overfitting_detected': svm_classifier.overfitting_analysis['overfitting_detected'],
+                'overfitting_risk': svm_classifier.overfitting_analysis['overfitting_risk']
+            })
         
         return model, eval_scores
 

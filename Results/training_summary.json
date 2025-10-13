@@ -1,0 +1,37 @@
+{
+  "total_targets": 3,
+  "successful_targets": 3,
+  "failed_targets": 0,
+  "target_results": {
+    "透中低血压_计算": {},
+    "降幅时间点比值区间": {},
+    "降幅时间点差值区间": {}
+  },
+  "total_duration": 4.587351083755493,
+  "global_results": {
+    "透中低血压_计算": {
+      "best_model": null,
+      "best_accuracy": 0,
+      "all_results": {},
+      "n_features": 41,
+      "n_samples": 153620,
+      "task_type": "二分类"
+    },
+    "降幅时间点比值区间": {
+      "best_model": null,
+      "best_accuracy": 0,
+      "all_results": {},
+      "n_features": 47,
+      "n_samples": 18020,
+      "task_type": "时间预测"
+    },
+    "降幅时间点差值区间": {
+      "best_model": null,
+      "best_accuracy": 0,
+      "all_results": {},
+      "n_features": 47,
+      "n_samples": 18020,
+      "task_type": "时间预测"
+    }
+  }
+}

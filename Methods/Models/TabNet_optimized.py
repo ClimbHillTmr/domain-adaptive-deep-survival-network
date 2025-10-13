@@ -1,30 +1,24 @@
 import pandas as pd
 import numpy as np
-import os
+from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, recall_score, confusion_matrix, classification_report, roc_curve, auc
+import matplotlib.pyplot as plt
 from pathlib import Path
-import warnings
-warnings.filterwarnings('ignore')
-
+import os
 import pickle
 import joblib
 from itertools import product
-from sklearn.model_selection import StratifiedKFold, train_test_split, RandomizedSearchCV, GridSearchCV
-from sklearn.metrics import (
-    accuracy_score, f1_score, roc_auc_score, roc_curve, auc,
-    confusion_matrix, classification_report, recall_score, precision_score
-)
-from sklearn.preprocessing import MinMaxScaler
-import matplotlib.pyplot as plt
-import multiprocessing
+import warnings
+warnings.filterwarnings('ignore')
 
-# 尝试导入yellowbrick
+# 尝试导入yellowbrick，如果失败则设置标志
 try:
-    from yellowbrick.target import ClassBalance
-    from yellowbrick.classifier import ROCAUC, PrecisionRecallCurve, ClassificationReport, ClassPredictionError, DiscriminationThreshold, ConfusionMatrix
+    from yellowbrick.classifier import ClassBalance, ROCAUC, PrecisionRecallCurve, DiscriminationThreshold
+    from yellowbrick.classifier import ClassificationReport, ConfusionMatrix, ClassPredictionError
     YELLOWBRICK_AVAILABLE = True
 except ImportError:
-    print("Warning: yellowbrick not available. Falling back to matplotlib.")
     YELLOWBRICK_AVAILABLE = False
+    print("Yellowbrick不可用，将使用基础matplotlib绘图")
 
 # 尝试导入贝叶斯优化库
 try:
@@ -32,34 +26,32 @@ try:
     from skopt.space import Real, Integer, Categorical
     BAYESIAN_AVAILABLE = True
 except ImportError:
-    print("Warning: scikit-optimize not available. Falling back to RandomizedSearchCV.")
     BAYESIAN_AVAILABLE = False
+    print("scikit-optimize不可用，将跳过贝叶斯优化")
 
+# 尝试导入TabNet
 try:
     from pytorch_tabnet.tab_model import TabNetClassifier
-    from pytorch_tabnet.augmentations import ClassificationSMOTE
+    import torch
     TABNET_AVAILABLE = True
 except ImportError:
     TABNET_AVAILABLE = False
-    print("Warning: pytorch_tabnet not available. TabNet models will be skipped.")
+    print("pytorch_tabnet不可用，TabNet模型将无法使用")
+    
+    # 创建虚拟类
+    class TabNetClassifier:
+        def __init__(self, **kwargs):
+            raise ImportError("pytorch_tabnet is required for TabNet models")
 
 # 设置多进程启动方法
 if __name__ == '__main__':
+    import multiprocessing
     multiprocessing.set_start_method('spawn', force=True)
 
-# 导入配置管理器
-import sys
-sys.path.append('/home/cht/Works/PredictionTimeHypotensionDialysis')
-from Method_Utils.model_config import get_config, config_manager
-
-
-class OptimizedTabNetClassifier:
-    """优化的TabNet分类器类"""
+class TabNetSimplified:
+    """简化版TabNet分类器"""
     
-    def __init__(self, random_state=42, device_name='cpu'):
-        if not TABNET_AVAILABLE:
-            raise ImportError("pytorch_tabnet is required for TabNet models")
-            
+    def __init__(self, random_state=42, device_name='auto'):
         self.random_state = random_state
         self.device_name = device_name
         self.model = None
@@ -67,7 +59,9 @@ class OptimizedTabNetClassifier:
         self.feature_names = None
         self.best_params = None
         self.best_score = None
-        self.cv_results = None
+        self.data_augmentation = True  # 启用数据增强
+        self.noise_level = 0.01  # 噪声水平
+        self.dropout_rate = 0.1  # 特征dropout率
         
     def _create_output_dirs(self, base_path):
         """创建输出目录"""
@@ -77,413 +71,465 @@ class OptimizedTabNetClassifier:
             full_path.mkdir(parents=True, exist_ok=True)
         return Path(base_path)
     
-    def get_param_grid(self, search_type='bayesian', n_samples=None):
-        """获取针对透析数据优化的参数网格"""
-        # 根据数据规模动态调整参数空间
-        if n_samples is None:
-            n_samples = 100000  # 默认假设中等规模数据
+    def _apply_data_augmentation(self, X, y=None, augment_type='noise'):
+        """应用数据增强技术"""
+        if not self.data_augmentation:
+            return X, y
         
-        # 大规模透析数据优化（15万+样本）
-        if n_samples >= 150000:
-            if search_type == 'bayesian' and BAYESIAN_AVAILABLE:
-                return {
-                    # 核心架构参数 - 针对大规模透析数据优化
-                    'n_d': Integer(32, 128),  # 决策层维度，适中范围避免过拟合
-                    'n_a': Integer(32, 128),  # 注意力层维度，与决策层匹配
-                    'n_steps': Integer(3, 6),  # 决策步数，透析数据特征相对简单
-                    
-                    # 正则化参数 - 透析医学数据特化
-                    'gamma': Real(1.2, 2.5),  # 特征重用惩罚，适度正则化
-                    'lambda_sparse': Real(1e-6, 1e-3, prior='log-uniform'),  # 稀疏正则化
-                    
-                    # 优化器参数 - 大数据集稳定训练
-                    'lr': Real(1e-3, 2e-2, prior='log-uniform'),  # 学习率范围
-                    'batch_size': Categorical([1024, 2048, 4096]),  # 大批次提升效率
-                    'max_epochs': Integer(50, 150),  # 适度训练轮数
-                    
-                    # 透析特定优化参数
-                    'momentum': Real(0.02, 0.3),  # 动量参数
-                    'clip_value': Real(1.0, 2.0)  # 梯度裁剪
-                }
-            elif search_type == 'random':
-                return {
-                    'n_d': [32, 48, 64, 96, 128],  # 精选维度
-                    'n_a': [32, 48, 64, 96, 128],  # 精选维度
-                    'n_steps': [3, 4, 5, 6],  # 透析数据适用步数
-                    'gamma': [1.2, 1.5, 1.8, 2.0, 2.5],  # 特征重用控制
-                    'lambda_sparse': [1e-6, 1e-5, 1e-4, 1e-3],  # 稀疏正则化
-                    'lr': [1e-3, 2e-3, 5e-3, 1e-2, 2e-2],  # 学习率选择
-                    'batch_size': [1024, 2048, 4096],  # 大批次训练
-                    'max_epochs': [50, 75, 100, 125, 150]  # 训练轮数
-                }
-            elif search_type == 'grid':
-                return {
-                    'n_d': [32, 64, 96],  # 核心维度选择
-                    'n_a': [32, 64, 96],  # 注意力维度
-                    'n_steps': [3, 4, 5],  # 决策步数
-                    'gamma': [1.3, 1.8, 2.0],  # 特征重用
-                    'lambda_sparse': [1e-5, 1e-4, 1e-3],  # 稀疏化
-                    'lr': [2e-3, 5e-3, 1e-2],  # 学习率
-                    'batch_size': [1024, 2048],  # 批次大小
-                    'max_epochs': [75, 100, 125]  # 训练轮数
-                }
-            else:  # 快速搜索 - 透析数据优化
-                return {
-                    'n_d': [64],  # 固定适中维度
-                    'n_a': [64],  # 匹配决策层
-                    'n_steps': [4],  # 透析数据最优步数
-                    'gamma': [1.5],  # 平衡特征重用
-                    'lambda_sparse': [1e-4],  # 适度稀疏化
-                    'lr': [5e-3],  # 稳定学习率
-                    'batch_size': [2048],  # 大批次训练
-                    'max_epochs': [100]  # 充分训练
-                }
+        X_augmented = X.copy()
         
-        # 中等规模数据（5万-15万样本）
+        if augment_type == 'noise':
+            # 特征噪声注入
+            noise = np.random.normal(0, self.noise_level, X.shape)
+            X_augmented = X + noise
+            
+        elif augment_type == 'dropout':
+            # 特征dropout
+            dropout_mask = np.random.binomial(1, 1-self.dropout_rate, X.shape)
+            X_augmented = X * dropout_mask
+            
+        elif augment_type == 'mixed':
+            # 混合增强：噪声 + dropout
+            # 先应用噪声
+            noise = np.random.normal(0, self.noise_level, X.shape)
+            X_augmented = X + noise
+            # 再应用dropout
+            dropout_mask = np.random.binomial(1, 1-self.dropout_rate, X.shape)
+            X_augmented = X_augmented * dropout_mask
+        
+        return X_augmented.astype(np.float32), y
+    
+    def _augment_training_data(self, X_train, y_train, augment_ratio=0.3):
+        """增强训练数据"""
+        if not self.data_augmentation:
+            return X_train, y_train
+        
+        n_samples = len(X_train)
+        n_augment = int(n_samples * augment_ratio)
+        
+        # 随机选择要增强的样本
+        augment_indices = np.random.choice(n_samples, n_augment, replace=True)
+        X_to_augment = X_train[augment_indices]
+        y_to_augment = y_train[augment_indices]
+        
+        # 应用不同类型的增强
+        augment_types = ['noise', 'dropout', 'mixed']
+        X_augmented_list = []
+        y_augmented_list = []
+        
+        for i, aug_type in enumerate(augment_types):
+            start_idx = i * (n_augment // 3)
+            end_idx = (i + 1) * (n_augment // 3) if i < 2 else n_augment
+            
+            if start_idx < end_idx:
+                X_aug, y_aug = self._apply_data_augmentation(
+                    X_to_augment[start_idx:end_idx], 
+                    y_to_augment[start_idx:end_idx], 
+                    aug_type
+                )
+                X_augmented_list.append(X_aug)
+                y_augmented_list.append(y_aug)
+        
+        if X_augmented_list:
+            X_augmented = np.vstack(X_augmented_list)
+            y_augmented = np.hstack(y_augmented_list)
+            
+            # 合并原始数据和增强数据
+            X_combined = np.vstack([X_train, X_augmented])
+            y_combined = np.hstack([y_train, y_augmented])
+            
+            print(f"数据增强完成: 原始样本 {len(X_train)} -> 增强后 {len(X_combined)}")
+            return X_combined.astype(np.float32), y_combined.astype(np.int64)
+        
+        return X_train, y_train
+    
+    def plot_training_curves(self, model, output_dir):
+        """绘制训练曲线"""
+        try:
+            if hasattr(model, 'history') and model.history is not None:
+                history = model.history
+                
+                # 创建图形
+                fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+                fig.suptitle('TabNet 训练曲线分析', fontsize=16)
+                
+                # 损失曲线
+                if 'loss' in history:
+                    axes[0, 0].plot(history['loss'], label='训练损失', color='blue')
+                    if 'val_loss' in history:
+                        axes[0, 0].plot(history['val_loss'], label='验证损失', color='red')
+                    axes[0, 0].set_title('损失曲线')
+                    axes[0, 0].set_xlabel('Epoch')
+                    axes[0, 0].set_ylabel('Loss')
+                    axes[0, 0].legend()
+                    axes[0, 0].grid(True)
+                
+                # 准确率曲线
+                if 'accuracy' in history:
+                    axes[0, 1].plot(history['accuracy'], label='训练准确率', color='blue')
+                    if 'val_accuracy' in history:
+                        axes[0, 1].plot(history['val_accuracy'], label='验证准确率', color='red')
+                    axes[0, 1].set_title('准确率曲线')
+                    axes[0, 1].set_xlabel('Epoch')
+                    axes[0, 1].set_ylabel('Accuracy')
+                    axes[0, 1].legend()
+                    axes[0, 1].grid(True)
+                
+                # 学习率曲线
+                if 'lr' in history:
+                    axes[1, 0].plot(history['lr'], label='学习率', color='green')
+                    axes[1, 0].set_title('学习率变化')
+                    axes[1, 0].set_xlabel('Epoch')
+                    axes[1, 0].set_ylabel('Learning Rate')
+                    axes[1, 0].legend()
+                    axes[1, 0].grid(True)
+                
+                # 过拟合检测图
+                if 'loss' in history and 'val_loss' in history:
+                    train_loss = np.array(history['loss'])
+                    val_loss = np.array(history['val_loss'])
+                    overfitting_gap = val_loss - train_loss
+                    
+                    axes[1, 1].plot(overfitting_gap, label='验证-训练损失差', color='purple')
+                    axes[1, 1].axhline(y=0, color='black', linestyle='--', alpha=0.5)
+                    axes[1, 1].set_title('过拟合检测')
+                    axes[1, 1].set_xlabel('Epoch')
+                    axes[1, 1].set_ylabel('Loss Gap')
+                    axes[1, 1].legend()
+                    axes[1, 1].grid(True)
+                
+                plt.tight_layout()
+                
+                # 保存图像
+                curve_path = os.path.join(output_dir, 'training_curves.png')
+                plt.savefig(curve_path, dpi=300, bbox_inches='tight')
+                plt.close()
+                
+                print(f"训练曲线已保存到: {curve_path}")
+                
+        except Exception as e:
+            print(f"绘制训练曲线时出错: {e}")
+    
+    def get_param_grid(self, search_type='bayesian', n_samples=None, task_type='multiclass'):
+        """获取针对防过拟合优化的参数网格"""
+        # 防过拟合优化的参数网格
+        if search_type == 'bayesian' and BAYESIAN_AVAILABLE:
+            param_grid = {
+                'n_d': Integer(24, 64),  # 减小网络容量防止过拟合
+                'n_a': Integer(24, 64),
+                'n_steps': Integer(3, 6),  # 减少步数
+                'gamma': Real(1.5, 3.0),  # 增加gamma值增强稀疏性
+                'lambda_sparse': Real(1e-4, 1e-2, prior='log-uniform'),  # 增强稀疏正则化
+                'lr': Real(5e-4, 1e-2, prior='log-uniform'),  # 降低学习率
+                'batch_size': Categorical([512, 1024, 2048]),  # 减小批次大小
+                'max_epochs': Integer(30, 100),  # 减少最大训练轮数
+                'weight_decay': Real(1e-5, 1e-3, prior='log-uniform')  # 添加权重衰减
+            }
+            
+            # 根据任务类型调整参数
+            if task_type == 'multiclass':
+                # 多分类任务的防过拟合策略
+                param_grid['lambda_sparse'] = Real(5e-4, 2e-2, prior='log-uniform')
+                param_grid['weight_decay'] = Real(5e-5, 5e-3, prior='log-uniform')
+                param_grid['gamma'] = Real(1.8, 3.5)
+            
+            return param_grid
         else:
-            if search_type == 'bayesian' and BAYESIAN_AVAILABLE:
-                return {
-                    'n_d': Integer(16, 96),
-                    'n_a': Integer(16, 96),
-                    'n_steps': Integer(3, 8),
-                    'gamma': Real(1.0, 3.0),
-                    'lambda_sparse': Real(1e-7, 1e-2, prior='log-uniform'),
-                    'lr': Real(5e-4, 5e-2, prior='log-uniform'),
-                    'batch_size': Categorical([512, 1024, 2048]),
-                    'max_epochs': Integer(75, 200)
-                }
-            elif search_type == 'random':
-                return {
-                    'n_d': [16, 24, 32, 48, 64, 96],
-                    'n_a': [16, 24, 32, 48, 64, 96],
-                    'n_steps': [3, 4, 5, 6, 7, 8],
-                    'gamma': [1.0, 1.3, 1.5, 2.0, 2.5, 3.0],
-                    'lambda_sparse': [1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2],
-                    'lr': [5e-4, 1e-3, 2e-3, 5e-3, 1e-2, 2e-2, 5e-2],
-                    'batch_size': [512, 1024, 2048],
-                    'max_epochs': [75, 100, 125, 150, 175, 200]
-                }
-            else:  # 简化搜索
-                return {
-                    'n_d': [32, 48],
-                    'n_a': [32, 48],
-                    'n_steps': [4, 5],
-                    'gamma': [1.3, 1.8],
-                    'lambda_sparse': [1e-5, 1e-4],
-                    'lr': [2e-3, 5e-3],
-                    'batch_size': [1024, 2048],
-                    'max_epochs': [100, 150]
-                }
+            # 防过拟合的网格搜索参数
+            param_grid = {
+                'n_d': [24, 32, 48, 64],  # 减小网络容量
+                'n_a': [24, 32, 48, 64],
+                'n_steps': [3, 4, 5],  # 减少步数
+                'gamma': [1.5, 2.0, 2.5, 3.0],  # 增强稀疏性
+                'lambda_sparse': [1e-4, 5e-4, 1e-3, 5e-3],  # 增强稀疏正则化
+                'lr': [5e-4, 1e-3, 2e-3, 5e-3],  # 降低学习率
+                'batch_size': [512, 1024, 2048],  # 减小批次大小
+                'max_epochs': [50, 75, 100],  # 减少训练轮数
+                'weight_decay': [1e-5, 1e-4, 5e-4, 1e-3]  # 添加权重衰减
+            }
+            
+            return param_grid
     
     def create_model(self, params, n_classes=2):
-        """创建TabNet模型，针对透析数据优化"""
-        import torch
-        
-        # 确保所有参数都是标量值，而不是numpy数组
+        """创建TabNet模型，增强防过拟合策略"""
         def extract_scalar(value, default):
             if hasattr(value, '__iter__') and not isinstance(value, str):
-                # 如果是数组或列表，取第一个元素
                 return float(value[0]) if len(value) > 0 else default
             elif hasattr(value, 'item'):
-                # 如果是numpy标量，转换为Python标量
                 return float(value.item())
             else:
                 return float(value) if value is not None else default
         
-        # 针对透析数据优化的TabNet参数配置
+        # 增强的权重衰减策略
+        weight_decay = extract_scalar(params.get('weight_decay'), 1e-4)
+        if n_classes > 2:  # 多分类任务需要更强的正则化
+            weight_decay = max(weight_decay, 5e-4)
+        
+        # 动态调整稀疏正则化
+        lambda_sparse = extract_scalar(params.get('lambda_sparse'), 1e-4)
+        if n_classes > 2:
+            lambda_sparse = max(lambda_sparse, 5e-4)  # 多分类增强稀疏性
+        
+        # 学习率调度器参数
+        scheduler_params = {
+            'step_size': 20,  # 每20个epoch降低学习率
+            'gamma': 0.8      # 学习率衰减因子
+        }
+        
         model_params = {
-            # 核心架构参数 - 针对透析数据特征优化
-            'n_d': int(extract_scalar(params.get('n_d'), 48)),  # 决策层维度，适中增加
-            'n_a': int(extract_scalar(params.get('n_a'), 48)),  # 注意力层维度，匹配决策层
-            'n_steps': int(extract_scalar(params.get('n_steps'), 4)),  # 决策步数，透析数据适用
-            
-            # 正则化参数 - 透析医学数据特化
-            'gamma': extract_scalar(params.get('gamma'), 1.4),  # 特征重用惩罚，适度增强
-            'lambda_sparse': extract_scalar(params.get('lambda_sparse'), 1e-4),  # 稀疏正则化
-            
-            # 优化器配置 - 透析数据稳定训练
+            'n_d': int(extract_scalar(params.get('n_d'), 48)),
+            'n_a': int(extract_scalar(params.get('n_a'), 48)),
+            'n_steps': int(extract_scalar(params.get('n_steps'), 4)),
+            'gamma': extract_scalar(params.get('gamma'), 1.4),
+            'lambda_sparse': lambda_sparse,
             'optimizer_fn': torch.optim.Adam,
             'optimizer_params': {
-                'lr': extract_scalar(params.get('lr'), 0.015),  # 学习率适度提升
-                'weight_decay': 1e-5  # 添加权重衰减
+                'lr': extract_scalar(params.get('lr'), 0.015),
+                'weight_decay': weight_decay
             },
-            
-            # 基础配置
-            'mask_type': 'entmax',  # 注意力掩码类型
+            'mask_type': 'entmax',
+            'scheduler_params': scheduler_params,  # 添加学习率调度
+            'scheduler_fn': torch.optim.lr_scheduler.StepLR,  # 使用StepLR调度器
             'seed': self.random_state,
             'verbose': 1,
-            'device_name': self.device_name,
-            
-            # 透析数据特定优化
-            'momentum': extract_scalar(params.get('momentum'), 0.02),  # 动量参数
-            'clip_value': extract_scalar(params.get('clip_value'), 1.0)  # 梯度裁剪
+            'device_name': self.device_name
         }
         
         return TabNetClassifier(**model_params)
     
-    def cross_validate(self, X, y, params, cv_folds=5, scoring='roc_auc'):
-        """交叉验证评估参数"""
-        print(f"\n交叉验证参数: {params}")
+    def get_comprehensive_metrics(self, y_true, y_pred, y_proba=None):
+        """综合评估指标计算"""
+        from sklearn.metrics import balanced_accuracy_score, precision_score
         
-        # 检查分类数量
+        metrics = {
+            'accuracy': accuracy_score(y_true, y_pred),
+            'f1_weighted': f1_score(y_true, y_pred, average='weighted'),
+            'f1_macro': f1_score(y_true, y_pred, average='macro'),
+            'f1_micro': f1_score(y_true, y_pred, average='micro'),
+            'precision_weighted': precision_score(y_true, y_pred, average='weighted'),
+            'precision_macro': precision_score(y_true, y_pred, average='macro'),
+            'recall_weighted': recall_score(y_true, y_pred, average='weighted'),
+            'recall_macro': recall_score(y_true, y_pred, average='macro'),
+            'balanced_accuracy': balanced_accuracy_score(y_true, y_pred)
+        }
+        
+        # 多分类AUC
+        if y_proba is not None:
+            try:
+                metrics['roc_auc_ovr'] = roc_auc_score(y_true, y_proba, multi_class='ovr', average='weighted')
+                metrics['roc_auc_ovo'] = roc_auc_score(y_true, y_proba, multi_class='ovo', average='weighted')
+            except ValueError:
+                pass
+        
+        return metrics
+    
+    def cross_validate(self, X, y, params, cv_folds=5, scoring='roc_auc'):
+        """增强的交叉验证，支持多指标评估"""
         n_classes = len(np.unique(y))
         is_binary = n_classes == 2
         
-        # 根据分类数量调整评估指标，针对透析低血压预测优化
+        # 检查类别分布
+        class_counts = np.bincount(y)
+        class_weights = len(y) / (n_classes * class_counts)
+        imbalance_ratio = max(class_counts) / min(class_counts)
+        
+        print(f"类别分布: {dict(enumerate(class_counts))}")
+        print(f"不平衡比例: {imbalance_ratio:.2f}")
+        
+        # 根据不平衡程度选择合适的评估策略
+        primary_metric = scoring
         if scoring == 'roc_auc' and not is_binary:
-            scoring = 'f1_weighted'
-            print(f"多分类任务，评估指标改为: {scoring}")
-        elif is_binary and scoring == 'roc_auc':
-            print("透析低血压预测交叉验证：使用AUC评估（优化召回率）")
+            primary_metric = 'f1_weighted'
+        
+        if imbalance_ratio > 3:
+            print("检测到类别不平衡，将使用平衡准确率作为主要指标")
+            primary_metric = 'balanced_accuracy'
+            secondary_metric = 'f1_macro'
+        else:
+            secondary_metric = 'f1_weighted'
         
         skf = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=self.random_state)
-        scores = []
-        fold_results = []
+        all_metrics = []
         
         for fold, (train_idx, val_idx) in enumerate(skf.split(X, y)):
-            print(f"\n第 {fold + 1}/{cv_folds} 折...")
-            
             try:
                 X_train_fold = X[train_idx].astype(np.float32)
                 X_val_fold = X[val_idx].astype(np.float32)
                 y_train_fold = y[train_idx].astype(np.int64)
                 y_val_fold = y[val_idx].astype(np.int64)
                 
-                # 创建模型
                 model = self.create_model(params, n_classes=n_classes)
                 
-                # 根据分类数量选择评估指标
-                if is_binary:
-                    eval_metrics = ['auc', 'balanced_accuracy']
-                else:
-                    eval_metrics = ['logloss', 'accuracy']
+                max_epochs_val = int(params.get('max_epochs', 100))
+                batch_size_val = int(params.get('batch_size', 1024))
                 
-                # 确保参数为标量值
-                def extract_scalar(value, default):
-                    if hasattr(value, '__iter__') and not isinstance(value, str):
-                        return int(value[0]) if len(value) > 0 else default
-                    elif hasattr(value, 'item'):
-                        return int(value.item())
-                    else:
-                        return int(value) if value is not None else default
+                # 防过拟合的训练策略
+                patience_val = min(10, max_epochs_val // 5)  # 更严格的早停
+                virtual_batch_size = min(batch_size_val // 2, 512)
                 
-                max_epochs_val = extract_scalar(params.get('max_epochs'), 100)
-                batch_size_val = extract_scalar(params.get('batch_size'), 1024)
-                
-                # 训练模型
                 model.fit(
                     X_train_fold, y_train_fold,
                     eval_set=[(X_train_fold, y_train_fold), (X_val_fold, y_val_fold)],
                     eval_name=['train', 'valid'],
-                    eval_metric=eval_metrics,
+                    eval_metric=['logloss', 'accuracy'] if not is_binary else ['auc', 'logloss'],
                     max_epochs=max_epochs_val,
-                    patience=15,
+                    patience=patience_val,  # 更严格的早停
                     batch_size=batch_size_val,
-                    virtual_batch_size=batch_size_val,
-                    num_workers=0,  # CPU使用单线程
+                    virtual_batch_size=virtual_batch_size,
+                    num_workers=0,
                     weights=1,
-                    drop_last=False,
-                    augmentations=None,  # 禁用数据增强避免设备问题
-                    from_unsupervised=None
+                    drop_last=False
                 )
                 
-                # 预测和评估
-                if scoring == 'roc_auc' and is_binary:
-                    y_pred_proba = model.predict_proba(X_val_fold)[:, 1]
-                    score = roc_auc_score(y_val_fold, y_pred_proba)
-                elif scoring == 'accuracy':
-                    y_pred = model.predict(X_val_fold)
-                    score = accuracy_score(y_val_fold, y_pred)
-                else:
-                    y_pred = model.predict(X_val_fold)
-                    score = f1_score(y_val_fold, y_pred, average='weighted')
+                # 预测
+                y_pred = model.predict(X_val_fold)
+                y_proba = model.predict_proba(X_val_fold)
                 
-                scores.append(score)
-                fold_results.append({
-                    'fold': fold + 1,
-                    'score': score,
-                    'params': params.copy()
-                })
-                
-                print(f"第 {fold + 1} 折 {scoring}: {score:.4f}")
+                # 计算综合指标
+                fold_metrics = self.get_comprehensive_metrics(y_val_fold, y_pred, y_proba)
+                all_metrics.append(fold_metrics)
                 
             except Exception as e:
                 print(f"第 {fold + 1} 折训练失败: {str(e)}")
-                scores.append(0.0)  # 失败时给予最低分
+                # 添加默认的失败指标
+                default_metrics = {
+                    'accuracy': 0.0, 'f1_weighted': 0.0, 'f1_macro': 0.0, 
+                    'balanced_accuracy': 0.0, 'precision_weighted': 0.0, 
+                    'recall_weighted': 0.0
+                }
+                all_metrics.append(default_metrics)
         
-        cv_result = {
-            'mean_score': np.mean(scores),
-            'std_score': np.std(scores),
-            'scores': scores,
-            'fold_results': fold_results,
-            'params': params
+        # 计算平均指标
+        mean_metrics = {}
+        std_metrics = {}
+        for metric in all_metrics[0].keys():
+            scores = [fold_metrics[metric] for fold_metrics in all_metrics]
+            mean_metrics[metric] = np.mean(scores)
+            std_metrics[metric] = np.std(scores)
+        
+        # 计算复合得分
+        if primary_metric in mean_metrics and secondary_metric in mean_metrics:
+            composite_score = (mean_metrics[primary_metric] + mean_metrics[secondary_metric]) / 2
+        else:
+            composite_score = mean_metrics.get(primary_metric, 0.0)
+        
+        return {
+            'mean_score': mean_metrics.get(primary_metric, 0.0),
+            'composite_score': composite_score,
+            'mean_metrics': mean_metrics,
+            'std_metrics': std_metrics,
+            'scores': [fold_metrics.get(primary_metric, 0.0) for fold_metrics in all_metrics],
+            'params': params,
+            'imbalance_ratio': imbalance_ratio
         }
-        
-        print(f"交叉验证完成 - 平均 {scoring}: {cv_result['mean_score']:.4f} (+/- {cv_result['std_score']:.4f})")
-        
-        return cv_result
     
-    def grid_search(self, X, y, cv_folds=5, scoring='roc_auc', search_type='bayesian', n_iter=100):
-        """网格搜索、随机搜索或贝叶斯优化最优参数"""
-        # 获取数据规模并传递给参数网格生成函数
-        n_samples = len(X)
-        print(f"数据规模: {n_samples} 样本，针对透析数据优化参数空间")
-        param_grid = self.get_param_grid(search_type, n_samples)
-        
-        # 设置交叉验证策略
-        cv_strategy = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=42)
+    def grid_search(self, X, y, cv_folds=5, scoring='roc_auc', search_type='bayesian', n_iter=20, task_type='multiclass'):
+        """参数搜索（贝叶斯优化）"""
+        param_grid = self.get_param_grid(search_type, task_type=task_type)
         
         if search_type == 'bayesian' and BAYESIAN_AVAILABLE:
-            print(f"开始贝叶斯优化，共 {n_iter} 次迭代...")
+            # 贝叶斯优化
+            print(f"\n开始贝叶斯优化，迭代次数: {n_iter}")
             
-            # 创建一个包装器来适配TabNet
-            class TabNetWrapper:
-                def __init__(self, tabnet_classifier):
-                    self.tabnet_classifier = tabnet_classifier
-                    
-                def fit(self, X, y):
-                    return self
-                    
-                def predict(self, X):
-                    return self.tabnet_classifier.predict(X)
-                    
-                def predict_proba(self, X):
-                    return self.tabnet_classifier.predict_proba(X)
-                    
-                def score(self, X, y):
-                    if scoring == 'roc_auc':
-                        from sklearn.metrics import roc_auc_score
-                        y_pred_proba = self.predict_proba(X)[:, 1]
-                        return roc_auc_score(y, y_pred_proba)
-                    else:
-                        from sklearn.metrics import f1_score
-                        y_pred = self.predict(X)
-                        return f1_score(y, y_pred, average='weighted')
-                        
-                def set_params(self, **params):
-                    self.params = params
-                    return self
-                    
-                def get_params(self, deep=True):
-                    return getattr(self, 'params', {})
-            
-            # 使用贝叶斯优化
-            wrapper = TabNetWrapper(self)
-            
-            # 使用配置管理器获取搜索配置
-            search_config = config_manager.get_search_config()
-            n_jobs_search = search_config['n_jobs']
-            
-            search = BayesSearchCV(
-                estimator=wrapper,
-                search_spaces=param_grid,
-                n_iter=n_iter,
-                cv=cv_strategy,
-                scoring=scoring,
-                n_jobs=n_jobs_search,
-                random_state=42,
-                refit=True,
-                verbose=1
-            )
-            
-            # 自定义评估函数
             def objective(params):
-                scores = []
-                for train_idx, val_idx in cv_strategy.split(X, y):
-                    X_train_fold, X_val_fold = X[train_idx], X[val_idx]
-                    y_train_fold, y_val_fold = y[train_idx], y[val_idx]
-                    
+                try:
+                    cv_result = self.cross_validate(X, y, params, cv_folds, scoring)
+                    return -cv_result['mean_score']  # 负值因为BayesSearchCV最小化目标
+                except Exception as e:
+                    print(f"参数评估失败: {e}")
+                    return 0.0
+            
+            try:
+                from skopt import gp_minimize
+                from skopt.utils import use_named_args
+                
+                # 转换参数空间 - 为每个维度添加名称
+                param_names = list(param_grid.keys())
+                dimensions = []
+                for name, space in param_grid.items():
+                    if hasattr(space, 'name'):
+                        space.name = name
+                    else:
+                        # 为没有name属性的空间对象手动设置
+                        try:
+                            space.name = name
+                        except AttributeError:
+                            # 如果无法设置name，重新创建空间对象
+                            if hasattr(space, 'low') and hasattr(space, 'high'):
+                                if hasattr(space, 'prior'):
+                                    if space.prior == 'log-uniform':
+                                        from skopt.space import Real
+                                        space = Real(space.low, space.high, prior='log-uniform', name=name)
+                                    else:
+                                        from skopt.space import Real, Integer
+                                        if isinstance(space.low, int):
+                                            space = Integer(space.low, space.high, name=name)
+                                        else:
+                                            space = Real(space.low, space.high, name=name)
+                                else:
+                                    from skopt.space import Real, Integer
+                                    if isinstance(space.low, int):
+                                        space = Integer(space.low, space.high, name=name)
+                                    else:
+                                        space = Real(space.low, space.high, name=name)
+                            elif hasattr(space, 'categories'):
+                                from skopt.space import Categorical
+                                space = Categorical(space.categories, name=name)
+                    dimensions.append(space)
+                
+                @use_named_args(dimensions)
+                def objective_func(**params):
+                    return objective(params)
+                
+                # 执行贝叶斯优化
+                result = gp_minimize(
+                    func=objective_func,
+                    dimensions=dimensions,
+                    n_calls=n_iter,
+                    random_state=self.random_state,
+                    n_initial_points=5
+                )
+                
+                # 提取最佳参数
+                best_params = dict(zip(param_names, result.x))
+                best_score = -result.fun
+                
+                print(f"贝叶斯优化完成，最佳得分: {best_score:.4f}")
+                
+            except Exception as e:
+                print(f"贝叶斯优化失败，回退到网格搜索: {e}")
+                # 回退到简化网格搜索
+                param_combinations = list(product(*param_grid.values()))
+                param_names = list(param_grid.keys())
+                param_combinations = [dict(zip(param_names, param_values)) 
+                                    for param_values in param_combinations[:n_iter]]
+                
+                best_score = -1
+                best_params = None
+                
+                for i, params in enumerate(param_combinations):
                     try:
                         cv_result = self.cross_validate(X, y, params, cv_folds, scoring)
-                        scores.append(cv_result['mean_score'])
-                    except Exception as e:
-                        print(f"参数组合失败: {str(e)}")
-                        scores.append(0.0)
-                        
-                return np.mean(scores)
-            
-            # 手动实现贝叶斯优化
-            best_score = -1
-            best_params = None
-            all_results = []
-            
-            for i in range(n_iter):
-                # 从参数空间中采样
-                params = {}
-                for param_name, param_space in param_grid.items():
-                    if hasattr(param_space, 'rvs'):
-                        params[param_name] = param_space.rvs()
-                    else:
-                        params[param_name] = np.random.choice(param_space.categories[0])
-                
-                print(f"\n测试参数组合 {i+1}/{n_iter}: {params}")
-                
-                try:
-                    # 确保cv_folds不为None
-                    cv_folds_safe = cv_folds if cv_folds is not None else 5
-                    cv_result = self.cross_validate(X, y, params, cv_folds_safe, scoring)
-                    all_results.append(cv_result)
-                    
-                    if cv_result['mean_score'] > best_score:
-                        best_score = cv_result['mean_score']
-                        best_params = params.copy()
-                        print(f"发现更好的参数组合！得分: {best_score:.4f}")
-                        
-                except Exception as e:
-                    print(f"参数组合 {i+1} 失败: {str(e)}")
-                    continue
-                    
-        elif search_type == 'random':
-            # 随机搜索
-            print(f"开始随机搜索，共 {n_iter} 次迭代...")
-            param_combinations = []
-            param_names = list(param_grid.keys())
-            
-            for _ in range(n_iter):
-                params = {}
-                for param_name in param_names:
-                    params[param_name] = np.random.choice(param_grid[param_name])
-                param_combinations.append(params)
-                
-            best_score = -1
-            best_params = None
-            all_results = []
-            
-            for i, params in enumerate(param_combinations):
-                print(f"\n测试参数组合 {i+1}/{len(param_combinations)}: {params}")
-                
-                try:
-                    # 确保cv_folds不为None
-                    cv_folds_safe = cv_folds if cv_folds is not None else 5
-                    cv_result = self.cross_validate(X, y, params, cv_folds_safe, scoring)
-                    all_results.append(cv_result)
-                    
-                    if cv_result['mean_score'] > best_score:
-                        best_score = cv_result['mean_score']
-                        best_params = params.copy()
-                        print(f"发现更好的参数组合！得分: {best_score:.4f}")
-                        
-                except Exception as e:
-                    print(f"参数组合 {i+1} 失败: {str(e)}")
-                    continue
+                        if cv_result['mean_score'] > best_score:
+                            best_score = cv_result['mean_score']
+                            best_params = params.copy()
+                    except Exception:
+                        continue
         else:
-            # 网格搜索
+            # 如果贝叶斯优化不可用，使用网格搜索
             param_combinations = list(product(*param_grid.values()))
             param_names = list(param_grid.keys())
             param_combinations = [dict(zip(param_names, param_values)) 
                                 for param_values in param_combinations]
-            print(f"开始网格搜索，共 {len(param_combinations)} 个参数组合...")
             
             best_score = -1
             best_params = None
-            all_results = []
             
             for i, params in enumerate(param_combinations):
                 print(f"\n测试参数组合 {i+1}/{len(param_combinations)}: {params}")
                 
                 try:
                     cv_result = self.cross_validate(X, y, params, cv_folds, scoring)
-                    all_results.append(cv_result)
                     
                     if cv_result['mean_score'] > best_score:
                         best_score = cv_result['mean_score']
@@ -496,92 +542,53 @@ class OptimizedTabNetClassifier:
         
         self.best_params = best_params
         self.best_score = best_score
-        self.cv_results = all_results
-        
-        print(f"\n搜索完成！")
-        print(f"最优参数: {best_params}")
-        print(f"最优得分: {best_score:.4f}")
         
         return {
             'best_params': best_params,
-            'best_score': best_score,
-            'all_results': all_results
+            'best_score': best_score
         }
     
     def fit(self, X_train, y_train, X_val=None, y_val=None, params=None):
-        """训练TabNet模型"""
-        print(f"\n=== TabNet模型训练开始 ===")
+        """训练TabNet模型，增强防过拟合策略"""
+        print(f"\n=== TabNet模型训练开始（防过拟合优化版）===")
         print(f"训练集形状: {X_train.shape}")
-        print(f"类别分布: {pd.Series(y_train).value_counts().to_dict()}")
-        
-        # 并行数据预处理
-        from joblib import Parallel, delayed
-        
-        def preprocess_data(X, y=None):
-            """并行数据预处理函数"""
-            if hasattr(X, 'columns'):
-                X = X.values
-            X = X.astype(np.float32)
-            if y is not None:
-                y = y.astype(np.int64)
-                return X, y
-            return X
         
         # 保存特征名称
         if hasattr(X_train, 'columns'):
             self.feature_names = X_train.columns.tolist()
         
-        # 并行处理训练和验证数据
+        # 数据预处理
+        if hasattr(X_train, 'values'):
+            X_train = X_train.values
+        if hasattr(y_train, 'values'):
+            y_train = y_train.values
+        
+        X_train = X_train.astype(np.float32)
+        y_train = y_train.astype(np.int64)
+        
         if X_val is not None:
-            results = Parallel(n_jobs=2, backend='threading')(
-                [delayed(preprocess_data)(X_train, y_train),
-                 delayed(preprocess_data)(X_val, y_val)]
-            )
-            X_train, y_train = results[0]
-            X_val, y_val = results[1]
-        else:
-            X_train, y_train = preprocess_data(X_train, y_train)
+            if hasattr(X_val, 'values'):
+                X_val = X_val.values
+            if hasattr(y_val, 'values'):
+                y_val = y_val.values
+            X_val = X_val.astype(np.float32)
+            y_val = y_val.astype(np.int64)
         
         # 检查分类数量
         n_classes = len(np.unique(y_train))
         is_binary = n_classes == 2
-        print(f"任务类型: {'二分类' if is_binary else f'{n_classes}分类'}")
         
-        # 获取数据规模用于参数优化
-        n_samples = len(X_train)
-        print(f"训练数据规模: {n_samples} 样本")
-        
-        # 使用提供的参数或针对透析数据优化的默认参数
+        # 防过拟合的默认参数
         if params is None:
-            # 根据数据规模优化默认参数，针对透析低血压预测
-            if n_samples >= 150000:  # 大规模透析数据
-                params = {
-                    'n_d': 64, 'n_a': 64, 'n_steps': 5,
-                    'gamma': 1.5, 'lambda_sparse': 1e-4,
-                    'lr': 0.012, 'batch_size': 2048, 'max_epochs': 120,
-                    'momentum': 0.02, 'clip_value': 1.0
-                }
-                print("使用大规模透析数据优化参数（低血压预测特化）")
-            else:
-                params = {
-                    'n_d': 48, 'n_a': 48, 'n_steps': 4,
-                    'gamma': 1.4, 'lambda_sparse': 1e-4,
-                    'lr': 0.015, 'batch_size': 1536, 'max_epochs': 150,
-                    'momentum': 0.02, 'clip_value': 1.0
-                }
-                print("使用中等规模透析数据优化参数")
+            params = {
+                'n_d': 32, 'n_a': 32, 'n_steps': 4,
+                'gamma': 2.0, 'lambda_sparse': 5e-4,
+                'lr': 0.005, 'batch_size': 1024, 'max_epochs': 80,
+                'weight_decay': 1e-4
+            }
         
         # 创建模型
         self.model = self.create_model(params, n_classes)
-        
-        # 根据分类数量选择评估指标，针对透析低血压预测优化
-        if is_binary:
-            # 透析低血压预测：优先考虑召回率，减少漏诊
-            eval_metrics = ['auc', 'balanced_accuracy']
-            print("二分类任务：使用AUC和平衡准确率评估（透析低血压预测优化）")
-        else:
-            eval_metrics = ['logloss', 'accuracy']
-            print("多分类任务：使用对数损失和准确率评估")
         
         # 训练模型
         if X_val is not None:
@@ -591,55 +598,29 @@ class OptimizedTabNetClassifier:
             eval_set = [(X_train, y_train)]
             eval_name = ['train']
         
-        # 确保参数为标量值
-        def extract_scalar(value, default):
-            if hasattr(value, '__iter__') and not isinstance(value, str):
-                return int(value[0]) if len(value) > 0 else default
-            elif hasattr(value, 'item'):
-                return int(value.item())
-            else:
-                return int(value) if value is not None else default
+        max_epochs_val = int(params.get('max_epochs', 80))
+        batch_size_val = int(params.get('batch_size', 1024))
         
-        # 针对透析数据优化训练参数
-        max_epochs_val = extract_scalar(params.get('max_epochs'), 120)
-        batch_size_val = extract_scalar(params.get('batch_size'), 1536)
-        
-        # 根据数据规模调整训练策略
-        if n_samples >= 150000:
-            virtual_batch_size = min(batch_size_val // 2, 1024)  # 大规模数据使用更大虚拟批
-            patience = 25  # 大数据集需要更多耐心
-            print(f"大规模透析数据训练策略：虚拟批大小={virtual_batch_size}, 耐心值={patience}")
-        else:
-            virtual_batch_size = min(batch_size_val // 4, 512)  # 中等规模数据
-            patience = 20  # 标准耐心值
-            print(f"中等规模透析数据训练策略：虚拟批大小={virtual_batch_size}, 耐心值={patience}")
-        
-        # 使用配置管理器获取优化的线程配置
-        config = get_config()
-        tabnet_config = config_manager.get_tabnet_config()
-        num_workers = tabnet_config['num_workers']
-        
-        print(f"训练配置 - 批大小: {batch_size_val}, 虚拟批大小: {virtual_batch_size}, 最大轮次: {max_epochs_val}, 早停耐心: {patience}")
+        # 增强的早停策略
+        patience_val = min(15, max_epochs_val // 4)  # 动态调整patience
+        print(f"使用早停patience: {patience_val}")
         
         self.model.fit(
             X_train, y_train,
             eval_set=eval_set,
             eval_name=eval_name,
-            eval_metric=eval_metrics,
+            eval_metric=['logloss', 'accuracy'] if not is_binary else ['auc', 'logloss'],
             max_epochs=max_epochs_val,
-            patience=patience,
+            patience=patience_val,  # 更严格的早停
             batch_size=batch_size_val,
-            virtual_batch_size=virtual_batch_size,
-            num_workers=num_workers,
+            virtual_batch_size=min(batch_size_val // 2, 512),  # 减小虚拟批次大小
+            num_workers=0,
             weights=1,
-            drop_last=False,
-            augmentations=None,
-            from_unsupervised=None
+            drop_last=False
         )
         
         self.is_fitted = True
-        print("TabNet模型训练完成")
-        
+        print("TabNet模型训练完成（防过拟合优化）")
         return self
     
     def predict(self, X):
@@ -647,7 +628,7 @@ class OptimizedTabNetClassifier:
         if not self.is_fitted:
             raise ValueError("模型尚未训练")
         
-        if hasattr(X, 'columns'):
+        if hasattr(X, 'values'):
             X = X.values
         X = X.astype(np.float32)
         return self.model.predict(X)
@@ -657,7 +638,7 @@ class OptimizedTabNetClassifier:
         if not self.is_fitted:
             raise ValueError("模型尚未训练")
         
-        if hasattr(X, 'columns'):
+        if hasattr(X, 'values'):
             X = X.values
         X = X.astype(np.float32)
         return self.model.predict_proba(X)
@@ -683,72 +664,35 @@ class OptimizedTabNetClassifier:
 
 def TabNet_model_optimized(X_train, X_test, y_train, y_test, class_weights,
                           X_val=None, y_val=None, target=None, kinds=None,
-                          optimize=True, cv_folds=5, search_type='bayesian',
-                          n_iter=100, use_validation_in_training=True, base_path=None):
+                          optimize=True, cv_folds=3, search_type='bayesian',
+                          n_iter=20, use_validation_in_training=True, base_path=None):
     """
     优化版TabNet模型训练函数
-    
-    Parameters:
-    -----------
-    X_train, X_test, X_val : array-like
-        训练、测试、验证集的输入特征
-    y_train, y_test, y_val : array-like
-        训练、测试、验证集的目标标签
-    class_weights : dict
-        类别权重
-    target : str
-        目标变量名
-    kinds : str
-        模型类型
-    optimize : bool, default=True
-        是否进行参数优化
-    cv_folds : int, default=5
-        交叉验证折数
-    search_type : str, default='grid'
-        搜索类型: 'grid', 'random', 'fast'
-    n_iter : int, default=20
-        随机搜索迭代次数
-    base_path : str, optional
-        输出文件的基础路径
-        
-    Returns:
-    --------
-    model : trained model
-        训练好的TabNet模型
-    eval_scores : dict
-        评估分数字典
-    optimization_results : dict or None
-        优化结果（如果进行了优化）
     """
     
     if not TABNET_AVAILABLE:
         raise ImportError("pytorch_tabnet is required for TabNet models")
     
-    # 设置基础路径 - 使用调用脚本所在目录
+    # 设置基础路径
     if base_path is None:
         import inspect
-        
-        # 获取调用栈，找到调用脚本的目录
         frame = inspect.currentframe()
         try:
-            # 向上查找调用栈，找到非模型文件的调用者
             caller_frame = frame.f_back
             while caller_frame:
                 caller_file = caller_frame.f_code.co_filename
-                if not caller_file.endswith(('C_SVM_model.py', 'LightGBM_model.py', 'TabNet_optimized.py', 'IEDT_model.py', 'dialysis_gnn_model.py', 'attention_knn_model.py')):
+                if not caller_file.endswith(('TabNet_optimized.py',)):
                     caller_base_path = os.path.dirname(caller_file)
                     break
                 caller_frame = caller_frame.f_back
             else:
-                # 如果没找到，使用当前工作目录
                 caller_base_path = os.getcwd()
         finally:
             del frame
         
         from datetime import datetime
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        模型名称 = "TabNet"
-        results_dir = os.path.join(caller_base_path, f"Results/{模型名称}_{target}_{timestamp}")
+        results_dir = os.path.join(caller_base_path, f"Results/TabNet_{target}_{timestamp}")
         os.makedirs(results_dir, exist_ok=True)
         base_path = results_dir
     
@@ -759,13 +703,12 @@ def TabNet_model_optimized(X_train, X_test, y_train, y_test, class_weights,
         print(f"验证集长度: {len(X_val)}, 标签1数量: {np.sum(y_val == 1)}")
     
     # 创建TabNet分类器
-    tabnet_classifier = OptimizedTabNetClassifier()
+    tabnet_classifier = TabNetSimplified()
     
     # 创建输出目录
     output_dir = tabnet_classifier._create_output_dirs(base_path)
     
     # 准备数据
-    features_col = X_train.columns if hasattr(X_train, 'columns') else None
     X_train_values = X_train.values if hasattr(X_train, 'values') else X_train
     y_train_values = y_train.values if hasattr(y_train, 'values') else y_train
     X_test_values = X_test.values if hasattr(X_test, 'values') else X_test
@@ -796,28 +739,26 @@ def TabNet_model_optimized(X_train, X_test, y_train, y_test, class_weights,
         
         # 准备训练数据
         if use_validation_in_training:
-            # 合并训练和验证数据用于交叉验证
             X_combined = np.vstack([X_train_values, X_val_values]).astype(np.float32)
             y_combined = np.hstack([y_train_values, y_val_values]).astype(np.int64)
-            print(f"使用验证集参与训练，合并后训练集大小: {X_combined.shape}")
         else:
             X_combined = X_train_values
             y_combined = y_train_values
-            print(f"仅使用原始训练集，大小: {X_combined.shape}")
         
-        # 根据分类数量选择评估指标，针对透析低血压预测优化
+        # 根据分类数量选择评估指标和任务类型
         n_classes = len(np.unique(y_combined))
+        task_type = 'binary' if n_classes == 2 else 'multiclass'
+        
         if n_classes == 2:
-            # 透析低血压预测：优先使用召回率相关指标
-            scoring = 'recall'  # 减少漏诊风险
-            print("透析低血压预测优化：使用召回率作为优化目标")
+            scoring = 'roc_auc'
         else:
             scoring = 'f1_weighted'
-            print("多分类任务：使用加权F1分数作为优化目标")
+        
+        print(f"任务类型: {task_type}, 类别数量: {n_classes}")
         
         optimization_results = tabnet_classifier.grid_search(
             X_combined, y_combined, cv_folds=cv_folds, scoring=scoring,
-            search_type=search_type, n_iter=n_iter
+            search_type=search_type, n_iter=n_iter, task_type=task_type
         )
         
         best_params = optimization_results['best_params']
@@ -830,21 +771,30 @@ def TabNet_model_optimized(X_train, X_test, y_train, y_test, class_weights,
         print(f"优化结果已保存到: {results_path}")
         
     else:
-        # 使用针对透析数据优化的默认参数
+        # 使用默认参数
         best_params = {
             'n_d': 48, 'n_a': 48, 'n_steps': 4, 'gamma': 1.4,
-            'lambda_sparse': 1e-4, 'lr': 0.015, 'batch_size': 1536, 'max_epochs': 120,
-            'momentum': 0.02, 'clip_value': 1.0
+            'lambda_sparse': 1e-4, 'lr': 0.015, 'batch_size': 1536, 'max_epochs': 120
         }
-        print(f"使用透析数据优化的默认参数: {best_params}")
+        print(f"使用默认参数: {best_params}")
+    
+    # 应用数据增强
+    print("\n应用数据增强技术...")
+    X_train_augmented, y_train_augmented = tabnet_classifier._augment_training_data(
+        X_train_values, y_train_values, augment_ratio=0.2
+    )
     
     # 使用最优参数训练最终模型
-    tabnet_classifier.fit(X_train_values, y_train_values, X_val_values, y_val_values, best_params)
+    tabnet_classifier.fit(X_train_augmented, y_train_augmented, X_val_values, y_val_values, best_params)
     
     # 保存模型
     model_path = output_dir / f'TabNet_model_target_{target}.joblib'
     joblib.dump(tabnet_classifier, model_path)
     print(f"模型已保存到: {model_path}")
+    
+    # 绘制训练曲线
+    print("\n绘制训练曲线...")
+    tabnet_classifier.plot_training_curves(tabnet_classifier.model, output_dir)
     
     # 评估模型
     try:
@@ -852,18 +802,67 @@ def TabNet_model_optimized(X_train, X_test, y_train, y_test, class_weights,
         y_pred_val = tabnet_classifier.predict(X_val_values)
         y_pred_test = tabnet_classifier.predict(X_test_values)
         
+        # 获取综合评估指标
+        y_proba_train = tabnet_classifier.predict_proba(X_train_values)
+        y_proba_val = tabnet_classifier.predict_proba(X_val_values)
+        y_proba_test = tabnet_classifier.predict_proba(X_test_values)
+        
+        train_metrics = tabnet_classifier.get_comprehensive_metrics(y_train_values, y_pred_train, y_proba_train)
+        val_metrics = tabnet_classifier.get_comprehensive_metrics(y_val_values, y_pred_val, y_proba_val)
+        test_metrics = tabnet_classifier.get_comprehensive_metrics(y_test_values, y_pred_test, y_proba_test)
+        
+        # 过拟合检测
+        print("\n=== 过拟合检测 ===")
+        acc_gap = train_metrics['accuracy'] - val_metrics['accuracy']
+        f1_gap = train_metrics['f1_weighted'] - val_metrics['f1_weighted']
+        balanced_acc_gap = train_metrics['balanced_accuracy'] - val_metrics['balanced_accuracy']
+        
+        print(f"训练集-验证集性能差异:")
+        print(f"  准确率差异: {acc_gap:.4f} ({'过拟合' if acc_gap > 0.15 else '轻微过拟合' if acc_gap > 0.08 else '正常'})")
+        print(f"  加权F1差异: {f1_gap:.4f} ({'过拟合' if f1_gap > 0.15 else '轻微过拟合' if f1_gap > 0.08 else '正常'})")
+        print(f"  平衡准确率差异: {balanced_acc_gap:.4f} ({'过拟合' if balanced_acc_gap > 0.15 else '轻微过拟合' if balanced_acc_gap > 0.08 else '正常'})")
+        
+        # 综合过拟合评估
+        overfitting_score = (acc_gap + f1_gap + balanced_acc_gap) / 3
+        if overfitting_score > 0.15:
+            print(f"\n⚠️  严重过拟合警告 (综合得分: {overfitting_score:.4f})")
+            print("建议: 增加正则化、减少模型复杂度、增加数据量")
+        elif overfitting_score > 0.08:
+            print(f"\n⚠️  轻微过拟合 (综合得分: {overfitting_score:.4f})")
+            print("建议: 调整超参数、增强早停策略")
+        else:
+            print(f"\n✅ 模型泛化良好 (综合得分: {overfitting_score:.4f})")
+        
+        # 多分类AUC过拟合检测
+        if 'roc_auc_ovr' in train_metrics and train_metrics['roc_auc_ovr'] is not None:
+            auc_ovr_gap = train_metrics['roc_auc_ovr'] - val_metrics['roc_auc_ovr']
+            auc_ovo_gap = train_metrics['roc_auc_ovo'] - val_metrics['roc_auc_ovo']
+            print(f"AUC差异 - OVR: {auc_ovr_gap:.4f}, OVO: {auc_ovo_gap:.4f}")
+        
         eval_scores = {
-            'training_accuracy': accuracy_score(y_train_values, y_pred_train),
-            'validation_accuracy': accuracy_score(y_val_values, y_pred_val),
-            'testing_accuracy': accuracy_score(y_test_values, y_pred_test),
-            'training_f1': f1_score(y_train_values, y_pred_train, average='weighted'),
-            'validation_f1': f1_score(y_val_values, y_pred_val, average='weighted'),
-            'testing_f1': f1_score(y_test_values, y_pred_test, average='weighted'),
-            'training_recall': recall_score(y_train_values, y_pred_train, average='weighted'),
-            'validation_recall': recall_score(y_val_values, y_pred_val, average='weighted'),
-            'testing_recall': recall_score(y_test_values, y_pred_test, average='weighted'),
+            'train_accuracy': train_metrics['accuracy'],
+            'val_accuracy': val_metrics['accuracy'],
+            'test_accuracy': test_metrics['accuracy'],
+            'train_f1_weighted': train_metrics['f1_weighted'],
+            'val_f1_weighted': val_metrics['f1_weighted'],
+            'test_f1_weighted': test_metrics['f1_weighted'],
+            'train_f1_macro': train_metrics['f1_macro'],
+            'val_f1_macro': val_metrics['f1_macro'],
+            'test_f1_macro': test_metrics['f1_macro'],
+            'train_balanced_accuracy': train_metrics['balanced_accuracy'],
+            'val_balanced_accuracy': val_metrics['balanced_accuracy'],
+            'test_balanced_accuracy': test_metrics['balanced_accuracy'],
+            'train_recall_weighted': train_metrics['recall_weighted'],
+            'val_recall_weighted': val_metrics['recall_weighted'],
+            'test_recall_weighted': test_metrics['recall_weighted'],
             'best_params': best_params
         }
+        
+        # 添加多分类AUC指标（如果可用）
+        if 'roc_auc_ovr' in test_metrics:
+            eval_scores['testing_roc_auc_ovr'] = test_metrics['roc_auc_ovr']
+        if 'roc_auc_ovo' in test_metrics:
+            eval_scores['testing_roc_auc_ovo'] = test_metrics['roc_auc_ovo']
         
         # 二分类特殊处理
         n_classes = len(np.unique(y_train_values))
@@ -880,6 +879,12 @@ def TabNet_model_optimized(X_train, X_test, y_train, y_test, class_weights,
             if metric != 'best_params':
                 print(f"{metric}: {score:.4f}")
         
+        # 添加过拟合评估到eval_scores
+        eval_scores['overfitting_score'] = overfitting_score
+        eval_scores['accuracy_gap'] = acc_gap
+        eval_scores['f1_weighted_gap'] = f1_gap
+        eval_scores['balanced_accuracy_gap'] = balanced_acc_gap
+        
         # 混淆矩阵
         print(f"\n测试集混淆矩阵:")
         cm = confusion_matrix(y_test_values, y_pred_test)
@@ -888,6 +893,37 @@ def TabNet_model_optimized(X_train, X_test, y_train, y_test, class_weights,
         # 分类报告
         print(f"\n测试集分类报告:")
         print(classification_report(y_test_values, y_pred_test))
+        
+        # 每类别性能分析（多分类特有）
+        n_classes = len(np.unique(y_test_values))
+        if n_classes > 2:
+            print(f"\n=== 每类别性能分析 ===")
+            unique_classes = np.unique(y_test_values)
+            for i, class_label in enumerate(unique_classes):
+                class_mask = (y_test_values == class_label)
+                class_pred_mask = (y_pred_test == class_label)
+                
+                # 计算每个类别的指标
+                if np.sum(class_mask) > 0:  # 确保该类别在测试集中存在
+                    class_precision = precision_score(y_test_values == class_label, y_pred_test == class_label)
+                    class_recall = recall_score(y_test_values == class_label, y_pred_test == class_label)
+                    class_f1 = f1_score(y_test_values == class_label, y_pred_test == class_label)
+                    class_support = np.sum(class_mask)
+                    
+                    print(f"类别 {class_label}:")
+                    print(f"  精确率: {class_precision:.4f}")
+                    print(f"  召回率: {class_recall:.4f}")
+                    print(f"  F1分数: {class_f1:.4f}")
+                    print(f"  支持度: {class_support}")
+                    
+                    # 如果有概率预测，计算该类别的AUC
+                    if y_proba_test is not None and y_proba_test.shape[1] > i:
+                        try:
+                            class_auc = roc_auc_score(y_test_values == class_label, y_proba_test[:, i])
+                            print(f"  AUC: {class_auc:.4f}")
+                        except ValueError:
+                            pass
+                    print()
         
     except Exception as e:
         print(f"模型评估失败: {str(e)}")
@@ -913,54 +949,18 @@ def TabNet_model_optimized(X_train, X_test, y_train, y_test, class_weights,
             if YELLOWBRICK_AVAILABLE:
                 print(f"正在创建TabNet模型的性能可视化图表 - {target}")
                 
-                # 1. 类别平衡可视化
-                print("创建类别平衡图...")
-                viz = ClassBalance(title=f"TabNet Class Balance - {target}")
-                viz.fit(y_train_values)
-                balance_path = output_dir / 'Output' / f'TabNet_class_balance_target_{target}.pdf'
-                viz.show(outpath=balance_path)
-                print(f"类别平衡图已保存到: {balance_path}")
-                
-                # 2. ROC曲线（仅二分类）
-                unique_labels = np.unique(np.concatenate([y_train_values, y_test_values]))
-                if len(unique_labels) == 2:
-                    print("创建ROC曲线...")
-                    viz = ROCAUC(tabnet_classifier.model, title=f"TabNet ROC Curve - {target}")
-                    viz.fit(X_train_values, y_train_values)
-                    viz.score(X_test_values, y_test_values)
-                    roc_path = output_dir / 'Output' / f'TabNet_ROC_curve_target_{target}.pdf'
-                    viz.show(outpath=roc_path)
-                    print(f"ROC曲线已保存到: {roc_path}")
-                    
-                    # 3. 精确率-召回率曲线（仅二分类）
-                    print("创建精确率-召回率曲线...")
-                    viz = PrecisionRecallCurve(tabnet_classifier.model, title=f"TabNet Precision-Recall Curve - {target}")
-                    viz.fit(X_train_values, y_train_values)
-                    viz.score(X_test_values, y_test_values)
-                    pr_path = output_dir / 'Output' / f'TabNet_precision_recall_target_{target}.pdf'
-                    viz.show(outpath=pr_path)
-                    print(f"精确率-召回率曲线已保存到: {pr_path}")
-                    
-                    # 4. 判别阈值可视化（仅二分类）
-                    print("创建判别阈值图...")
-                    viz = DiscriminationThreshold(tabnet_classifier.model, title=f"TabNet Discrimination Threshold - {target}")
-                    viz.fit(X_train_values, y_train_values)
-                    viz.score(X_test_values, y_test_values)
-                    dt_path = output_dir / 'Output' / f'TabNet_discrimination_threshold_target_{target}.pdf'
-                    viz.show(outpath=dt_path)
-                    print(f"判别阈值图已保存到: {dt_path}")
-                
-                # 5. 分类报告
-                print("创建分类报告...")
-                viz = ClassificationReport(tabnet_classifier.model, title=f"TabNet Classification Report - {target}")
+                # ROC曲线
+                print("创建ROC曲线...")
+                viz = ROCAUC(tabnet_classifier.model, title=f"TabNet ROC Curve - {target}")
                 viz.fit(X_train_values, y_train_values)
                 viz.score(X_test_values, y_test_values)
-                report_path = output_dir / 'Output' / f'TabNet_classification_report_target_{target}.pdf'
-                viz.show(outpath=report_path)
-                print(f"分类报告已保存到: {report_path}")
+                roc_path = output_dir / 'Output' / f'TabNet_ROC_curve_target_{target}.pdf'
+                viz.show(outpath=roc_path)
+                print(f"ROC曲线已保存到: {roc_path}")
                 
-                # 6. 混淆矩阵
+                # 混淆矩阵
                 print("创建混淆矩阵...")
+                unique_labels = np.unique(np.concatenate([y_train_values, y_test_values]))
                 viz = ConfusionMatrix(tabnet_classifier.model, classes=unique_labels, title=f"TabNet Confusion Matrix - {target}")
                 viz.fit(X_train_values, y_train_values)
                 viz.score(X_test_values, y_test_values)
@@ -968,16 +968,6 @@ def TabNet_model_optimized(X_train, X_test, y_train, y_test, class_weights,
                 viz.show(outpath=cm_path)
                 print(f"混淆矩阵已保存到: {cm_path}")
                 
-                # 7. 类预测错误可视化
-                print("创建类预测错误图...")
-                viz = ClassPredictionError(tabnet_classifier.model, classes=unique_labels, title=f"TabNet Class Prediction Error - {target}")
-                viz.fit(X_train_values, y_train_values)
-                viz.score(X_test_values, y_test_values)
-                cpe_path = output_dir / 'Output' / f'TabNet_class_prediction_error_target_{target}.pdf'
-                viz.show(outpath=cpe_path)
-                print(f"类预测错误图已保存到: {cpe_path}")
-                
-                print(f"✓ TabNet模型所有可视化图表已保存到: {output_dir / 'Output'}")
             else:
                 # 回退到matplotlib
                 y_proba_test = tabnet_classifier.predict_proba(X_test_values)[:, 1]
