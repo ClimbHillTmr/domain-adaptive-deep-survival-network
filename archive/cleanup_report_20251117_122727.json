@@ -1,0 +1,259 @@
+{
+  "moved": [
+    {
+      "from": "Methods",
+      "to": "archive/Methods"
+    },
+    {
+      "from": "Method_Utils",
+      "to": "archive/Method_Utils"
+    },
+    {
+      "from": "TimeSeries",
+      "to": "archive/TimeSeries"
+    },
+    {
+      "from": "模型2.1",
+      "to": "archive/模型2.1"
+    },
+    {
+      "from": "模型2.2",
+      "to": "archive/模型2.2"
+    },
+    {
+      "from": "透前模型",
+      "to": "archive/透前模型"
+    },
+    {
+      "from": "evaluation_results",
+      "to": "archive/evaluation_results"
+    },
+    {
+      "from": "Results",
+      "to": "archive/Results"
+    },
+    {
+      "from": "runs/20251117_081810",
+      "to": "archive/runs_old/20251117_081810"
+    },
+    {
+      "from": "runs/20251117_081451",
+      "to": "archive/runs_old/20251117_081451"
+    },
+    {
+      "from": "runs/20251117_081249",
+      "to": "archive/runs_old/20251117_081249"
+    },
+    {
+      "from": "runs/20251117_081028",
+      "to": "archive/runs_old/20251117_081028"
+    },
+    {
+      "from": "runs/20251116_224108",
+      "to": "archive/runs_old/20251116_224108"
+    },
+    {
+      "from": "runs/20251116_223159",
+      "to": "archive/runs_old/20251116_223159"
+    },
+    {
+      "from": "runs/20251116_222603",
+      "to": "archive/runs_old/20251116_222603"
+    },
+    {
+      "from": "runs/20251116_222226",
+      "to": "archive/runs_old/20251116_222226"
+    },
+    {
+      "from": "runs/20251116_221956",
+      "to": "archive/runs_old/20251116_221956"
+    },
+    {
+      "from": "runs/20251116_220823",
+      "to": "archive/runs_old/20251116_220823"
+    },
+    {
+      "from": "runs/20251116_220255",
+      "to": "archive/runs_old/20251116_220255"
+    },
+    {
+      "from": "runs/20251116_215241",
+      "to": "archive/runs_old/20251116_215241"
+    },
+    {
+      "from": "runs/20251116_213447",
+      "to": "archive/runs_old/20251116_213447"
+    },
+    {
+      "from": "runs/20251115_225818",
+      "to": "archive/runs_old/20251115_225818"
+    },
+    {
+      "from": "runs/20251115_225615",
+      "to": "archive/runs_old/20251115_225615"
+    },
+    {
+      "from": "runs/20251115_225428",
+      "to": "archive/runs_old/20251115_225428"
+    },
+    {
+      "from": "runs/20251115_223948",
+      "to": "archive/runs_old/20251115_223948"
+    },
+    {
+      "from": "runs/20251115_223630",
+      "to": "archive/runs_old/20251115_223630"
+    },
+    {
+      "from": "runs/20251115_223234",
+      "to": "archive/runs_old/20251115_223234"
+    },
+    {
+      "from": "runs/20251115_222732",
+      "to": "archive/runs_old/20251115_222732"
+    },
+    {
+      "from": "runs/20251115_222517",
+      "to": "archive/runs_old/20251115_222517"
+    },
+    {
+      "from": "runs/20251115_221616",
+      "to": "archive/runs_old/20251115_221616"
+    },
+    {
+      "from": "runs/20251115_215558",
+      "to": "archive/runs_old/20251115_215558"
+    },
+    {
+      "from": "runs/20251115_215413",
+      "to": "archive/runs_old/20251115_215413"
+    },
+    {
+      "from": "runs/20251115_215205",
+      "to": "archive/runs_old/20251115_215205"
+    },
+    {
+      "from": "runs/20251115_215011",
+      "to": "archive/runs_old/20251115_215011"
+    },
+    {
+      "from": "runs/20251115_214717",
+      "to": "archive/runs_old/20251115_214717"
+    },
+    {
+      "from": "runs/20251115_214120",
+      "to": "archive/runs_old/20251115_214120"
+    },
+    {
+      "from": "runs/20251115_214041",
+      "to": "archive/runs_old/20251115_214041"
+    },
+    {
+      "from": "runs/20251115_213620",
+      "to": "archive/runs_old/20251115_213620"
+    },
+    {
+      "from": "runs/20251115_213539",
+      "to": "archive/runs_old/20251115_213539"
+    },
+    {
+      "from": "runs/20251115_213505",
+      "to": "archive/runs_old/20251115_213505"
+    },
+    {
+      "from": "runs/20251115_213414",
+      "to": "archive/runs_old/20251115_213414"
+    }
+  ],
+  "kept": [
+    {
+      "path": "runs/20251117_121643",
+      "reason": "recent or has thresholded/calibration"
+    },
+    {
+      "path": "runs/20251117_121400",
+      "reason": "recent or has thresholded/calibration"
+    },
+    {
+      "path": "runs/20251117_103624",
+      "reason": "recent or has thresholded/calibration"
+    },
+    {
+      "path": "runs/20251117_093049",
+      "reason": "recent or has thresholded/calibration"
+    },
+    {
+      "path": "runs/20251117_092506",
+      "reason": "recent or has thresholded/calibration"
+    },
+    {
+      "path": "runs/20251117_092252",
+      "reason": "recent or has thresholded/calibration"
+    },
+    {
+      "path": "runs/20251117_091858",
+      "reason": "recent or has thresholded/calibration"
+    },
+    {
+      "path": "runs/20251117_091624",
+      "reason": "recent or has thresholded/calibration"
+    },
+    {
+      "path": "runs/20251117_083222",
+      "reason": "recent or has thresholded/calibration"
+    },
+    {
+      "path": "runs/20251117_082828",
+      "reason": "recent or has thresholded/calibration"
+    },
+    {
+      "path": "runs/20251116_213203",
+      "reason": "recent or has thresholded/calibration"
+    },
+    {
+      "path": "runs/20251116_212836",
+      "reason": "recent or has thresholded/calibration"
+    },
+    {
+      "path": "runs/20251116_212419",
+      "reason": "recent or has thresholded/calibration"
+    },
+    {
+      "path": "runs/20251116_205119",
+      "reason": "recent or has thresholded/calibration"
+    },
+    {
+      "path": "runs/20251116_203127",
+      "reason": "recent or has thresholded/calibration"
+    },
+    {
+      "path": "runs/20251116_193230",
+      "reason": "recent or has thresholded/calibration"
+    },
+    {
+      "path": "runs/20251116_192239",
+      "reason": "recent or has thresholded/calibration"
+    },
+    {
+      "path": "runs/20251116_185806",
+      "reason": "recent or has thresholded/calibration"
+    },
+    {
+      "path": "runs/20251116_185347",
+      "reason": "recent or has thresholded/calibration"
+    },
+    {
+      "path": "runs/20251116_101003",
+      "reason": "recent or has thresholded/calibration"
+    },
+    {
+      "path": "runs/20251116_100703",
+      "reason": "recent or has thresholded/calibration"
+    },
+    {
+      "path": "runs/20251116_092002",
+      "reason": "recent or has thresholded/calibration"
+    }
+  ],
+  "errors": []
+}

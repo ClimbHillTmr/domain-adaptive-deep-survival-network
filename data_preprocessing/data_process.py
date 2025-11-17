@@ -1,41 +1,51 @@
 import pandas as pd
 import numpy as np
+import ast
 
 
 def convert_to_float_list(input_list):
-    if isinstance(input_list, str):
+    if input_list is None:
+        return None
+    iterable = None
+    if isinstance(input_list, list):
+        iterable = input_list
+    elif isinstance(input_list, (int, float)):
+        iterable = [input_list]
+    elif isinstance(input_list, str):
+        s = input_list.strip()
         try:
-            parsed_list = eval(input_list)
-            if isinstance(parsed_list, list):
-                lst = [
-                    float(value)
-                    for value in parsed_list
-                    if isinstance(value, (int, float, str))
-                    and value
-                    and value != "NA"
-                    and (
-                        isinstance(value, (int, float))
-                        or (isinstance(value, str) and value.isdigit())
-                    )
-                ]
-                return [x for x in lst if x is not None]
-        except (SyntaxError, ValueError):
-            pass
-    elif isinstance(input_list, list):
-        lst = [
-            float(value)
-            for value in input_list
-            if isinstance(value, (int, float, str))
-            and value
-            and value != "NA"
-            and (
-                isinstance(value, (int, float))
-                or (isinstance(value, str) and value.isdigit())
-            )
-        ]
-        return [x for x in lst if x is not None]
-
-    return None
+            parsed = ast.literal_eval(s)
+        except Exception:
+            parsed = s
+        if isinstance(parsed, list):
+            iterable = parsed
+        elif isinstance(parsed, (int, float)):
+            iterable = [parsed]
+        else:
+            try:
+                iterable = [float(s)]
+            except Exception:
+                return None
+    else:
+        return None
+    out = []
+    for value in iterable:
+        if value is None:
+            continue
+        if isinstance(value, str):
+            v = value.strip()
+            if v == "" or v.upper() == "NA":
+                continue
+            try:
+                out.append(float(v))
+            except Exception:
+                continue
+        else:
+            try:
+                out.append(float(value))
+            except Exception:
+                continue
+    return out if out else None
 
 
 def replace_extremes_with_percentiles(

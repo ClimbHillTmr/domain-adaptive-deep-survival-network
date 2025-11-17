@@ -1,0 +1,14 @@
+{
+  "f1_macro": 0.010629933712591896,
+  "f1_micro": 0.021721667189894923,
+  "precision_macro": 0.005430416797473731,
+  "recall_macro": 0.25,
+  "recall_stage_0": 0.0,
+  "recall_stage_1": 1.0,
+  "recall_stage_2": 0.0,
+  "recall_stage_3": 0.0,
+  "early_bias_rate": 0.11587966981219183,
+  "late_bias_rate": 0.8623986629979132,
+  "mean_offset": 0.6473656996177356,
+  "brier": 0.7499860796666873
+}

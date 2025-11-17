@@ -1,0 +1,204 @@
+{
+  "runs": [
+    {
+      "path": "runs/20251117_121643",
+      "keep": true,
+      "signals": {
+        "thresholded": true,
+        "calibration": true,
+        "survival": false
+      }
+    },
+    {
+      "path": "runs/20251117_121400",
+      "keep": true,
+      "signals": {
+        "thresholded": true,
+        "calibration": true,
+        "survival": false
+      }
+    },
+    {
+      "path": "runs/20251117_103624",
+      "keep": true,
+      "signals": {
+        "thresholded": false,
+        "calibration": false,
+        "survival": false
+      }
+    },
+    {
+      "path": "runs/20251117_093049",
+      "keep": true,
+      "signals": {
+        "thresholded": true,
+        "calibration": true,
+        "survival": false
+      }
+    },
+    {
+      "path": "runs/20251117_092506",
+      "keep": true,
+      "signals": {
+        "thresholded": false,
+        "calibration": false,
+        "survival": false
+      }
+    },
+    {
+      "path": "runs/20251117_092252",
+      "keep": true,
+      "signals": {
+        "thresholded": false,
+        "calibration": false,
+        "survival": false
+      }
+    },
+    {
+      "path": "runs/20251117_091858",
+      "keep": true,
+      "signals": {
+        "thresholded": false,
+        "calibration": false,
+        "survival": false
+      }
+    },
+    {
+      "path": "runs/20251117_091624",
+      "keep": true,
+      "signals": {
+        "thresholded": false,
+        "calibration": false,
+        "survival": false
+      }
+    },
+    {
+      "path": "runs/20251117_083222",
+      "keep": true,
+      "signals": {
+        "thresholded": false,
+        "calibration": false,
+        "survival": false
+      }
+    },
+    {
+      "path": "runs/20251117_082828",
+      "keep": true,
+      "signals": {
+        "thresholded": false,
+        "calibration": false,
+        "survival": false
+      }
+    },
+    {
+      "path": "runs/20251116_213203",
+      "keep": true,
+      "signals": {
+        "thresholded": true,
+        "calibration": true,
+        "survival": false
+      }
+    },
+    {
+      "path": "runs/20251116_212836",
+      "keep": true,
+      "signals": {
+        "thresholded": true,
+        "calibration": true,
+        "survival": false
+      }
+    },
+    {
+      "path": "runs/20251116_212419",
+      "keep": true,
+      "signals": {
+        "thresholded": true,
+        "calibration": true,
+        "survival": false
+      }
+    },
+    {
+      "path": "runs/20251116_205119",
+      "keep": true,
+      "signals": {
+        "thresholded": true,
+        "calibration": true,
+        "survival": false
+      }
+    },
+    {
+      "path": "runs/20251116_203127",
+      "keep": true,
+      "signals": {
+        "thresholded": true,
+        "calibration": true,
+        "survival": false
+      }
+    },
+    {
+      "path": "runs/20251116_193230",
+      "keep": true,
+      "signals": {
+        "thresholded": true,
+        "calibration": true,
+        "survival": false
+      }
+    },
+    {
+      "path": "runs/20251116_192239",
+      "keep": true,
+      "signals": {
+        "thresholded": true,
+        "calibration": true,
+        "survival": false
+      }
+    },
+    {
+      "path": "runs/20251116_185806",
+      "keep": true,
+      "signals": {
+        "thresholded": true,
+        "calibration": true,
+        "survival": false
+      }
+    },
+    {
+      "path": "runs/20251116_185347",
+      "keep": true,
+      "signals": {
+        "thresholded": true,
+        "calibration": true,
+        "survival": false
+      }
+    },
+    {
+      "path": "runs/20251116_101003",
+      "keep": true,
+      "signals": {
+        "thresholded": true,
+        "calibration": true,
+        "survival": false
+      }
+    },
+    {
+      "path": "runs/20251116_100703",
+      "keep": true,
+      "signals": {
+        "thresholded": true,
+        "calibration": true,
+        "survival": false
+      }
+    },
+    {
+      "path": "runs/20251116_092002",
+      "keep": true,
+      "signals": {
+        "thresholded": true,
+        "calibration": true,
+        "survival": false
+      }
+    }
+  ],
+  "ckpt_deleted": [],
+  "errors": []
+}

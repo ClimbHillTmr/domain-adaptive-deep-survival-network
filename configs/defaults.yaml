@@ -1,0 +1,23 @@
+columns:
+  sbp_col: "透析中收缩压"
+  map_col: "动脉压"
+  hr_col: "心率"
+  uf_col: "超滤率"
+  time_col: "透中数据记录时间节点"
+  static_cols: []
+boundaries:
+  b1: 30
+  b2: 60
+  b3: 120
+missing_threshold: 0.4
+gap_threshold: 15
+calibration:
+  method: isotonic
+  beta: 2.0
+  bootstrap: 200
+  alpha: 0.05
+weights:
+  stage_0: 1.0
+  stage_1: 2.0
+  stage_2: 1.5
+  stage_3: 1.2

@@ -226,6 +226,35 @@ def shengyi_dataset(first_pressure_sd="透前动脉压", use_parallel=True, n_th
     dataset["透析开始时间"] = pd.to_datetime(dataset["透析开始时间"])
     dataset["透析结束时间"] = pd.to_datetime(dataset["透析结束时间"])
 
+    # 相对起始分钟数组与时长
+    def minutes_from_start_list(lst):
+        try:
+            base = pd.to_datetime(lst[0])
+            return [float((pd.to_datetime(t) - base).total_seconds() / 60.0) for t in lst]
+        except Exception:
+            return []
+    dataset["minutes_from_start_list"] = dataset["透中数据记录时间节点"].apply(minutes_from_start_list)
+    dataset["duration_minutes"] = (dataset["透析结束时间"] - dataset["透析开始时间"]).dt.total_seconds() / 60.0
+
+    # 事件分钟 et_min 与事件标记 events
+    dataset["et_min"] = (
+        (dataset["降幅时间点"] - dataset["透析开始时间"]).dt.total_seconds() / 60.0
+    )
+    dataset["events"] = dataset["透中低血压_计算"].astype(int)
+    dataset.loc[dataset["events"] == 0, "et_min"] = None
+
+    # 阶段标签（两套边界）
+    def stage_label_from_et(et, b1, b2, b3):
+        if et is None:
+            return 0
+        try:
+            x = float(et)
+        except Exception:
+            return 0
+        return 1 if x <= b1 else (2 if x <= b2 else (3 if x <= b3 else 3))
+    dataset["stage_30_60_120"] = dataset["et_min"].apply(lambda x: stage_label_from_et(x, 30, 60, 120))
+    dataset["stage_30_90_120"] = dataset["et_min"].apply(lambda x: stage_label_from_et(x, 30, 90, 120))
+
     # Calculate '涨幅时间点区间' and '涨幅时间点差值' columns
     time_diff_minutes = (
         dataset["透析结束时间"] - dataset["透析开始时间"]
@@ -334,6 +363,12 @@ def shengyi_dataset(first_pressure_sd="透前动脉压", use_parallel=True, n_th
         "降幅时间点比值",
         "降幅时间点比值区间",
         "透前体重-干体重",
+        "minutes_from_start_list",
+        "duration_minutes",
+        "et_min",
+        "events",
+        "stage_30_60_120",
+        "stage_30_90_120",
         "涨幅时间点差值",
         "降幅时间点差值",
         "降幅时间点差值区间",
