@@ -53,6 +53,19 @@ def _event_time_from_final(row, columns=None):
         return None
     return float((dt_drop - dt_start).total_seconds() / 60.0)
 
+def _session_length_minutes(row, times=None, columns=None, seq_length=None):
+    start_time_col = columns.get('start_time_col', '透析开始时间') if columns else '透析开始时间'
+    end_time_col = columns.get('end_time_col', '透析结束时间') if columns else '透析结束时间'
+    dt_start = pd.to_datetime(row.get(start_time_col), errors='coerce')
+    dt_end = pd.to_datetime(row.get(end_time_col), errors='coerce')
+    if not pd.isna(dt_start) and not pd.isna(dt_end):
+        return float((dt_end - dt_start).total_seconds() / 60.0)
+    if times and len(times) > 0 and times[-1] is not None:
+        return float(times[-1])
+    if seq_length is not None:
+        return float(seq_length)
+    return 0.0
+
 def _get_float(row, col):
     v = row.get(col)
     try:
@@ -224,7 +237,14 @@ def load_and_build_features(csv_path: str, boundaries=(30, 90), columns: Dict[st
         feats += _extract_optional_static(row, base_features_history)
         feats += _extract_optional_static(row, base_features_current)
         features.append(feats)
-        labels.append(build_stage_label(et, boundaries=boundaries))
+        sess_len = _session_length_minutes(row, times=times, columns=columns)
+        is_relative = all((0.0 < float(b) <= 1.0) for b in (boundaries if isinstance(boundaries, (list, tuple)) else [boundaries]))
+        if is_relative and sess_len > 0:
+            bs = list(boundaries)
+            abs_boundaries = (float(bs[0]) * sess_len, float(bs[1]) * sess_len, float(bs[2]) * sess_len) if len(bs) >= 3 else (float(bs[0]) * sess_len, float(bs[1]) * sess_len)
+            labels.append(build_stage_label(et, boundaries=abs_boundaries))
+        else:
+            labels.append(build_stage_label(et, boundaries=boundaries))
     X = np.array(features, dtype=float)
     y = np.array(labels, dtype=int)
     return X, y
@@ -282,7 +302,14 @@ def load_seq_static_survival(csv_path: str, boundaries=(30,90), seq_length=30, s
         et = _event_time_from_final(row, columns=columns)
         if et is None:
             et = _event_time_minutes(row)
-        y_list.append(build_stage_label(et, boundaries=boundaries))
+        sess_len = _session_length_minutes(row, times=times, columns=columns, seq_length=seq_length)
+        is_relative = all((0.0 < float(b) <= 1.0) for b in (boundaries if isinstance(boundaries, (list, tuple)) else [boundaries]))
+        if is_relative and sess_len > 0:
+            bs = list(boundaries)
+            abs_boundaries = (float(bs[0]) * sess_len, float(bs[1]) * sess_len, float(bs[2]) * sess_len) if len(bs) >= 3 else (float(bs[0]) * sess_len, float(bs[1]) * sess_len)
+            y_list.append(build_stage_label(et, boundaries=abs_boundaries))
+        else:
+            y_list.append(build_stage_label(et, boundaries=boundaries))
         # 生存标签
         start_time_col = columns.get('start_time_col', '透析开始时间') if columns else '透析开始时间'
         end_time_col = columns.get('end_time_col', '透析结束时间') if columns else '透析结束时间'

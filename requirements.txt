@@ -29,6 +29,7 @@ feature-engine>=1.2.0
 # 统计分析
 tableone>=0.7.0
 palettable>=3.3.0
+lifelines>=0.30.0
 
 # 外部工具
 graphviz>=0.19.0
