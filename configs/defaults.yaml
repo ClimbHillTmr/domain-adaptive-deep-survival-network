@@ -1,23 +1,85 @@
+# Data Column Definitions
 columns:
-  sbp_col: "透析中收缩压"
-  map_col: "动脉压"
-  hr_col: "心率"
-  uf_col: "超滤率"
-  time_col: "透中数据记录时间节点"
-  static_cols: []
+  # Dynamic/Time-Series Features (High-frequency intradialytic data)
+  dynamic_cols:
+    - "透析中收缩压_mean" # Using mean/std summaries if raw seq not available, but Transformer prefers sequences
+    - "透析中舒张压_mean"
+    - "透析中脉搏_mean"
+    - "超滤率_mean"
+    - "静脉压_mean"
+    - "血流速_mean"
+    - "透析液温度_mean"
+
+  # Raw Sequence Columns (if available in list format in CSV)
+  seq_cols:
+    - "透析中收缩压"
+    - "透析中舒张压"
+    - "透析中脉搏"
+    - "超滤率"
+    - "静脉压"
+    - "血流速"
+
+  # Static Patient Features
+  static_cols:
+    - "透析年龄" # "年龄" is 100% empty, use "透析年龄" instead
+    - "性别"
+    - "透析龄"
+    - "干体重"
+    - "透前收缩压"
+    - "透前舒张压"
+    - "透前体重"
+    - "透前呼吸频率"
+    # REMOVED: "透前体温" - 50.3% NaN + extreme outliers (3663, 3661, etc.)
+    - "透析液钙浓度"
+    # REMOVED: "透析液电导率" - Zero variance (all values = 14.00), provides no predictive signal
+    - "超滤量MAX" # Will be winsorized to P99
+    - "高血压诊断"
+    - "history_HBP_rate"
+
+  # Target Definition
+  targets:
+    event_col: "events" # 1 for Hypotension/IDH, 0 otherwise
+    duration_col: "et_min" # Time to event in minutes
+    label_col: "stage_30_60_120" # Risk stage label
+
+# Model Hyperparameters
+model:
+  name: "hybrid" # 'transformer', 'lgbm', or 'hybrid'
+
+  transformer:
+    d_model: 64
+    nhead: 4
+    num_layers: 2
+    dropout: 0.1
+    max_len: 48 # Max sequence length (e.g., 4 hours * 12 measurements/hr)
+
+  lgbm:
+    n_estimators: 100
+    learning_rate: 0.05
+    max_depth: -1
+    num_leaves: 31
+
+# Training Configuration
+training:
+  batch_size: 32
+  epochs: 20
+  learning_rate: 1e-3
+  weight_decay: 1e-4
+  early_stopping_patience: 5
+  cv_folds: 5
+
+  # Domain Adaptation (CORAL)
+  coral:
+    enabled: true
+    lambda_coral: 0.5 # Weight for CORAL loss
+
+# Survival Analysis Configuration
+survival:
+  enabled: true
+  method: "cox" # 'cox' or 'deephit'
+
+# Risk Boundaries (in minutes)
 boundaries:
   b1: 30
   b2: 60
   b3: 120
-missing_threshold: 0.4
-gap_threshold: 15
-calibration:
-  method: isotonic
-  beta: 2.0
-  bootstrap: 200
-  alpha: 0.05
-weights:
-  stage_0: 1.0
-  stage_1: 2.0
-  stage_2: 1.5
-  stage_3: 1.2

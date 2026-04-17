@@ -1,339 +1,248 @@
 import pandas as pd
 import numpy as np
-from datetime import datetime
-from typing import Tuple, Dict, Any
-from src.labels.stage_builder import build_stage_label
-from src.data.sessionize import normalize_times_to_minutes, split_sessions, filter_by_missing
+import ast
+from typing import Tuple, List, Dict
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.impute import SimpleImputer
 
-def _parse_list(x):
-    if isinstance(x, list):
-        return [float(v) for v in x if v is not None and str(v) != "NA"]
-    if isinstance(x, str):
-        import ast
-        s = x.strip()
+# Clinical observation window: only use first OBS_WINDOW minutes of data for prediction
+# Events occurring within this window are excluded (cannot predict what already happened)
+OBS_WINDOW = 60  # minutes
+
+
+def parse_list_col(val):
+    """Parse stringified list from CSV."""
+    if isinstance(val, str):
         try:
-            v = ast.literal_eval(s)
-            if isinstance(v, list):
-                return [float(t) for t in v if t is not None and str(t) != "NA"]
-        except Exception:
+            return ast.literal_eval(val)
+        except (ValueError, SyntaxError):
             return []
+    elif isinstance(val, list):
+        return val
     return []
 
-def _parse_times(x):
-    lst = _parse_list(x)
-    return normalize_times_to_minutes(lst)
 
-def _event_time_minutes(row):
-    seq = _parse_list(row.get("透析中收缩压"))
-    times = _parse_times(row.get("透中数据记录时间节点"))
-    if not seq:
-        return None
-    first = seq[0]
-    for i, v in enumerate(seq):
-        if (first - v >= 30) or (v <= 90):
-            if times and i < len(times) and times[i] is not None:
-                return float(times[i])
-            return float(i)
-    return None
+def pad_sequence(seq, max_len, padding_value=0.0):
+    """Pad sequence to max_len."""
+    if len(seq) >= max_len:
+        return seq[:max_len]
+    return seq + [padding_value] * (max_len - len(seq))
 
-def _event_time_from_final(row, columns=None):
-    event_flag_col = columns.get('event_flag_col', '透中低血压_计算') if columns else '透中低血压_计算'
-    drop_time_col = columns.get('drop_time_col', '降幅时间点') if columns else '降幅时间点'
-    start_time_col = columns.get('start_time_col', '透析开始时间') if columns else '透析开始时间'
-    flag = row.get(event_flag_col)
-    try:
-        flag_val = int(flag) if flag is not None else 0
-    except Exception:
-        flag_val = 0
-    if flag_val == 0:
-        return None
-    dt_drop = pd.to_datetime(row.get(drop_time_col), errors='coerce')
-    dt_start = pd.to_datetime(row.get(start_time_col), errors='coerce')
-    if pd.isna(dt_drop) or pd.isna(dt_start):
-        return None
-    return float((dt_drop - dt_start).total_seconds() / 60.0)
 
-def _session_length_minutes(row, times=None, columns=None, seq_length=None):
-    start_time_col = columns.get('start_time_col', '透析开始时间') if columns else '透析开始时间'
-    end_time_col = columns.get('end_time_col', '透析结束时间') if columns else '透析结束时间'
-    dt_start = pd.to_datetime(row.get(start_time_col), errors='coerce')
-    dt_end = pd.to_datetime(row.get(end_time_col), errors='coerce')
-    if not pd.isna(dt_start) and not pd.isna(dt_end):
-        return float((dt_end - dt_start).total_seconds() / 60.0)
-    if times and len(times) > 0 and times[-1] is not None:
-        return float(times[-1])
-    if seq_length is not None:
-        return float(seq_length)
-    return 0.0
+class DialysisDataLoader:
+    def __init__(self, config):
+        self.cfg = config
+        self.static_imputer = None
+        self.static_scaler = StandardScaler()
+        self.dynamic_imputer = None
+        self.dynamic_scaler = StandardScaler()
+        self.label_encoders = {}
+        self._fitted = False
 
-def _get_float(row, col):
-    v = row.get(col)
-    try:
-        return float(v)
-    except Exception:
-        return 0.0
+    def _process_static(self, df, is_training):
+        static_cols = self.cfg.columns.static_cols
+        available_cols = [c for c in static_cols if c in df.columns]
+        X_static = df[available_cols].copy()
 
-def _extract_optional_static(row, names):
-    vals = []
-    for name in names:
-        if name in row and row[name] is not None and str(row[name]) != "":
-            vals.append(_get_float(row, name))
-    return vals
+        # CRITICAL: Winsorize 超滤量MAX to P99 to eliminate extreme outliers
+        # Normal ultrafiltration volume: 500-5000 mL per session
+        # Values >10000 are likely data entry errors (extra zeros)
+        if "超滤量MAX" in X_static.columns:
+            p99 = X_static["超滤量MAX"].quantile(0.99)
+            X_static["超滤量MAX"] = X_static["超滤量MAX"].clip(upper=p99)
 
-def _seq_features(seq):
-    if not seq:
-        return [0.0, 0.0, 0.0, 0.0, 0.0]
-    arr = np.array(seq, dtype=float)
-    mean = float(np.mean(arr))
-    std = float(np.std(arr))
-    mn = float(np.min(arr))
-    mx = float(np.max(arr))
-    slope = float((arr[-1] - arr[0]) / max(len(arr) - 1, 1))
-    return [mean, std, mn, mx, slope]
+        cat_cols = ["性别", "高血压诊断"]
+        for col in cat_cols:
+            if col in X_static.columns:
+                if is_training:
+                    le = LabelEncoder()
+                    X_static[col] = le.fit_transform(X_static[col].astype(str))
+                    self.label_encoders[col] = le
+                else:
+                    if col in self.label_encoders:
+                        le = self.label_encoders[col]
+                        X_static[col] = (
+                            X_static[col]
+                            .astype(str)
+                            .map(
+                                lambda x: (
+                                    le.transform([x])[0] if x in le.classes_ else 0
+                                )
+                            )
+                        )
 
-def _rolling_std_mean(seq, w=5):
-    arr = np.array(seq or [], dtype=float)
-    if arr.size == 0:
-        return 0.0
-    if arr.size < w:
-        return float(np.std(arr))
-    s = []
-    for i in range(0, arr.size - w + 1):
-        s.append(float(np.std(arr[i:i+w])))
-    return float(np.mean(s))
-
-def _short_window_slope(seq, w=5):
-    arr = np.array(seq or [], dtype=float)
-    if arr.size < 2:
-        return 0.0
-    a = arr[:w] if arr.size >= w else arr
-    b = arr[-w:] if arr.size >= w else arr
-    return float((np.mean(b) - np.mean(a)) / max(w, 1))
-
-def _min_pos_ratio(seq):
-    arr = np.array(seq or [], dtype=float)
-    if arr.size == 0:
-        return 0.0
-    return float(np.argmin(arr) / max(arr.size - 1, 1))
-
-def _mean_abs_diff(seq):
-    arr = np.array(seq or [], dtype=float)
-    if arr.size < 2:
-        return 0.0
-    d = np.diff(arr)
-    return float(np.mean(np.abs(d)))
-
-def _nearest_index(times, t):
-    if times is None or t is None:
-        return None
-    idx = None
-    best = None
-    for i, v in enumerate(times):
-        if v is None:
-            continue
-        dv = abs(float(v) - float(t))
-        if best is None or dv < best:
-            best = dv
-            idx = i
-    return idx
-
-def _neighbor_features(seq, times, et, w=5):
-    arr = np.array(seq or [], dtype=float)
-    if arr.size == 0 or times is None or et is None:
-        return [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    k = _nearest_index(times, et)
-    if k is None:
-        return [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    a = max(0, k - w)
-    b = min(arr.size, k + w + 1)
-    pre = arr[a:k] if k > a else arr[a:a+1]
-    post = arr[k:b] if b > k else arr[b-1:b]
-    pre_mean = float(np.mean(pre))
-    pre_std = float(np.std(pre))
-    pre_slope = float((pre[-1] - pre[0]) / max(len(pre) - 1, 1))
-    post_mean = float(np.mean(post))
-    post_std = float(np.std(post))
-    post_slope = float((post[-1] - post[0]) / max(len(post) - 1, 1))
-    delta_mean = float(post_mean - pre_mean)
-    delta_std = float(post_std - pre_std)
-    return [pre_mean, pre_std, pre_slope, post_mean, post_std, post_slope, delta_mean, delta_std]
-
-def load_and_build_features(csv_path: str, boundaries=(30, 90), columns: Dict[str, Any] = None,
-                            missing_threshold: float = 0.4, gap_threshold: float = 15.0) -> Tuple[np.ndarray, np.ndarray]:
-    df = pd.read_csv(csv_path)
-    features = []
-    labels = []
-    base_features_core = [
-        "传染病", "抗凝剂类型", "干体重", "瘘管类型", "瘘管位置", "瘘管使用时间",
-        "首次透析年龄", "透析方式", "透析龄", "透析龄_天数", "透析年龄", "性别"
-    ]
-    base_features_history = [
-        "历史平均超滤率_mean", "历史平均动脉压_mean", "历史平均干体重",
-        "历史平均降幅时间点比值区间", "历史平均降幅时间点差值区间",
-        "历史平均静脉压_mean", "历史平均跨膜压_mean", "历史平均实际透析时长",
-        "历史平均透析液钙浓度", "历史平均透析液电导率", "历史平均透析液温度_mean",
-        "历史平均透析中收缩压_mean", "历史平均透析中舒张压_mean", "历史平均透析中脉搏_mean",
-        "历史平均透前收缩压", "历史平均透前舒张压", "历史平均透前呼吸频率",
-        "历史平均透前体重", "历史平均透中高血压_计算", "历史平均血流速_mean",
-        "历史平均涨幅时间点比值区间", "历史平均涨幅时间点差值区间",
-        "history_HBP_rate", "history_LBP_times_0_rate", "history_LBP_times_1_rate",
-        "history_LBP_times_2_rate", "history_LBP_times_3_rate", "history_LBP_times_4_rate",
-        "history_HBP", "history_LBP_times_0", "history_LBP_times_1",
-        "history_LBP_times_2", "history_LBP_times_3", "history_LBP_times_4"
-    ]
-    base_features_current = [
-        "透析液钙浓度", "透析液电导率", "透前呼吸频率", "透前收缩压", "透前舒张压",
-        "透前体重", "透前体重-干体重"
-    ]
-    for _, row in df.iterrows():
-        sbp_col = columns.get('sbp_col', '透析中收缩压') if columns else '透析中收缩压'
-        map_col = columns.get('map_col', '动脉压') if columns else '动脉压'
-        hr_col = columns.get('hr_col', '心率') if columns else '心率'
-        uf_col = columns.get('uf_col', '超滤率') if columns else '超滤率'
-        time_col = columns.get('time_col', '透中数据记录时间节点') if columns else '透中数据记录时间节点'
-        sbp = _parse_list(row.get(sbp_col))
-        map_ = _parse_list(row.get(map_col))
-        hr = _parse_list(row.get(hr_col))
-        uf = _parse_list(row.get(uf_col))
-        times = _parse_times(row.get(time_col))
-        session_times = split_sessions(times)
-        seq_dict = {"sbp": sbp, "map": map_, "hr": hr, "uf": uf}
-        if not filter_by_missing(seq_dict, missing_threshold=missing_threshold):
-            continue
-        et = _event_time_from_final(row, columns=columns)
-        if et is None:
-            et = _event_time_minutes(row)
-        feats = []
-        feats += _seq_features(sbp)
-        feats += [_rolling_std_mean(sbp, 3), _rolling_std_mean(sbp, 5), _rolling_std_mean(sbp, 7)]
-        feats += [_short_window_slope(sbp, 3), _short_window_slope(sbp, 5), _short_window_slope(sbp, 7)]
-        feats += [_min_pos_ratio(sbp)]
-        feats += _neighbor_features(sbp, times, et, w=5)
-        feats += _seq_features(map_)
-        feats += [_rolling_std_mean(map_, 3), _rolling_std_mean(map_, 5), _rolling_std_mean(map_, 7)]
-        feats += [_short_window_slope(map_, 3), _short_window_slope(map_, 5), _short_window_slope(map_, 7)]
-        feats += [_min_pos_ratio(map_)]
-        feats += _neighbor_features(map_, times, et, w=5)
-        feats += _seq_features(hr)
-        feats += [_rolling_std_mean(hr, 3), _rolling_std_mean(hr, 5), _rolling_std_mean(hr, 7)]
-        feats += [_short_window_slope(hr, 3), _short_window_slope(hr, 5), _short_window_slope(hr, 7)]
-        feats += [_min_pos_ratio(hr)]
-        feats += _neighbor_features(hr, times, et, w=5)
-        feats += _seq_features(uf)
-        feats += [_rolling_std_mean(uf, 3), _rolling_std_mean(uf, 5), _rolling_std_mean(uf, 7)]
-        feats += [_short_window_slope(uf, 3), _short_window_slope(uf, 5), _short_window_slope(uf, 7)]
-        feats += [_mean_abs_diff(uf)]
-        feats += _neighbor_features(uf, times, et, w=5)
-        feats += [
-            _get_float(row, '透前收缩压'),
-            _get_float(row, '透前舒张压'),
-            _get_float(row, '透前动脉压'),
-            _get_float(row, '透前体重'),
-            _get_float(row, '干体重'),
-            _get_float(row, '透析龄_天数'),
-            _get_float(row, '实际透析时长')
-        ]
-        feats += _extract_optional_static(row, base_features_core)
-        feats += _extract_optional_static(row, base_features_history)
-        feats += _extract_optional_static(row, base_features_current)
-        features.append(feats)
-        sess_len = _session_length_minutes(row, times=times, columns=columns)
-        is_relative = all((0.0 < float(b) <= 1.0) for b in (boundaries if isinstance(boundaries, (list, tuple)) else [boundaries]))
-        if is_relative and sess_len > 0:
-            bs = list(boundaries)
-            abs_boundaries = (float(bs[0]) * sess_len, float(bs[1]) * sess_len, float(bs[2]) * sess_len) if len(bs) >= 3 else (float(bs[0]) * sess_len, float(bs[1]) * sess_len)
-            labels.append(build_stage_label(et, boundaries=abs_boundaries))
+        X_static_vals = X_static.values
+        if len(available_cols) > 0:
+            if is_training:
+                self.static_imputer = SimpleImputer(strategy="mean")
+                X_static_vals = self.static_imputer.fit_transform(X_static_vals)
+                self.static_scaler = StandardScaler()
+                X_static_vals = self.static_scaler.fit_transform(X_static_vals)
+                self._fitted = True
+            else:
+                if not self._fitted:
+                    raise RuntimeError(
+                        "Loader not fitted. Call load_data with is_training=True first."
+                    )
+                X_static_vals = self.static_imputer.transform(X_static_vals)
+                X_static_vals = self.static_scaler.transform(X_static_vals)
         else:
-            labels.append(build_stage_label(et, boundaries=boundaries))
-    X = np.array(features, dtype=float)
-    y = np.array(labels, dtype=int)
-    return X, y
+            X_static_vals = np.zeros((len(df), 1))
 
-def _pad_or_truncate(seq, L):
-    arr = [v for v in (seq or []) if v is not None]
-    if len(arr) == 0:
-        arr = [0.0]
-    if len(arr) >= L:
-        return np.array(arr[:L], dtype=float)
-    else:
-        pad = np.pad(np.array(arr, dtype=float), (0, L - len(arr)), mode='edge')
-        return pad
+        return X_static_vals.astype(np.float32)
 
-def load_seq_static_survival(csv_path: str, boundaries=(30,90), seq_length=30, sample_limit=None,
-                             columns: Dict[str, Any] = None, missing_threshold: float = 0.4, gap_threshold: float = 15.0):
-    df = pd.read_csv(csv_path)
-    X_seq_list = []
-    X_static_list = []
-    y_list = []
-    durations = []
-    events = []
-    count = 0
-    for _, row in df.iterrows():
-        sbp_col = columns.get('sbp_col', '透析中收缩压') if columns else '透析中收缩压'
-        map_col = columns.get('map_col', '动脉压') if columns else '动脉压'
-        hr_col = columns.get('hr_col', '心率') if columns else '心率'
-        uf_col = columns.get('uf_col', '超滤率') if columns else '超滤率'
-        time_col = columns.get('time_col', '透中数据记录时间节点') if columns else '透中数据记录时间节点'
-        sbp = _parse_list(row.get(sbp_col))
-        map_ = _parse_list(row.get(map_col))
-        hr = _parse_list(row.get(hr_col))
-        uf = _parse_list(row.get(uf_col))
-        times = _parse_times(row.get(time_col))
-        if not filter_by_missing({"sbp": sbp, "map": map_, "hr": hr, "uf": uf}, missing_threshold=missing_threshold):
-            continue
-        sbp_pad = _pad_or_truncate(sbp, seq_length)
-        map_pad = _pad_or_truncate(map_, seq_length)
-        hr_pad = _pad_or_truncate(hr, seq_length)
-        uf_pad = _pad_or_truncate(uf, seq_length)
-        x_seq = np.stack([sbp_pad, map_pad, hr_pad, uf_pad], axis=-1)
-        X_seq_list.append(x_seq)
-        # 静态特征：首值与简单统计
-        static = [
-            sbp_pad[0], map_pad[0], hr_pad[0], uf_pad[0], float(np.mean(sbp_pad)), float(np.std(sbp_pad)),
-            _get_float(row, '透前收缩压'),
-            _get_float(row, '透前舒张压'),
-            _get_float(row, '透前动脉压'),
-            _get_float(row, '透前体重'),
-            _get_float(row, '干体重'),
-            _get_float(row, '透析龄_天数'),
-            _get_float(row, '实际透析时长')
-        ]
-        X_static_list.append(static)
-        et = _event_time_from_final(row, columns=columns)
-        if et is None:
-            et = _event_time_minutes(row)
-        sess_len = _session_length_minutes(row, times=times, columns=columns, seq_length=seq_length)
-        is_relative = all((0.0 < float(b) <= 1.0) for b in (boundaries if isinstance(boundaries, (list, tuple)) else [boundaries]))
-        if is_relative and sess_len > 0:
-            bs = list(boundaries)
-            abs_boundaries = (float(bs[0]) * sess_len, float(bs[1]) * sess_len, float(bs[2]) * sess_len) if len(bs) >= 3 else (float(bs[0]) * sess_len, float(bs[1]) * sess_len)
-            y_list.append(build_stage_label(et, boundaries=abs_boundaries))
-        else:
-            y_list.append(build_stage_label(et, boundaries=boundaries))
-        # 生存标签
-        start_time_col = columns.get('start_time_col', '透析开始时间') if columns else '透析开始时间'
-        end_time_col = columns.get('end_time_col', '透析结束时间') if columns else '透析结束时间'
-        dt_start = pd.to_datetime(row.get(start_time_col), errors='coerce')
-        dt_end = pd.to_datetime(row.get(end_time_col), errors='coerce')
-        if not pd.isna(dt_start) and not pd.isna(dt_end):
-            last_obs = float((dt_end - dt_start).total_seconds() / 60.0)
-        else:
-            last_obs = times[-1] if times and times[-1] is not None else float(seq_length)
-        durations.append(float(et) if et is not None else float(last_obs))
-        events.append(1 if et is not None else 0)
-        count += 1
-        if sample_limit and count >= sample_limit:
-            break
-    X_seq = np.array(X_seq_list, dtype=float)
-    X_static = np.array(X_static_list, dtype=float)
-    y_stage = np.array(y_list, dtype=int)
-    durations = np.array(durations, dtype=float)
-    events = np.array(events, dtype=int)
-    # 对齐长度
-    min_len = min(len(X_seq), len(X_static), len(y_stage), len(durations), len(events))
-    X_seq = X_seq[:min_len]
-    X_static = X_static[:min_len]
-    y_stage = y_stage[:min_len]
-    durations = durations[:min_len]
-    events = events[:min_len]
-    return X_seq, X_static, y_stage, durations, events
+    def _process_dynamic(self, df, is_training):
+        seq_cols = self.cfg.columns.seq_cols
+        dynamic_cols = self.cfg.columns.dynamic_cols
+        max_len = self.cfg.model.transformer.max_len
+        n_samples = len(df)
+        X_dynamic = None
+
+        # Truncate sequence to observation window (first OBS_WINDOW minutes)
+        # Sampling rate: max_len covers 4 hours = 240 minutes
+        # OBS_WINDOW=60 minutes => keep first OBS_WINDOW/240 * max_len frames
+        obs_frames = int(OBS_WINDOW / 240.0 * max_len)
+        obs_frames = max(obs_frames, 1)  # at least 1 frame
+
+        sample_col = seq_cols[0] if seq_cols else None
+        if sample_col and sample_col in df.columns:
+            sample_val = df[sample_col].iloc[0] if len(df) > 0 else None
+            if isinstance(sample_val, (list, str)) and sample_val.startswith("["):
+                n_features = len(seq_cols)
+                X_dynamic = np.zeros((n_samples, obs_frames, n_features))
+                for i, col in enumerate(seq_cols):
+                    if col in df.columns:
+                        parsed = df[col].apply(parse_list_col)
+                        # Truncate to observation window, then pad if shorter
+                        padded = parsed.apply(
+                            lambda x: pad_sequence(x[:obs_frames], obs_frames)
+                        )
+                        X_dynamic[:, :, i] = np.vstack(padded)
+
+        if X_dynamic is None and dynamic_cols:
+            available_dyn = [c for c in dynamic_cols if c in df.columns]
+            if available_dyn:
+                n_features = len(available_dyn)
+                X_dynamic = np.zeros((n_samples, 1, n_features))
+                X_dynamic[:, 0, :] = df[available_dyn].values
+
+                # CRITICAL: Normalize dynamic features (same as static)
+                if is_training:
+                    self.dynamic_imputer = SimpleImputer(strategy="mean")
+                    X_dynamic_flat = self.dynamic_imputer.fit_transform(
+                        X_dynamic.reshape(n_samples, -1)
+                    )
+                    self.dynamic_scaler = StandardScaler()
+                    X_dynamic_flat = self.dynamic_scaler.fit_transform(X_dynamic_flat)
+                    X_dynamic = X_dynamic_flat.reshape(n_samples, 1, n_features)
+                    self._fitted = True
+                else:
+                    if not self._fitted:
+                        raise RuntimeError(
+                            "Loader not fitted. Call load_data with is_training=True first."
+                        )
+                    if self.dynamic_imputer is not None:
+                        X_dynamic_flat = self.dynamic_imputer.transform(
+                            X_dynamic.reshape(n_samples, -1)
+                        )
+                        X_dynamic_flat = self.dynamic_scaler.transform(X_dynamic_flat)
+                        X_dynamic = X_dynamic_flat.reshape(n_samples, 1, n_features)
+            else:
+                X_dynamic = np.zeros((n_samples, 1, 1))
+
+        if X_dynamic is None:
+            X_dynamic = np.zeros((n_samples, 1, 1))
+
+        return X_dynamic.astype(np.float32)
+
+    def _process_targets(self, df):
+        targets = {}
+        if self.cfg.columns.targets.event_col in df.columns:
+            targets["event"] = (
+                df[self.cfg.columns.targets.event_col].fillna(0).values.astype(int)
+            )
+
+        if self.cfg.columns.targets.duration_col in df.columns:
+            targets["duration"] = (
+                df[self.cfg.columns.targets.duration_col].fillna(0).values.astype(float)
+            )
+
+        if self.cfg.columns.targets.label_col in df.columns:
+            targets["label"] = (
+                df[self.cfg.columns.targets.label_col].fillna(0).values.astype(int)
+            )
+
+        # CRITICAL: Filter out events that occurred within the observation window.
+        # We can only predict future events for patients who survived OBS_WINDOW minutes.
+        # This prevents data leakage: the model must not learn from events that already
+        # happened during the observation period used as input.
+        valid_idx = (targets["duration"] > 0) | (targets["event"] == 0)
+        if "event" in targets and "duration" in targets:
+            early_event_mask = (targets["event"] == 1) & (
+                targets["duration"] <= OBS_WINDOW
+            )
+            valid_idx = valid_idx & ~early_event_mask
+
+        if "event" in targets:
+            targets["event"] = targets["event"][valid_idx]
+        if "duration" in targets:
+            targets["duration"] = targets["duration"][valid_idx]
+        if "label" in targets:
+            targets["label"] = targets["label"][valid_idx]
+
+        return targets, valid_idx
+
+    def load_data(
+        self, csv_path: str, is_training: bool = True
+    ) -> Dict[str, np.ndarray]:
+        df = pd.read_csv(csv_path)
+
+        X_static_vals = self._process_static(df, is_training)
+        X_dynamic = self._process_dynamic(df, is_training)
+        targets, valid_idx = self._process_targets(df)
+
+        X_static_vals = X_static_vals[valid_idx]
+        X_dynamic = X_dynamic[valid_idx]
+
+        return {
+            "static": X_static_vals,
+            "dynamic": X_dynamic,
+            "targets": targets,
+            "df_raw": df,
+        }
+
+
+def get_loader(config):
+    return DialysisDataLoader(config)
+
+
+def load_and_build_features(
+    csv_path, boundaries, columns, missing_threshold, gap_threshold
+):
+    from omegaconf import OmegaConf
+
+    conf = OmegaConf.create(
+        {"columns": columns, "model": {"transformer": {"max_len": 48}}}
+    )
+    loader = DialysisDataLoader(conf)
+    data = loader.load_data(csv_path)
+    return data, data["targets"]["label"]
+
+
+def load_seq_static_survival(
+    csv_path, boundaries, columns, missing_threshold, gap_threshold
+):
+    from omegaconf import OmegaConf
+
+    conf = OmegaConf.create(
+        {"columns": columns, "model": {"transformer": {"max_len": 48}}}
+    )
+    loader = DialysisDataLoader(conf)
+    data = loader.load_data(csv_path)
+    return (
+        data["dynamic"],
+        data["static"],
+        data["targets"]["label"],
+        data["targets"]["duration"],
+        data["targets"]["event"],
+    )
