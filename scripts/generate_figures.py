@@ -1,8 +1,8 @@
 """
 Publication-Ready Figures Generator for DA-DSN Paper
 - Figure 1: Individualized Survival Curves (3 risk groups)
-- Figure 2: UMAP CORAL Domain Adaptation Visualization
-- Ablation: Base, Base+Transformer, DA-DSN (CORAL)
+- Figure 2: UMAP MMD Domain Adaptation Visualization
+- Ablation: Base, Base+ResNet1D, DA-DSN (MMD)
 - Bootstrap confidence intervals for C-index
 - MMD distribution difference analysis
 """
@@ -21,7 +21,12 @@ from omegaconf import OmegaConf
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.data.loader import DialysisDataLoader
-from src.models.dadsn_model import DADSN, cox_partial_log_likelihood, coral_loss
+from src.models.dadsn_model import (
+    DADSN,
+    cox_partial_log_likelihood,
+    coral_loss,
+    mmd_loss,
+)
 from src.training.dadsn_runner import (
     create_source_only_dataloader,
     predict_risk,
@@ -171,14 +176,14 @@ def generate_figure_2(
     model_base_trans, model_coral, source_data, target_data, device, save_path
 ):
     """
-    Figure 2: UMAP visualization of CORAL domain adaptation.
-    Compare features before and after CORAL.
+    Figure 2: UMAP visualization of MMD domain adaptation.
+    Compare features before and after MMD.
     """
-    print("  Extracting features (Base+Transformer model)...")
+    print("  Extracting features (Base+ResNet1D model)...")
     src_feat_base = extract_features(model_base_trans, source_data, device)
     tgt_feat_base = extract_features(model_base_trans, target_data, device)
 
-    print("  Extracting features (CORAL model)...")
+    print("  Extracting features (MMD model)...")
     src_feat_coral = extract_features(model_coral, source_data, device)
     tgt_feat_coral = extract_features(model_coral, target_data, device)
 
@@ -198,8 +203,8 @@ def generate_figure_2(
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
     for ax, X_2d, labels, title in [
-        (axes[0], X_base_2d, labels_base, "Base + Transformer (No CORAL)"),
-        (axes[1], X_coral_2d, labels_coral, "DA-DSN (With CORAL)"),
+        (axes[0], X_base_2d, labels_base, "Base + ResNet1D (No MMD)"),
+        (axes[1], X_coral_2d, labels_coral, "DA-DSN (With MMD)"),
     ]:
         mask_src = labels == 0
         mask_tgt = labels == 1
@@ -226,7 +231,7 @@ def generate_figure_2(
         ax.grid(True, alpha=0.2, linestyle="--")
 
     plt.suptitle(
-        "CORAL Domain Adaptation: UMAP Feature Visualization",
+        "MMD Domain Adaptation: UMAP Feature Visualization",
         fontsize=15,
         fontweight="bold",
         y=1.02,
@@ -235,6 +240,34 @@ def generate_figure_2(
     plt.savefig(save_path, dpi=300, bbox_inches="tight")
     plt.close()
     print("Figure 2 saved to: %s" % save_path)
+
+
+def concordance_index_fast(event_times, predicted_scores, event_observed):
+    """Fast C-index implementation using vectorized operations."""
+    n = len(event_times)
+    concordant = 0
+    comparable = 0
+
+    for i in range(n):
+        if event_observed[i] == 0:
+            continue
+        for j in range(i + 1, n):
+            if event_times[i] < event_times[j]:
+                comparable += 1
+                if predicted_scores[i] > predicted_scores[j]:
+                    concordant += 1
+                elif predicted_scores[i] == predicted_scores[j]:
+                    concordant += 0.5
+            elif event_times[j] < event_times[i] and event_observed[j] == 1:
+                comparable += 1
+                if predicted_scores[j] > predicted_scores[i]:
+                    concordant += 1
+                elif predicted_scores[j] == predicted_scores[i]:
+                    concordant += 0.5
+
+    if comparable == 0:
+        return 0.5
+    return concordant / comparable
 
 
 def train_model(
@@ -246,8 +279,9 @@ def train_model(
     use_coral=False,
     use_transformer=False,
     epochs=None,
+    val_data=None,
 ):
-    """Train a model with or without CORAL."""
+    """Train a model with or without CORAL, with Early Stopping."""
     if epochs is None:
         epochs = cfg.training.epochs
 
@@ -258,13 +292,20 @@ def train_model(
     )
 
     if use_coral:
-        model_name = "DA-DSN (CORAL)"
+        model_name = "DA-DSN (MMD)"
     elif use_transformer:
-        model_name = "Base+Transformer"
+        model_name = "Base+ResNet1D"
     else:
         model_name = "Base"
 
     print("Training %s model for %d epochs..." % (model_name, epochs))
+
+    # Early Stopping setup
+    patience = cfg.training.early_stopping_patience
+    best_val_cindex = -1
+    best_model_state = None
+    patience_counter = 0
+    best_epoch = 0
 
     for epoch in range(epochs):
         model.train()
@@ -285,7 +326,8 @@ def train_model(
                 _, emb_t = model(x_t, x_td)
 
                 surv_loss = cox_partial_log_likelihood(log_h, ev, dur)
-                c_loss = coral_loss(emb_s, emb_t)
+                # C: Use MMD instead of CORAL for domain adaptation
+                c_loss = mmd_loss(emb_s, emb_t)
                 loss = surv_loss + cfg.training.coral.lambda_coral * c_loss
 
                 optimizer.zero_grad()
@@ -313,6 +355,7 @@ def train_model(
                 total_surv += loss.item()
                 n_batches += 1
 
+        # Print progress every 5 epochs
         if (epoch + 1) % 5 == 0 or epoch == 0 or epochs == 1:
             if use_coral:
                 print(
@@ -330,6 +373,45 @@ def train_model(
                     % (epoch + 1, epochs, total_surv / max(n_batches, 1))
                 )
 
+        # Early Stopping: evaluate on validation set every 5 epochs
+        if val_data is not None and ((epoch + 1) % 5 == 0 or epoch == epochs - 1):
+            val_risk, val_events, val_durations = predict_risk(model, val_data, device)
+            val_cindex = concordance_index_fast(val_durations, val_risk, val_events)
+
+            if val_cindex > best_val_cindex:
+                best_val_cindex = val_cindex
+                best_model_state = {
+                    k: v.cpu().clone() for k, v in model.state_dict().items()
+                }
+                patience_counter = 0
+                best_epoch = epoch + 1
+            else:
+                patience_counter += 1
+
+            if (epoch + 1) % 10 == 0:
+                print(
+                    "    Val C-index: %.4f (Best: %.4f at epoch %d, Patience: %d/%d)"
+                    % (
+                        val_cindex,
+                        best_val_cindex,
+                        best_epoch,
+                        patience_counter,
+                        patience,
+                    )
+                )
+
+            if patience_counter >= patience:
+                print(
+                    "  Early Stopping triggered at epoch %d. Best epoch: %d (C-index: %.4f)"
+                    % (epoch + 1, best_epoch, best_val_cindex)
+                )
+                break
+
+    # Restore best model if early stopping was used
+    if best_model_state is not None:
+        model.load_state_dict(best_model_state)
+        print("  Restored best model from epoch %d" % best_epoch)
+
     return model
 
 
@@ -341,33 +423,6 @@ def compute_c_index_bootstrap(
     Uses subsampling for efficiency on large datasets.
     """
     from sklearn.utils import resample
-
-    def concordance_index_fast(event_times, predicted_scores, event_observed):
-        """Fast C-index implementation using vectorized operations."""
-        n = len(event_times)
-        concordant = 0
-        comparable = 0
-
-        for i in range(n):
-            if event_observed[i] == 0:
-                continue
-            for j in range(i + 1, n):
-                if event_times[i] < event_times[j]:
-                    comparable += 1
-                    if predicted_scores[i] > predicted_scores[j]:
-                        concordant += 1
-                    elif predicted_scores[i] == predicted_scores[j]:
-                        concordant += 0.5
-                elif event_times[j] < event_times[i] and event_observed[j] == 1:
-                    comparable += 1
-                    if predicted_scores[j] > predicted_scores[i]:
-                        concordant += 1
-                    elif predicted_scores[j] == predicted_scores[i]:
-                        concordant += 0.5
-
-        if comparable == 0:
-            return 0.5
-        return concordant / comparable
 
     n = len(events)
     if n > max_samples:
@@ -437,14 +492,41 @@ def run_figure_generation():
     print("Source samples: %d" % source_data["static"].shape[0])
     print("Target samples: %d" % target_data["static"].shape[0])
 
-    src_loader = create_source_only_dataloader(source_data, cfg.training.batch_size)
+    # Split source data into train/val for early stopping (80/20)
+    n_source = source_data["static"].shape[0]
+    np.random.seed(42)
+    idx = np.random.permutation(n_source)
+    split = int(0.8 * n_source)
+    train_idx, val_idx = idx[:split], idx[split:]
+
+    train_data = {
+        "static": source_data["static"][train_idx],
+        "dynamic": source_data["dynamic"][train_idx],
+        "targets": {
+            "event": source_data["targets"]["event"][train_idx],
+            "duration": source_data["targets"]["duration"][train_idx],
+        },
+    }
+    val_data = {
+        "static": source_data["static"][val_idx],
+        "dynamic": source_data["dynamic"][val_idx],
+        "targets": {
+            "event": source_data["targets"]["event"][val_idx],
+            "duration": source_data["targets"]["duration"][val_idx],
+        },
+    }
+
+    src_loader = create_source_only_dataloader(train_data, cfg.training.batch_size)
     tgt_loader = create_source_only_dataloader(target_data, cfg.training.batch_size)
 
     n_static = source_data["static"].shape[1]
     n_dynamic = source_data["dynamic"].shape[2]
 
     print("\n" + "=" * 60)
-    print("ABLATION STUDY (Debug Mode: %d epoch)" % debug_epochs)
+    print(
+        "ABLATION STUDY (Train: %d, Val: %d, Max Epochs: %d)"
+        % (len(train_idx), len(val_idx), debug_epochs)
+    )
     print("=" * 60)
 
     model_base = DADSN(cfg, n_static, n_dynamic, use_transformer=False)
@@ -458,6 +540,7 @@ def run_figure_generation():
         use_coral=False,
         use_transformer=False,
         epochs=debug_epochs,
+        val_data=val_data,
     )
 
     model_base_trans = DADSN(cfg, n_static, n_dynamic, use_transformer=True)
@@ -471,6 +554,7 @@ def run_figure_generation():
         use_coral=False,
         use_transformer=True,
         epochs=debug_epochs,
+        val_data=val_data,
     )
 
     model_coral = DADSN(cfg, n_static, n_dynamic, use_transformer=True)
@@ -484,6 +568,7 @@ def run_figure_generation():
         use_coral=True,
         use_transformer=True,
         epochs=debug_epochs,
+        val_data=val_data,
     )
 
     print("\n" + "=" * 60)
@@ -492,8 +577,8 @@ def run_figure_generation():
 
     models = {
         "Base (Static Only)": model_base,
-        "Base + Transformer": model_base_trans,
-        "DA-DSN (CORAL)": model_coral,
+        "Base + ResNet1D": model_base_trans,
+        "DA-DSN (MMD)": model_coral,
     }
 
     results = {}
@@ -535,7 +620,7 @@ def run_figure_generation():
         os.path.join(save_dir, "figure1_survival_curves.png"),
     )
 
-    print("\nGenerating Figure 2: UMAP CORAL Visualization...")
+    print("\nGenerating Figure 2: UMAP MMD Visualization...")
     generate_figure_2(
         model_base_trans,
         model_coral,

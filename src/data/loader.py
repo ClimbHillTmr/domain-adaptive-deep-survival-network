@@ -51,6 +51,42 @@ class DialysisDataLoader:
             p99 = X_static["超滤量MAX"].quantile(0.99)
             X_static["超滤量MAX"] = X_static["超滤量MAX"].clip(upper=p99)
 
+        # P2: Feature Engineering - Construct clinically meaningful derived features
+        # These features capture physiological relationships known to predict IDH
+
+        # 1. Pulse Pressure (脉压差) = SBP - DBP
+        # Higher pulse pressure indicates arterial stiffness, a risk factor for IDH
+        if "透前收缩压" in X_static.columns and "透前舒张压" in X_static.columns:
+            X_static["脉压差"] = X_static["透前收缩压"] - X_static["透前舒张压"]
+
+        # 2. Mean Arterial Pressure (平均动脉压) = (SBP + 2*DBP) / 3
+        # Better indicator of perfusion pressure than SBP alone
+        if "透前收缩压" in X_static.columns and "透前舒张压" in X_static.columns:
+            X_static["平均动脉压"] = (
+                X_static["透前收缩压"] + 2 * X_static["透前舒张压"]
+            ) / 3
+
+        # 3. Pre-dialysis weight - dry weight difference (超负荷)
+        # Positive values indicate fluid overload, a key IDH risk factor
+        if "透前体重" in X_static.columns and "干体重" in X_static.columns:
+            X_static["超负荷"] = X_static["透前体重"] - X_static["干体重"]
+
+        # 4. Ultrafiltration volume / dry weight ratio (超滤比)
+        # Normalized ultrafiltration target, more meaningful than absolute volume
+        if "超滤量MAX" in X_static.columns and "干体重" in X_static.columns:
+            X_static["超滤比"] = X_static["超滤量MAX"] / (
+                X_static["干体重"].replace(0, np.nan)
+            )
+            X_static["超滤比"] = X_static["超滤比"].fillna(0)
+
+        # 5. Age-dialysis age interaction (透析龄/年龄比)
+        # Proportion of life spent on dialysis
+        if "透析年龄" in X_static.columns and "透析龄" in X_static.columns:
+            X_static["透析龄占比"] = X_static["透析龄"] / (
+                X_static["透析年龄"].replace(0, np.nan)
+            )
+            X_static["透析龄占比"] = X_static["透析龄占比"].fillna(0)
+
         cat_cols = ["性别", "高血压诊断"]
         for col in cat_cols:
             if col in X_static.columns:

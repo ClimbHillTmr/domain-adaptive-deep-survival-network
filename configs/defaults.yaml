@@ -19,22 +19,24 @@ columns:
     - "静脉压"
     - "血流速"
 
-  # Static Patient Features
+  # Static Patient Features (B: 恢复部分特征 8→12，为 MMD 域适应提供足够协方差维度)
   static_cols:
+    # 核心特征（P0 特征选择保留）
     - "透析年龄" # "年龄" is 100% empty, use "透析年龄" instead
-    - "性别"
-    - "透析龄"
-    - "干体重"
-    - "透前收缩压"
-    - "透前舒张压"
-    - "透前体重"
-    - "透前呼吸频率"
-    # REMOVED: "透前体温" - 50.3% NaN + extreme outliers (3663, 3661, etc.)
-    - "透析液钙浓度"
-    # REMOVED: "透析液电导率" - Zero variance (all values = 14.00), provides no predictive signal
+    - "透前收缩压" # Highest correlation with event (0.24)
+    - "透前舒张压" # Second highest correlation (0.085)
+    - "干体重" # LASSO + correlation selected
+    - "透前体重" # LASSO + correlation selected
     - "超滤量MAX" # Will be winsorized to P99
-    - "高血压诊断"
-    - "history_HBP_rate"
+    - "高血压诊断" # LASSO + correlation selected
+    - "透析龄" # Correlation selected
+    # 恢复特征（为域适应提供额外协方差信息）
+    - "性别" # Low corr but provides demographic variance
+    - "透前呼吸频率" # Low corr but provides physiological variance
+    - "history_HBP_rate" # Low corr but provides clinical history variance
+    - "透析液钙浓度" # Low corr but provides treatment parameter variance
+    # REMOVED: "透前体温" - 50.3% NaN + extreme outliers
+    # REMOVED: "脉压差", "平均动脉压", "超负荷", "超滤比", "透析龄占比" - Engineered features
 
   # Target Definition
   targets:
@@ -44,8 +46,15 @@ columns:
 
 # Model Hyperparameters
 model:
-  name: "hybrid" # 'transformer', 'lgbm', or 'hybrid'
+  name: "resnet1d" # 'resnet1d', 'transformer', 'lgbm', or 'hybrid'
 
+  # Dynamic Encoder: ResNet1D (replaces Transformer for seq_len <= 12)
+  dynamic_encoder:
+    type: "resnet1d" # 'resnet1d' or 'transformer'
+    d_model: 64
+    dropout: 0.1
+
+  # Legacy Transformer Config (kept for backward compatibility)
   transformer:
     d_model: 64
     nhead: 4
@@ -61,17 +70,22 @@ model:
 
 # Training Configuration
 training:
-  batch_size: 32
-  epochs: 20
-  learning_rate: 1e-3
-  weight_decay: 1e-4
-  early_stopping_patience: 5
+  batch_size: 64 # Increased for more stable gradient estimation in Cox loss
+  epochs: 50 # Increased from 20 to allow full convergence
+  learning_rate: 5e-4 # Reduced from 1e-3 for more stable Cox loss optimization
+  weight_decay: 1e-3 # Increased for stronger regularization
+  early_stopping_patience: 10 # Increased to allow more patience with 50 epochs
   cv_folds: 5
+  
+  # Training Strategy Upgrades (B+C optimization)
+  use_weighted_cox: false # Disabled: was causing target domain C-index collapse (0.34)
+  event_weight: 1.2 # Reduced from 2.0 to prevent overfitting to events
+  warmup_epochs: 10 # Increased from 5 for smoother LR transition
 
-  # Domain Adaptation (CORAL)
+  # Domain Adaptation (MMD - replaces CORAL for better low-dimensional alignment)
   coral:
     enabled: true
-    lambda_coral: 0.5 # Weight for CORAL loss
+    lambda_coral: 0.5 # Increased from 0.1 for MMD (MMD has smaller scale than CORAL)
 
 # Survival Analysis Configuration
 survival:

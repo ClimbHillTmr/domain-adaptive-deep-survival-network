@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
 import logging
 import os
+from torch.optim.lr_scheduler import CosineAnnealingLR
 
 from src.models.dadsn_model import DADSN, cox_partial_log_likelihood, coral_loss
 from src.metrics.survival_metrics import (
@@ -13,6 +14,64 @@ from src.metrics.survival_metrics import (
 )
 
 log = logging.getLogger(__name__)
+
+
+class WarmupCosineAnnealing:
+    """Learning rate scheduler with warmup and cosine annealing."""
+
+    def __init__(self, optimizer, warmup_epochs, total_epochs, base_lr):
+        self.optimizer = optimizer
+        self.warmup_epochs = warmup_epochs
+        self.total_epochs = total_epochs
+        self.base_lr = base_lr
+        self.current_epoch = 0
+
+    def step(self):
+        self.current_epoch += 1
+        if self.current_epoch <= self.warmup_epochs:
+            # Linear warmup
+            lr = self.base_lr * (self.current_epoch / self.warmup_epochs)
+        else:
+            # Cosine annealing
+            progress = (self.current_epoch - self.warmup_epochs) / (
+                self.total_epochs - self.warmup_epochs
+            )
+            lr = self.base_lr * (1 + np.cos(np.pi * progress)) / 2
+
+        for param_group in self.optimizer.param_groups:
+            param_group["lr"] = lr
+        return lr
+
+
+def weighted_cox_partial_log_likelihood(log_hazard, event, time, event_weight=2.0):
+    """
+    Compute weighted Cox Partial Log-Likelihood.
+    Events get higher weight to handle class imbalance.
+    """
+    log_hazard = log_hazard.squeeze()
+    if log_hazard.dim() == 0 or len(log_hazard) == 0:
+        return torch.tensor(0.0, device=log_hazard.device, requires_grad=True)
+
+    sort_idx = torch.argsort(time, descending=True)
+    log_hazard_sorted = log_hazard[sort_idx]
+    event_sorted = event[sort_idx]
+
+    log_hazard_max = log_hazard_sorted.max()
+    cumsum_exp = torch.cumsum(torch.exp(log_hazard_sorted - log_hazard_max), dim=0)
+    log_risk = torch.log(cumsum_exp + 1e-10) + log_hazard_max
+
+    log_partial_lik = log_hazard_sorted - log_risk
+
+    mask = event_sorted > 0
+    if mask.sum() == 0:
+        return torch.tensor(0.0, device=log_hazard.device, requires_grad=True)
+
+    # Apply weight to events
+    weights = torch.ones_like(log_partial_lik)
+    weights[mask] = event_weight
+
+    neg_log_lik = -(log_partial_lik * weights)[mask].mean()
+    return neg_log_lik
 
 
 def _build_tensor_dataset(data_dict, include_labels=True):
@@ -46,7 +105,15 @@ def create_source_only_dataloader(source_data, batch_size, shuffle=True):
 
 
 def train_epoch_dadsn(
-    model, loader_src, loader_tgt, optimizer, device, coral_lambda=0.0
+    model,
+    loader_src,
+    loader_tgt,
+    optimizer,
+    device,
+    coral_lambda=0.0,
+    use_weighted_cox=False,
+    event_weight=2.0,
+    scheduler=None,
 ):
     model.train()
     total_surv_loss = 0.0
@@ -54,6 +121,12 @@ def train_epoch_dadsn(
     n_batches = 0
 
     iter_tgt = iter(loader_tgt) if loader_tgt else None
+
+    cox_loss_fn = (
+        weighted_cox_partial_log_likelihood
+        if use_weighted_cox
+        else cox_partial_log_likelihood
+    )
 
     for batch_static, batch_dyn, batch_event, batch_time in loader_src:
         batch_static = batch_static.to(device)
@@ -72,13 +145,20 @@ def train_epoch_dadsn(
         batch_event = batch_event[valid_mask]
         batch_time = batch_time[valid_mask]
 
+        # Skip batches with <= 1 sample (BatchNorm requires batch_size > 1 during training)
+        if batch_static.shape[0] <= 1:
+            continue
+
         optimizer.zero_grad()
 
         log_hazard, emb_fuse = model(batch_static, batch_dyn)
 
-        surv_loss = cox_partial_log_likelihood(
-            log_hazard.squeeze(), batch_event, batch_time
-        )
+        if use_weighted_cox:
+            surv_loss = cox_loss_fn(
+                log_hazard.squeeze(), batch_event, batch_time, event_weight
+            )
+        else:
+            surv_loss = cox_loss_fn(log_hazard.squeeze(), batch_event, batch_time)
 
         loss = surv_loss
 
@@ -100,6 +180,9 @@ def train_epoch_dadsn(
 
         loss.backward()
         optimizer.step()
+
+        if scheduler is not None:
+            scheduler.step()
 
         total_surv_loss += surv_loss.item()
         n_batches += 1
@@ -154,9 +237,7 @@ def evaluate_survival_metrics(model, data_dict, device):
             times_grid = np.percentile(duration[event_mask], np.linspace(10, 90, 5))
             times_grid = times_grid[times_grid > 0]
             if len(times_grid) > 0:
-                ibs = integrated_brier_score(
-                    event, duration, risk_scores, times_grid
-                )
+                ibs = integrated_brier_score(event, duration, risk_scores, times_grid)
             else:
                 ibs = np.nan
         else:
@@ -185,6 +266,12 @@ def run_dadsn_experiment(
 
     results_all_seeds = []
 
+    # Training strategy upgrades
+    use_weighted_cox = getattr(config.training, "use_weighted_cox", False)
+    event_weight = getattr(config.training, "event_weight", 2.0)
+    warmup_epochs = getattr(config.training, "warmup_epochs", 5)
+    patience = getattr(config.training, "early_stopping_patience", 10)
+
     for seed in seeds:
         torch.manual_seed(seed)
         np.random.seed(seed)
@@ -205,6 +292,14 @@ def run_dadsn_experiment(
             weight_decay=config.training.weight_decay,
         )
 
+        # Cosine Annealing + Warmup scheduler
+        scheduler = WarmupCosineAnnealing(
+            optimizer,
+            warmup_epochs,
+            config.training.epochs,
+            config.training.learning_rate,
+        )
+
         if use_coral and target_data is not None:
             loader_src, loader_tgt = create_mixed_dataloader(
                 source_data, target_data, config.training.batch_size
@@ -217,6 +312,7 @@ def run_dadsn_experiment(
 
         best_c_index = -1
         best_state = None
+        epochs_no_improve = 0
 
         for epoch in range(config.training.epochs):
             surv_loss, coral_l = train_epoch_dadsn(
@@ -226,23 +322,35 @@ def run_dadsn_experiment(
                 optimizer,
                 device,
                 coral_lambda=config.training.coral.lambda_coral if use_coral else 0.0,
+                use_weighted_cox=use_weighted_cox,
+                event_weight=event_weight,
+                scheduler=scheduler,
             )
 
+            # Evaluate every epoch for early stopping
+            metrics = evaluate_survival_metrics(model, target_data, device)
+            current_lr = scheduler.current_epoch
+
             if (epoch + 1) % 5 == 0 or epoch == 0:
-                metrics = evaluate_survival_metrics(model, target_data, device)
                 log.info(
                     f"Epoch {epoch+1}/{config.training.epochs} | "
                     f"SurvLoss: {surv_loss:.4f} | "
                     f"CoralLoss: {coral_l:.4f} | "
                     f"Target C-index: {metrics['c_index']:.4f} | "
-                    f"Target IBS: {metrics['ibs']:.4f}"
+                    f"Target IBS: {metrics['ibs']:.4f} | "
+                    f"LR: {scheduler.optimizer.param_groups[0]['lr']:.6f}"
                 )
 
-                if metrics["c_index"] > best_c_index:
-                    best_c_index = metrics["c_index"]
-                    best_state = {
-                        k: v.cpu().clone() for k, v in model.state_dict().items()
-                    }
+            # Early stopping based on C-index
+            if metrics["c_index"] > best_c_index:
+                best_c_index = metrics["c_index"]
+                best_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
+                epochs_no_improve = 0
+            else:
+                epochs_no_improve += 1
+                if epochs_no_improve >= patience:
+                    log.info(f"Early stopping at epoch {epoch+1}")
+                    break
 
         if best_state is not None:
             model.load_state_dict(best_state)
