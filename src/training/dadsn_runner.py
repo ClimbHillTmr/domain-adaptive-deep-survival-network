@@ -227,8 +227,11 @@ def evaluate_survival_metrics(model, data_dict, device):
 
     try:
         c_index, _, _, _, _ = concordance_index_censored(event, duration, risk_scores)
-    except Exception as e:
-        log.warning(f"C-index computation failed: {e}")
+    except ValueError as e:
+        log.warning(f"C-index computation failed (invalid input): {e}")
+        c_index = np.nan
+    except TypeError as e:
+        log.warning(f"C-index computation failed (type error): {e}")
         c_index = np.nan
 
     try:
@@ -242,8 +245,11 @@ def evaluate_survival_metrics(model, data_dict, device):
                 ibs = np.nan
         else:
             ibs = np.nan
-    except Exception as e:
-        log.warning(f"IBS computation failed: {e}")
+    except ValueError as e:
+        log.warning(f"IBS computation failed (invalid input): {e}")
+        ibs = np.nan
+    except RuntimeError as e:
+        log.warning(f"IBS computation failed (runtime error): {e}")
         ibs = np.nan
 
     return {"c_index": c_index, "ibs": ibs}
@@ -310,21 +316,39 @@ def run_dadsn_experiment(
             )
             loader_tgt = None
 
+        # Domain adaptation configuration
+        da_config = getattr(config.training, 'domain_adaptation', None)
+        if da_config:
+            da_enabled = getattr(da_config, 'enabled', use_coral)
+            da_method = getattr(da_config, 'method', 'mmd' if use_coral else 'none')
+            da_lambda = getattr(da_config, 'lambda_da', 0.5)
+            da_warmup = getattr(da_config, 'warmup_epochs', 15)
+        else:
+            # Backward compatibility with old config
+            da_enabled = use_coral
+            da_method = 'mmd' if use_coral else 'none'
+            da_lambda = getattr(config.training.coral, 'lambda_coral', 0.5)
+            da_warmup = 15
+
         best_c_index = -1
         best_state = None
         epochs_no_improve = 0
 
         for epoch in range(config.training.epochs):
-            surv_loss, coral_l = train_epoch_dadsn(
+            effective_lambda = da_lambda if da_enabled else 0.0
+            surv_loss, da_l = train_epoch_dadsn(
                 model,
                 loader_src,
                 loader_tgt,
                 optimizer,
                 device,
-                coral_lambda=config.training.coral.lambda_coral if use_coral else 0.0,
+                coral_lambda=effective_lambda,
                 use_weighted_cox=use_weighted_cox,
                 event_weight=event_weight,
                 scheduler=scheduler,
+                da_method=da_method,
+                current_epoch=epoch,
+                da_warmup_epochs=da_warmup,
             )
 
             # Evaluate every epoch for early stopping
@@ -335,7 +359,7 @@ def run_dadsn_experiment(
                 log.info(
                     f"Epoch {epoch+1}/{config.training.epochs} | "
                     f"SurvLoss: {surv_loss:.4f} | "
-                    f"CoralLoss: {coral_l:.4f} | "
+                    f"DALoss({da_method}): {da_l:.4f} | "
                     f"Target C-index: {metrics['c_index']:.4f} | "
                     f"Target IBS: {metrics['ibs']:.4f} | "
                     f"LR: {scheduler.optimizer.param_groups[0]['lr']:.6f}"

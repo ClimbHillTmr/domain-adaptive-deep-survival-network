@@ -19,24 +19,42 @@ columns:
     - "静脉压"
     - "血流速"
 
-  # Static Patient Features (B: 恢复部分特征 8→12，为 MMD 域适应提供足够协方差维度)
+  # Static Patient Features (21: Clinical + Variability + History, both domains exist)
   static_cols:
-    # 核心特征（P0 特征选择保留）
-    - "透析年龄" # "年龄" is 100% empty, use "透析年龄" instead
-    - "透前收缩压" # Highest correlation with event (0.24)
-    - "透前舒张压" # Second highest correlation (0.085)
-    - "干体重" # LASSO + correlation selected
-    - "透前体重" # LASSO + correlation selected
-    - "超滤量MAX" # Will be winsorized to P99
-    - "高血压诊断" # LASSO + correlation selected
-    - "透析龄" # Correlation selected
-    # 恢复特征（为域适应提供额外协方差信息）
-    - "性别" # Low corr but provides demographic variance
-    - "透前呼吸频率" # Low corr but provides physiological variance
-    - "history_HBP_rate" # Low corr but provides clinical history variance
-    - "透析液钙浓度" # Low corr but provides treatment parameter variance
-    # REMOVED: "透前体温" - 50.3% NaN + extreme outliers
-    # REMOVED: "脉压差", "平均动脉压", "超负荷", "超滤比", "透析龄占比" - Engineered features
+    # === Tier 1: Core Hemodynamics (SHAP top features) ===
+    - "透前收缩压" # Pre-dialysis SBP: strongest predictor
+    - "透前舒张压" # Pre-dialysis DBP: perfusion pressure
+    - "透析年龄" # Patient age at dialysis
+    - "性别" # Gender: physiological differences
+    
+    # === Tier 2: Blood Pressure Variability (intradialytic std) ===
+    - "透析中收缩压_std" # SBP variability: hemodynamic instability marker
+    - "透析中舒张压_std" # DBP variability: autonomic dysfunction marker
+    
+    # === Tier 3: Derived Hemodynamic Features (clinical relevance) ===
+    - "透前动脉压" # Pre-dialysis arterial pressure
+    - "透后收缩压" # Post-dialysis SBP: treatment response
+    - "透后舒张压" # Post-dialysis DBP
+    - "透后动脉压" # Post-dialysis arterial pressure
+    
+    # === Tier 4: Volume & Treatment ===
+    - "透前体重" # Pre-dialysis weight
+    - "干体重" # Dry weight: fluid status reference
+    - "超滤量MAX" # Maximum ultrafiltration volume
+    - "透析龄" # Dialysis vintage
+    
+    # === Tier 5: Historical Hypotension Patterns ===
+    - "history_LBP_times_0" # Count of sessions with 0 hypotension events
+    - "history_LBP_times_1" # Count of sessions with 1 hypotension event
+    - "history_LBP_times_2" # Count of sessions with 2 hypotension events
+    - "history_LBP_times_3" # Count of sessions with 3 hypotension events
+    - "history_LBP_times_4" # Count of sessions with 4+ hypotension events
+    - "history_HBP_rate" # Historical hypertension rate
+    
+    # === Tier 6: Clinical Comorbidities & Settings ===
+    - "高血压诊断" # Hypertension diagnosis
+    - "透析液钙浓度" # Dialysate calcium concentration
+    - "透析液电导率" # Dialysate conductivity
 
   # Target Definition
   targets:
@@ -51,13 +69,12 @@ model:
   # Dynamic Encoder: ResNet1D (replaces Transformer for seq_len <= 12)
   dynamic_encoder:
     type: "resnet1d" # 'resnet1d' or 'transformer'
-    d_model: 64
-    dropout: 0.1
+    d_model: 96 # Increased from 64 for better feature representation
 
   # Legacy Transformer Config (kept for backward compatibility)
   transformer:
-    d_model: 64
-    nhead: 4
+    d_model: 96 # Increased from 64 to match dynamic encoder
+    nhead: 6 # Increased from 4 to match larger d_model
     num_layers: 2
     dropout: 0.1
     max_len: 48 # Max sequence length (e.g., 4 hours * 12 measurements/hr)
@@ -82,12 +99,10 @@ training:
   event_weight: 1.2 # Reduced from 2.0 to prevent overfitting to events
   warmup_epochs: 10 # Increased from 5 for smoother LR transition
 
-  # Domain Adaptation (MMD/CORAL/DANN)
-  domain_adaptation:
+  # Domain Adaptation (MMD - replaces CORAL for better low-dimensional alignment)
+  coral:
     enabled: true
-    method: "mmd"  # "mmd", "coral", or "dann"
-    lambda_da: 0.5  # Domain adaptation loss weight
-    warmup_epochs: 15  # Gradual DA loss warmup
+    lambda_coral: 0.1 # Reduced from 0.5 to prevent MMD from dominating Cox loss
 
 # Survival Analysis Configuration
 survival:

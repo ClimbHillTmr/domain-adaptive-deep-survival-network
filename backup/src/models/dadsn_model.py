@@ -76,9 +76,14 @@ class AttentionPool1d(nn.Module):
 
 class ResNet1DEncoder(nn.Module):
     """
-    1D ResNet Encoder for temporal physiological signals.
+    1D ResNet Encoder for dynamic physiological signals.
     Input: (Batch, Seq_len, Features) -> Output: (Batch, d_model)
-    Requires seq_len >= 4 for meaningful temporal convolution.
+    Works for both seq_len=1 (summary mode) and longer sequences.
+
+    Upgraded:
+    - 4 ResNet blocks (was 3)
+    - Increased channel dimensions: 32->64->128->128
+    - Attention pooling
     """
 
     def __init__(self, num_features, d_model, dropout=0.1):
@@ -86,6 +91,7 @@ class ResNet1DEncoder(nn.Module):
         self.input_proj = nn.Conv1d(num_features, 32, kernel_size=1, bias=False)
         self.bn_input = nn.BatchNorm1d(32)
 
+        # Upgraded: 4 blocks with increased channels
         self.blocks = nn.Sequential(
             ResNet1DBlock(32, 64, kernel_size=3, dropout=dropout),
             ResNet1DBlock(64, 64, kernel_size=3, stride=1, dropout=dropout),
@@ -93,6 +99,7 @@ class ResNet1DEncoder(nn.Module):
             ResNet1DBlock(128, 128, kernel_size=3, stride=1, dropout=dropout),
         )
 
+        # Attention pooling
         self.output_proj = nn.Sequential(
             nn.Conv1d(128, d_model, kernel_size=1),
         )
@@ -106,84 +113,6 @@ class ResNet1DEncoder(nn.Module):
         x = self.blocks(x)
         x = self.output_proj(x)
         return self.attn_pool(x)
-
-
-class DynamicFeatureEncoder(nn.Module):
-    """
-    Adaptive encoder for dynamic physiological signals.
-    
-    Automatically selects architecture based on sequence length:
-    - seq_len >= 4: ResNet1D for temporal pattern extraction
-    - seq_len == 1: MLP for summary statistics processing
-    
-    This fixes the issue where ResNet1D was being used on single-frame data,
-    which wasted the temporal modeling capacity.
-    """
-    
-    def __init__(self, num_features, d_model, seq_len=1, dropout=0.1):
-        super(DynamicFeatureEncoder, self).__init__()
-        self.seq_len = seq_len
-        
-        if seq_len >= 4:
-            # Use ResNet1D for temporal sequences
-            self.encoder_type = "resnet1d"
-            self.resnet_encoder = ResNet1DEncoder(num_features, d_model, dropout)
-        else:
-            # Use MLP for summary statistics (seq_len=1)
-            self.encoder_type = "mlp"
-            self.mlp_encoder = nn.Sequential(
-                nn.Linear(num_features, d_model * 2),
-                nn.ReLU(),
-                nn.Dropout(dropout),
-                nn.Linear(d_model * 2, d_model),
-                nn.ReLU(),
-                nn.Dropout(dropout),
-            )
-    
-    def forward(self, x):
-        if self.encoder_type == "resnet1d":
-            return self.resnet_encoder(x)
-        else:
-            # x: (Batch, 1, Features) -> (Batch, Features)
-            x = x.squeeze(1)
-            return self.mlp_encoder(x)
-
-
-class GatedFusion(nn.Module):
-    """
-    Gated fusion mechanism for static and dynamic features.
-    
-    Replaces Cross-Attention when seq_len=1 to avoid attention degradation.
-    Uses learnable gates to control information flow from each branch.
-    """
-    
-    def __init__(self, d_model, dropout=0.1):
-        super(GatedFusion, self).__init__()
-        # Gates compute importance weights for each branch
-        self.gate_static = nn.Sequential(
-            nn.Linear(d_model * 2, d_model),
-            nn.Sigmoid()
-        )
-        self.gate_dyn = nn.Sequential(
-            nn.Linear(d_model * 2, d_model),
-            nn.Sigmoid()
-        )
-        self.layer_norm = nn.LayerNorm(d_model)
-        self.dropout = nn.Dropout(dropout)
-    
-    def forward(self, static_feat, dyn_feat):
-        # static_feat: (B, d_model), dyn_feat: (B, d_model)
-        combined = torch.cat([static_feat, dyn_feat], dim=1)
-        
-        # Compute gate weights
-        gate_s = self.gate_static(combined)
-        gate_d = self.gate_dyn(combined)
-        
-        # Apply gates with residual connections
-        static_out = self.layer_norm(static_feat * gate_s + static_feat)
-        dyn_out = self.layer_norm(dyn_feat * gate_d + dyn_feat)
-        
-        return static_out, dyn_out
 
 
 class CrossAttentionFusion(nn.Module):
@@ -237,17 +166,15 @@ class DADSN(nn.Module):
     Domain-Adaptive Deep Survival Network (DA-DSN).
 
     Architecture:
-        - Dynamic Branch: Adaptive encoder (ResNet1D for sequences, MLP for summaries)
-        - Static Branch: MLP over baseline features
-        - Fusion: Gated fusion (replaces Cross-Attention for seq_len=1)
+        - Dynamic Branch: ResNet1D Encoder over time-series vitals
+          OR zero embedding when use_transformer=False (static-only mode)
+        - Static Branch: Deeper MLP over baseline features
+        - Fusion: Cross-Attention + Concatenate -> FC -> ReLU
         - Output: DeepSurv head (Linear -> log-hazard ratio h(t|x))
-    
-    FIX: Replaced Cross-Attention with Gated Fusion to avoid attention
-    degradation when seq_len=1.
     """
 
     def __init__(
-        self, config, num_static_features, num_dynamic_features, use_transformer=True, seq_len=1
+        self, config, num_static_features, num_dynamic_features, use_transformer=True
     ):
         super(DADSN, self).__init__()
 
@@ -259,17 +186,15 @@ class DADSN(nn.Module):
         dropout = transformer_cfg.dropout
 
         self.d_model = d_model
-        self.seq_len = seq_len
 
         if use_transformer:
-            # Use adaptive encoder that selects architecture based on seq_len
-            self.dynamic_encoder = DynamicFeatureEncoder(
-                num_dynamic_features, d_model, seq_len=seq_len, dropout=dropout
+            self.dynamic_encoder = ResNet1DEncoder(
+                num_dynamic_features, d_model, dropout
             )
         else:
             self.dynamic_encoder = None
 
-        # MLP for static features
+        # Upgraded: Deeper MLP for static features
         self.static_mlp = nn.Sequential(
             nn.Linear(num_static_features, d_model * 2),
             nn.ReLU(),
@@ -279,16 +204,8 @@ class DADSN(nn.Module):
             nn.Dropout(dropout),
         )
 
-        # Gated fusion (replaces Cross-Attention for seq_len=1)
-        # When seq_len=1, Cross-Attention degenerates to bilinear transform
-        if seq_len >= 4:
-            # Use Cross-Attention for true temporal sequences
-            self.fusion_module = CrossAttentionFusion(d_model, dropout)
-            self.fusion_type = "cross_attn"
-        else:
-            # Use Gated Fusion for summary statistics
-            self.fusion_module = GatedFusion(d_model, dropout)
-            self.fusion_type = "gated"
+        # Upgraded: Cross-Attention fusion
+        self.cross_attn = CrossAttentionFusion(d_model, dropout)
 
         self.fusion = nn.Sequential(
             nn.Linear(d_model * 2, d_model),
@@ -310,11 +227,8 @@ class DADSN(nn.Module):
 
         emb_static = self.static_mlp(x_static)
 
-        # Apply fusion module
-        if self.fusion_type == "cross_attn":
-            emb_static_ca, emb_dyn_ca = self.fusion_module(emb_static, emb_dyn)
-        else:
-            emb_static_ca, emb_dyn_ca = self.fusion_module(emb_static, emb_dyn)
+        # Cross-Attention fusion
+        emb_static_ca, emb_dyn_ca = self.cross_attn(emb_static, emb_dyn)
 
         emb_fuse = torch.cat([emb_dyn_ca, emb_static_ca], dim=1)
         emb_fuse = self.fusion(emb_fuse)
@@ -430,3 +344,53 @@ def mmd_loss(source, target, kernel_mul=2.0, kernel_num=5):
         mmd += K_XX.mean() + K_YY.mean() - K_XY.mean() - K_YX.mean()
 
     return mmd / kernel_num
+
+
+class GradientReversalFunction(torch.autograd.Function):
+    """
+    Gradient Reversal Layer (GRL) for DANN.
+    During forward pass: identity function
+    During backward pass: multiply gradient by -lambda
+    """
+
+    @staticmethod
+    def forward(ctx, x, lambda_):
+        ctx.lambda_ = lambda_
+        return x.view_as(x)
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        return grad_output.neg() * ctx.lambda_, None
+
+
+def gradient_reversal(x, lambda_=1.0):
+    """Apply gradient reversal to input tensor."""
+    return GradientReversalFunction.apply(x, lambda_)
+
+
+class DomainClassifier(nn.Module):
+    """
+    Domain classifier for DANN.
+    Predicts whether input comes from source (0) or target (1) domain.
+    """
+
+    def __init__(self, input_dim, hidden_dim=128):
+        super(DomainClassifier, self).__init__()
+        self.classifier = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.BatchNorm1d(hidden_dim),
+            nn.ReLU(inplace=True),
+            nn.Dropout(0.3),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.BatchNorm1d(hidden_dim),
+            nn.ReLU(inplace=True),
+            nn.Dropout(0.3),
+            nn.Linear(hidden_dim, hidden_dim // 2),
+            nn.BatchNorm1d(hidden_dim // 2),
+            nn.ReLU(inplace=True),
+            nn.Dropout(0.2),
+            nn.Linear(hidden_dim // 2, 1),
+        )
+
+    def forward(self, x):
+        return self.classifier(x)
