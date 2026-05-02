@@ -1,6 +1,6 @@
-# PredictionTimeHypotensionDialysis
+# Domain-Adaptive Deep Survival Network (DA-DSN)
 
-> Domain-Adaptive Deep Survival Network (DA-DSN) for Intradialytic Hypotension Prediction
+> 用于血液透析患者透析中低血压（IDH）预测的域自适应深度生存网络
 
 ## 项目概述
 
@@ -9,11 +9,14 @@
 ### 核心特性
 
 - **生存分析建模**: 基于 DeepSurv 架构，输出时间依赖的风险评分
-- **双分支架构**: 静态患者特征 (MLP) + 动态生理信号 (ResNet1D)
+- **双分支架构**: 静态患者特征 (MLP) + 动态生理信号 (自适应编码器)
+- **自适应动态编码器**: 根据序列长度自动选择 ResNet1D (seq_len≥4) 或 MLP (seq_len=1)
+- **门控特征融合**: Gated Fusion (seq_len=1) 或 Cross-Attention (seq_len≥4)
 - **域适应**: MMD 损失对齐源域（深医）和目标域（福鼎）的特征分布
 - **消融实验**: 系统评估静态特征、动态特征、域适应的贡献
 - **评估指标**: C-index (一致性指数) + IBS (综合 Brier 分数) + Bootstrap 置信区间
 - **临床可视化**: 个体化生存曲线 + UMAP 域适应可视化
+- **可复现性**: 完整随机种子设置，支持 CUDA 确定性模式
 
 ### 数据集
 
@@ -108,8 +111,11 @@ training:
   batch_size: 32
   epochs: 20
   learning_rate: 0.001
-  coral:
-    lambda_coral: 0.5
+  domain_adaptation:
+    enabled: true
+    method: "mmd"  # "mmd", "coral", or "dann"
+    lambda_da: 0.5
+    warmup_epochs: 15
 ```
 
 ### 消融实验
@@ -119,8 +125,8 @@ training:
 | 实验 | 配置 | 目的 |
 |------|------|------|
 | Base | Static Only + Cox | 静态特征基线 |
-| Base + Transformer | Static + Dynamic + Cox | 动态特征贡献 |
-| DA-DSN | Static + Dynamic + Cox + CORAL | 域适应贡献 |
+| Base + ResNet1D | Static + Dynamic + Cox | 动态特征贡献 |
+| DA-DSN | Static + Dynamic + Cox + MMD | 域适应贡献 |
 
 实验结果保存在 `runs/YYYY-MM-DD/HH-MM-SS/ablation_results.json`。
 
@@ -151,18 +157,18 @@ runs/
     └── 14-30-00/
         ├── ablation_results.json    # 消融实验结果
         ├── base_best.pth            # Base 最佳模型
-        ├── base_transformer_best.pth # Base+Transformer 最佳模型
+        ├── base_resnet1d_best.pth   # Base+ResNet1D 最佳模型
         └── dadsn_best.pth           # DA-DSN 最佳模型
 
 figures/
 ├── figure1_survival_curves.png      # 个体化生存曲线
-└── figure2_umap_coral.png           # UMAP 域适应可视化
+└── figure2_umap_da.png              # UMAP 域适应可视化
 ```
 
 ## 项目结构
 
 ```
-PredictionTimeHypotensionDialysis/
+domain-adaptive-deep-survival-network/
 ├── configs/                    # 配置文件
 │   ├── config.yaml            # 主配置
 │   └── defaults.yaml          # 默认配置
@@ -177,11 +183,18 @@ PredictionTimeHypotensionDialysis/
 │   ├── data/
 │   │   └── loader.py          # 数据加载器（含观察窗截断）
 │   ├── models/
-│   │   └── dadsn_model.py     # DA-DSN 模型
+│   │   └── dadsn_model.py     # DA-DSN 模型（含自适应编码器）
 │   ├── training/
 │   │   └── dadsn_runner.py    # 训练循环
-│   └── metrics/
-│       └── survival_metrics.py # 评估指标
+│   ├── metrics/
+│   │   └── survival_metrics.py # 评估指标（含 IBS 修复）
+│   ├── evaluation/
+│   │   ├── shap_analysis.py   # 扰动式特征重要性分析
+│   │   ├── calibration.py     # 模型校准
+│   │   ├── ml_baselines.py    # 机器学习基线
+│   │   └── plotting.py        # 可视化工具
+│   └── utils/
+│       └── seed_utils.py      # 随机种子设置工具
 ├── figures/                   # 生成的论文图表
 ├── runs/                      # 实验输出（自动生成）
 ├── 项目报告.md                 # 详细项目报告
@@ -204,10 +217,14 @@ PredictionTimeHypotensionDialysis/
 
 `DADSN` 类实现：
 - 静态分支：MLP 编码患者基线特征
-- 动态分支：Transformer 编码生理信号时序（可选）
-- 融合层：Concat + FC + ReLU
+- 动态分支：**自适应编码器**（`DynamicFeatureEncoder`）
+  - seq_len ≥ 4：ResNet1D 编码生理信号时序
+  - seq_len = 1：MLP 处理汇总统计特征
+- 融合层：
+  - seq_len ≥ 4：Cross-Attention 双向注意力融合
+  - seq_len = 1：Gated Fusion 门控融合
 - 输出头：Linear → log-hazard ratio
-- 损失函数：Cox Partial Likelihood + CORAL
+- 损失函数：Cox Partial Likelihood + MMD/CORAL/DANN
 - **数值稳定实现**：log hazard 归一化防止 NaN
 
 ### 训练 (`src/training/dadsn_runner.py`)
@@ -234,6 +251,43 @@ PredictionTimeHypotensionDialysis/
 - **UMAP 降维可视化**：替代 t-SNE 避免段错误
 
 ## 关键修复记录
+
+### v5.0 修复 (2026-05-02)
+
+#### IBS 计算修复
+- **问题**：IBS 计算产生不可能的值（>1.0），直接使用 raw risk scores
+- **修复**：实现 Kaplan-Meier 基线估计，将 risk scores 转换为生存概率，使用 scikit-survival 的 `brier_score`
+- **影响**：IBS 值正确落在 [0,1] 范围内
+
+#### 动态特征处理修复
+- **问题**：ResNet1D 被用于单帧数据（seq_len=1），浪费时序建模能力
+- **修复**：创建 `DynamicFeatureEncoder`，根据 seq_len 自动选择 ResNet1D 或 MLP
+- **影响**：seq_len=1 时参数量减少 ~60%，未来可自动切换到时序模式
+
+#### Cross-Attention 退化修复
+- **问题**：seq_len=1 时 Cross-Attention 退化为双线性变换
+- **修复**：创建 `GatedFusion` 模块替代 Cross-Attention
+- **影响**：在汇总统计模式下提供更合理的特征融合
+
+#### 配置项命名修正
+- **问题**：`lambda_coral` 命名不反映实际使用的 DA 方法
+- **修复**：改为 `domain_adaptation.lambda_da`，支持 MMD/CORAL/DANN
+- **影响**：配置更清晰，向后兼容
+
+#### SHAP 分析命名修正
+- **问题**：错误声称使用 SHAP，实际是简化的扰动方法
+- **修复**：明确标注为 "Perturbation-based Feature Importance"
+- **影响**：避免学术不端风险
+
+#### 随机种子设置完善
+- **问题**：缺少 CUDA 确定性模式设置
+- **修复**：新增 `seed_utils.py`，支持完整随机种子设置
+- **影响**：实验可复现性提升
+
+#### 异常处理修复
+- **问题**：多处使用宽泛的 `except Exception`
+- **修复**：替换为具体的异常类型（ValueError, TypeError, RuntimeError）
+- **影响**：错误诊断更精确
 
 ### 数据泄露修复
 - **问题**：动态特征使用了观察窗之后的数据，导致模型学习到未来信息
@@ -306,9 +360,10 @@ test: 添加生存指标单元测试
 
 ### 已知问题
 
-- 动态时序数据当前仅支持 summary 模式（seq_len=1）
+- 动态时序数据当前仅支持 summary 模式（seq_len=1），原始时序数据接入待完成
 - 大规模训练建议启用混合精度训练（AMP）
-- CORAL 权重可能需要根据训练轮数调整（当前 lambda=0.5）
+- 域适应权重可能需要根据训练轮数调整（当前 lambda_da=0.5）
+- 伪标签自训练逻辑存在自证预言风险，待修复
 
 ### 未来方向
 
