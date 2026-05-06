@@ -1,0 +1,205 @@
+{
+  "feature_count": 63,
+  "feature_names": [
+    "delta_超滤率绝对_vs_hist",
+    "delta_超滤率绝对_vs_hist_ratio",
+    "delta_超滤量MAX_vs_hist",
+    "delta_超滤量MAX_vs_hist_ratio",
+    "delta_透前体重_vs_hist",
+    "delta_透前体重_vs_hist_ratio",
+    "delta_透前收缩压_vs_hist",
+    "delta_透前收缩压_vs_hist_ratio",
+    "delta_透前舒张压_vs_hist",
+    "delta_透前舒张压_vs_hist_ratio",
+    "history_HBP",
+    "history_HBP_rate",
+    "history_LBP_times_0_rate",
+    "history_LBP_times_1_rate",
+    "history_LBP_times_2_rate",
+    "history_LBP_times_3_rate",
+    "history_LBP_times_4_rate",
+    "recent1_idh",
+    "recent3_idh_rate",
+    "recent3_mean_et_event",
+    "recent3_超滤率_绝对_mean",
+    "recent3_超滤率_绝对_slope",
+    "recent3_超滤量MAX_mean",
+    "recent3_超滤量MAX_slope",
+    "recent3_透前体重_mean",
+    "recent3_透前体重_slope",
+    "recent3_透前动脉压_mean",
+    "recent3_透前动脉压_slope",
+    "recent3_透前收缩压_mean",
+    "recent3_透前收缩压_slope",
+    "recent5_idh_rate",
+    "recent5_mean_et_event",
+    "历史平均超滤率_mean",
+    "历史平均超滤量MAX",
+    "历史平均透中低血压_计算",
+    "历史平均透前体重",
+    "历史平均透前收缩压",
+    "历史平均透前舒张压",
+    "容量超负荷比",
+    "平均动脉压",
+    "性别",
+    "抗凝剂类型_code",
+    "瘘管位置_code",
+    "瘘管类型_code",
+    "脉压差",
+    "超滤比",
+    "超滤率_绝对",
+    "超滤量MAX",
+    "透前体重",
+    "透前体重-干体重",
+    "透前动脉压",
+    "透前呼吸频率",
+    "透前收缩压",
+    "透前舒张压",
+    "透析年龄",
+    "透析方式_code",
+    "透析液电导率",
+    "透析液钙浓度",
+    "透析龄",
+    "透析龄_天数",
+    "透析龄占比",
+    "首次透析年龄",
+    "高血压诊断"
+  ],
+  "models": {
+    "tt_small_deep": {
+      "config": {
+        "name": "tt_small_deep",
+        "d_model": 64,
+        "num_layers": 3,
+        "nhead": 4,
+        "dropout": 0.1,
+        "lr": 0.0007,
+        "head_lr": 0.0001,
+        "top_encoder_lr": 7e-05,
+        "full_lr": 3e-05,
+        "batch_size": 384
+      },
+      "source_pretrain": {
+        "best_adapt_val_cindex": 0.6143319938585787,
+        "best_epoch": 5,
+        "zero_shot_test_cindex": 0.6047793785266566
+      },
+      "head_only": {
+        "best_adapt_val_cindex": 0.6143319938585787,
+        "best_epoch": 0,
+        "test_cindex": 0.6047793785266566
+      },
+      "layerwise_da": {
+        "phase_results": [
+          {
+            "phase": "head_only",
+            "best_adapt_val_cindex": 0.6143319938585787,
+            "best_epoch": 0
+          },
+          {
+            "phase": "partial_unfreeze",
+            "best_adapt_val_cindex": 0.61438612583881,
+            "best_epoch": 5
+          },
+          {
+            "phase": "full_finetune",
+            "best_adapt_val_cindex": 0.6349253072932475,
+            "best_epoch": 12
+          }
+        ],
+        "test_cindex": 0.6220770075496372,
+        "gain_vs_zero_shot": 0.0172976290229806
+      }
+    },
+    "tt_mid_wide": {
+      "config": {
+        "name": "tt_mid_wide",
+        "d_model": 80,
+        "num_layers": 2,
+        "nhead": 4,
+        "dropout": 0.1,
+        "lr": 0.0007,
+        "head_lr": 0.0001,
+        "top_encoder_lr": 6e-05,
+        "full_lr": 2.5e-05,
+        "batch_size": 320
+      },
+      "source_pretrain": {
+        "best_adapt_val_cindex": 0.6111085825581374,
+        "best_epoch": 6,
+        "zero_shot_test_cindex": 0.5977781052685025
+      },
+      "head_only": {
+        "best_adapt_val_cindex": 0.611140630844941,
+        "best_epoch": 3,
+        "test_cindex": 0.5978454873620075
+      },
+      "layerwise_da": {
+        "phase_results": [
+          {
+            "phase": "head_only",
+            "best_adapt_val_cindex": 0.611126222581546,
+            "best_epoch": 2
+          },
+          {
+            "phase": "partial_unfreeze",
+            "best_adapt_val_cindex": 0.6111422467249479,
+            "best_epoch": 2
+          },
+          {
+            "phase": "full_finetune",
+            "best_adapt_val_cindex": 0.6315968637923572,
+            "best_epoch": 12
+          }
+        ],
+        "test_cindex": 0.6172784418091587,
+        "gain_vs_zero_shot": 0.019500336540656193
+      }
+    },
+    "tt_mid_deep": {
+      "config": {
+        "name": "tt_mid_deep",
+        "d_model": 80,
+        "num_layers": 3,
+        "nhead": 4,
+        "dropout": 0.12,
+        "lr": 0.0006,
+        "head_lr": 0.0001,
+        "top_encoder_lr": 6e-05,
+        "full_lr": 2e-05,
+        "batch_size": 256
+      },
+      "source_pretrain": {
+        "best_adapt_val_cindex": 0.6168549211760267,
+        "best_epoch": 1,
+        "zero_shot_test_cindex": 0.6040058490342942
+      },
+      "head_only": {
+        "best_adapt_val_cindex": 0.6169816330999015,
+        "best_epoch": 3,
+        "test_cindex": 0.6041770902485287
+      },
+      "layerwise_da": {
+        "phase_results": [
+          {
+            "phase": "head_only",
+            "best_adapt_val_cindex": 0.6169796132498929,
+            "best_epoch": 3
+          },
+          {
+            "phase": "partial_unfreeze",
+            "best_adapt_val_cindex": 0.6183587668357865,
+            "best_epoch": 5
+          },
+          {
+            "phase": "full_finetune",
+            "best_adapt_val_cindex": 0.6362850703190582,
+            "best_epoch": 12
+          }
+        ],
+        "test_cindex": 0.6260578007337518,
+        "gain_vs_zero_shot": 0.022051951699457617
+      }
+    }
+  }
+}

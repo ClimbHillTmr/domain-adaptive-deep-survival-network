@@ -1,0 +1,198 @@
+{
+  "feature_names": [
+    "pre60_blood_flow_cv",
+    "pre60_blood_flow_delta",
+    "pre60_blood_flow_max",
+    "pre60_blood_flow_mean",
+    "pre60_blood_flow_min",
+    "pre60_blood_flow_slope",
+    "pre60_blood_flow_std",
+    "pre60_dbp_cv",
+    "pre60_dbp_delta",
+    "pre60_dbp_max",
+    "pre60_dbp_mean",
+    "pre60_dbp_min",
+    "pre60_dbp_slope",
+    "pre60_dbp_std",
+    "pre60_dialysate_temp_cv",
+    "pre60_dialysate_temp_delta",
+    "pre60_dialysate_temp_max",
+    "pre60_dialysate_temp_mean",
+    "pre60_dialysate_temp_min",
+    "pre60_dialysate_temp_slope",
+    "pre60_dialysate_temp_std",
+    "pre60_pulse_cv",
+    "pre60_pulse_delta",
+    "pre60_pulse_max",
+    "pre60_pulse_mean",
+    "pre60_pulse_min",
+    "pre60_pulse_slope",
+    "pre60_pulse_std",
+    "pre60_sbp_cv",
+    "pre60_sbp_delta",
+    "pre60_sbp_max",
+    "pre60_sbp_mean",
+    "pre60_sbp_min",
+    "pre60_sbp_slope",
+    "pre60_sbp_std",
+    "pre60_ufr_cv",
+    "pre60_ufr_delta",
+    "pre60_ufr_max",
+    "pre60_ufr_mean",
+    "pre60_ufr_min",
+    "pre60_ufr_slope",
+    "pre60_ufr_std",
+    "pre60_venous_cv",
+    "pre60_venous_delta",
+    "pre60_venous_max",
+    "pre60_venous_mean",
+    "pre60_venous_min",
+    "pre60_venous_slope",
+    "pre60_venous_std",
+    "容量超负荷比",
+    "干体重",
+    "平均动脉压",
+    "性别",
+    "脉压差",
+    "透前体重",
+    "透前收缩压",
+    "透前舒张压",
+    "透析年龄",
+    "透析龄"
+  ],
+  "landmark_meta": {
+    "source_raw_n": 222836,
+    "target_raw_n": 76519,
+    "source_label_n": 216553,
+    "target_label_n": 75224,
+    "source_merged_n": 216626,
+    "target_merged_n": 75224,
+    "source_landmark_n": 207953,
+    "target_landmark_n": 63342,
+    "source_landmark_event_rate": 0.10333584992762787,
+    "target_landmark_event_rate": 0.2650532032458716
+  },
+  "split": {
+    "source_n": 207953,
+    "adapt_train_n": 6334,
+    "adapt_val_n": 6334,
+    "test_n": 50674
+  },
+  "source_pretrain": {
+    "best_adapt_val_cindex": 0.8004430121062712,
+    "best_epoch": 2,
+    "zero_shot_test_cindex": 0.7993784176961921,
+    "event_metrics": {
+      "precision": 0.5901273173996052,
+      "recall": 0.5901273173996052,
+      "threshold": 0.22905486877352635
+    },
+    "history": [
+      {
+        "epoch": 1,
+        "adapt_val_cindex": 0.794001955937582
+      },
+      {
+        "epoch": 2,
+        "adapt_val_cindex": 0.8004430121062712
+      },
+      {
+        "epoch": 3,
+        "adapt_val_cindex": 0.7888050424738356
+      },
+      {
+        "epoch": 4,
+        "adapt_val_cindex": 0.7864680002547748
+      },
+      {
+        "epoch": 5,
+        "adapt_val_cindex": 0.7819613762260746
+      }
+    ]
+  },
+  "head_only_clean": {
+    "best_adapt_val_cindex": 0.8004430121062712,
+    "best_epoch": 0,
+    "test_cindex": 0.7993784176961921,
+    "event_metrics": {
+      "precision": 0.5901273173996052,
+      "recall": 0.5901273173996052,
+      "threshold": 0.22905486877352635
+    },
+    "history": [
+      {
+        "epoch": 1,
+        "adapt_val_cindex": 0.772304727648266
+      }
+    ]
+  },
+  "v11_4_landmark60_da": {
+    "phase_results": [
+      {
+        "phase": "head_only",
+        "best_adapt_val_cindex": 0.8004430121062712,
+        "best_epoch": 0
+      },
+      {
+        "phase": "partial_unfreeze",
+        "best_adapt_val_cindex": 0.8004430121062712,
+        "best_epoch": 0
+      },
+      {
+        "phase": "full_finetune",
+        "best_adapt_val_cindex": 0.8004430121062712,
+        "best_epoch": 0
+      }
+    ],
+    "test_cindex": 0.7993784176961921,
+    "event_metrics": {
+      "precision": 0.5901273173996052,
+      "recall": 0.5901273173996052,
+      "threshold": 0.22905486877352635
+    },
+    "history": [
+      {
+        "phase": "head_only",
+        "epoch": 1,
+        "adapt_val_cindex": 0.7863013624578911
+      },
+      {
+        "phase": "partial_unfreeze",
+        "epoch": 1,
+        "adapt_val_cindex": 0.7882168745095173
+      },
+      {
+        "phase": "partial_unfreeze",
+        "epoch": 2,
+        "adapt_val_cindex": 0.7888398272325645
+      },
+      {
+        "phase": "full_finetune",
+        "epoch": 1,
+        "adapt_val_cindex": 0.7873483131859854
+      },
+      {
+        "phase": "full_finetune",
+        "epoch": 2,
+        "adapt_val_cindex": 0.7895526797543538
+      },
+      {
+        "phase": "full_finetune",
+        "epoch": 3,
+        "adapt_val_cindex": 0.7921127674871561
+      }
+    ],
+    "delta_vs_zero_shot_test": 0.0,
+    "delta_vs_head_only_test": 0.0
+  },
+  "config": {
+    "obs_minutes": 60.0,
+    "landmark_minutes": 60.0,
+    "source_replay_weight": 0.2,
+    "conditional_align_weight": 0.1,
+    "pretrain_max_epochs": 24,
+    "head_only_max_epochs": 3,
+    "partial_unfreeze_max_epochs": 5,
+    "full_finetune_max_epochs": 12
+  }
+}

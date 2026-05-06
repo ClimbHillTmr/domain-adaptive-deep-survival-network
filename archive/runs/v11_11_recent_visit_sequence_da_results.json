@@ -1,0 +1,80 @@
+{
+  "config": {
+    "source_data": "data_preprocessing/data/深医_final_data.csv",
+    "target_data": "data_preprocessing/data/福鼎_final_data.csv",
+    "event_col": "透中低血压_计算",
+    "duration_col": "et_min",
+    "batch_size": 512,
+    "pretrain_max_epochs": 24,
+    "pretrain_patience": 3,
+    "head_only_max_epochs": 3,
+    "head_only_patience": 1,
+    "partial_unfreeze_max_epochs": 5,
+    "partial_unfreeze_patience": 2,
+    "full_finetune_max_epochs": 12,
+    "full_finetune_patience": 3,
+    "lr": 0.0008,
+    "head_lr": 0.0001,
+    "top_encoder_lr": 7e-05,
+    "full_lr": 3e-05,
+    "d_model": 64,
+    "dropout": 0.15,
+    "target_adapt_ratio": 0.2,
+    "target_val_ratio_within_adapt": 0.5,
+    "source_replay_weight": 0.2,
+    "conditional_align_weight": 0.1,
+    "device": "cuda",
+    "seed": 42,
+    "results_path": "runs/v11_11_recent_visit_sequence_da_results.json",
+    "seq_d_model": 32,
+    "num_transformer_layers": 2,
+    "num_heads": 4,
+    "seq_len": 3,
+    "seq_encoder_type": "gru",
+    "benchmark_batch_size": 512,
+    "eval_batch_size": 1024
+  },
+  "feature_count": 63,
+  "visit_feature_count": 8,
+  "visit_feature_names": [
+    "透中低血压_计算",
+    "et_min",
+    "透前收缩压",
+    "透前舒张压",
+    "透前动脉压",
+    "透前体重",
+    "超滤量MAX",
+    "超滤率_绝对"
+  ],
+  "source_pretrain": {
+    "best_adapt_val_cindex": 0.6156483974375375,
+    "best_epoch": 14,
+    "zero_shot_test_cindex": 0.6077975860174415
+  },
+  "head_only": {
+    "best_adapt_val_cindex": 0.615682061604348,
+    "best_epoch": 3,
+    "test_cindex": 0.6078060586210123
+  },
+  "layerwise_da": {
+    "phase_results": [
+      {
+        "phase": "head_only",
+        "best_adapt_val_cindex": 0.6156483974375375,
+        "best_epoch": 0
+      },
+      {
+        "phase": "partial_unfreeze",
+        "best_adapt_val_cindex": 0.6156483974375375,
+        "best_epoch": 0
+      },
+      {
+        "phase": "full_finetune",
+        "best_adapt_val_cindex": 0.62404289407341,
+        "best_epoch": 12
+      }
+    ],
+    "test_cindex": 0.6156295463028012,
+    "gain_vs_zero_shot": 0.007831960285359707
+  }
+}

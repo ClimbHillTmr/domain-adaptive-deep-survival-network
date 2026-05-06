@@ -1,0 +1,21 @@
+{
+  "Source-Only": {
+    "target_cindex": 0.5629372470842096
+  },
+  "CORAL": {
+    "target_cindex": 0.5608846540204377
+  },
+  "MMD": {
+    "target_cindex": 0.560360627311651
+  },
+  "Label-Shift-Aware MMD": {
+    "target_cindex": 0.5626077121823387,
+    "pos_weight": 2.7660838030390256,
+    "neg_weight": 0.7182097586352315
+  },
+  "Supervised DA Fine-tune": {
+    "zero_shot_target_cindex": 0.5629372470842096,
+    "target_cindex": 0.5555192316407584,
+    "improvement_vs_zero_shot": -0.007418015443451109
+  }
+}

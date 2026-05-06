@@ -1,0 +1,198 @@
+{
+  "feature_names": [
+    "pre60_blood_flow_cv",
+    "pre60_blood_flow_delta",
+    "pre60_blood_flow_max",
+    "pre60_blood_flow_mean",
+    "pre60_blood_flow_min",
+    "pre60_blood_flow_slope",
+    "pre60_blood_flow_std",
+    "pre60_dbp_cv",
+    "pre60_dbp_delta",
+    "pre60_dbp_max",
+    "pre60_dbp_mean",
+    "pre60_dbp_min",
+    "pre60_dbp_slope",
+    "pre60_dbp_std",
+    "pre60_dialysate_temp_cv",
+    "pre60_dialysate_temp_delta",
+    "pre60_dialysate_temp_max",
+    "pre60_dialysate_temp_mean",
+    "pre60_dialysate_temp_min",
+    "pre60_dialysate_temp_slope",
+    "pre60_dialysate_temp_std",
+    "pre60_pulse_cv",
+    "pre60_pulse_delta",
+    "pre60_pulse_max",
+    "pre60_pulse_mean",
+    "pre60_pulse_min",
+    "pre60_pulse_slope",
+    "pre60_pulse_std",
+    "pre60_sbp_cv",
+    "pre60_sbp_delta",
+    "pre60_sbp_max",
+    "pre60_sbp_mean",
+    "pre60_sbp_min",
+    "pre60_sbp_slope",
+    "pre60_sbp_std",
+    "pre60_ufr_cv",
+    "pre60_ufr_delta",
+    "pre60_ufr_max",
+    "pre60_ufr_mean",
+    "pre60_ufr_min",
+    "pre60_ufr_slope",
+    "pre60_ufr_std",
+    "pre60_venous_cv",
+    "pre60_venous_delta",
+    "pre60_venous_max",
+    "pre60_venous_mean",
+    "pre60_venous_min",
+    "pre60_venous_slope",
+    "pre60_venous_std",
+    "容量超负荷比",
+    "干体重",
+    "平均动脉压",
+    "性别",
+    "脉压差",
+    "透前体重",
+    "透前收缩压",
+    "透前舒张压",
+    "透析年龄",
+    "透析龄"
+  ],
+  "split": {
+    "source_n": 222836,
+    "adapt_train_n": 7651,
+    "adapt_val_n": 7652,
+    "test_n": 61216
+  },
+  "source_pretrain": {
+    "best_adapt_val_cindex": 0.9018253225650037,
+    "best_epoch": 9,
+    "zero_shot_test_cindex": 0.8879936271599946,
+    "history": [
+      {
+        "epoch": 1,
+        "adapt_val_cindex": 0.8647936057278105
+      },
+      {
+        "epoch": 2,
+        "adapt_val_cindex": 0.8807852438446789
+      },
+      {
+        "epoch": 3,
+        "adapt_val_cindex": 0.8914431364475699
+      },
+      {
+        "epoch": 4,
+        "adapt_val_cindex": 0.8971386432924054
+      },
+      {
+        "epoch": 5,
+        "adapt_val_cindex": 0.8989004507618998
+      },
+      {
+        "epoch": 6,
+        "adapt_val_cindex": 0.8995038276202294
+      },
+      {
+        "epoch": 7,
+        "adapt_val_cindex": 0.901160383394195
+      },
+      {
+        "epoch": 8,
+        "adapt_val_cindex": 0.8982629829455845
+      },
+      {
+        "epoch": 9,
+        "adapt_val_cindex": 0.9018253225650037
+      },
+      {
+        "epoch": 10,
+        "adapt_val_cindex": 0.8978830177051225
+      },
+      {
+        "epoch": 11,
+        "adapt_val_cindex": 0.8981451540034203
+      },
+      {
+        "epoch": 12,
+        "adapt_val_cindex": 0.8962350674156969
+      }
+    ]
+  },
+  "head_only_clean": {
+    "best_adapt_val_cindex": 0.9018253225650037,
+    "best_epoch": 0,
+    "test_cindex": 0.8879936271599946,
+    "history": [
+      {
+        "epoch": 1,
+        "adapt_val_cindex": 0.8822250076042695
+      }
+    ]
+  },
+  "v11_2_clean_da": {
+    "phase_results": [
+      {
+        "phase": "head_only",
+        "best_adapt_val_cindex": 0.9018253225650037,
+        "best_epoch": 0
+      },
+      {
+        "phase": "partial_unfreeze",
+        "best_adapt_val_cindex": 0.9018253225650037,
+        "best_epoch": 0
+      },
+      {
+        "phase": "full_finetune",
+        "best_adapt_val_cindex": 0.9018253225650037,
+        "best_epoch": 0
+      }
+    ],
+    "test_cindex": 0.8879936271599946,
+    "history": [
+      {
+        "phase": "head_only",
+        "epoch": 1,
+        "adapt_val_cindex": 0.8946610911952985
+      },
+      {
+        "phase": "partial_unfreeze",
+        "epoch": 1,
+        "adapt_val_cindex": 0.8951772547776161
+      },
+      {
+        "phase": "partial_unfreeze",
+        "epoch": 2,
+        "adapt_val_cindex": 0.8954605738070895
+      },
+      {
+        "phase": "full_finetune",
+        "epoch": 1,
+        "adapt_val_cindex": 0.895748195578833
+      },
+      {
+        "phase": "full_finetune",
+        "epoch": 2,
+        "adapt_val_cindex": 0.8954367432345169
+      },
+      {
+        "phase": "full_finetune",
+        "epoch": 3,
+        "adapt_val_cindex": 0.895879263727982
+      }
+    ],
+    "delta_vs_zero_shot_test": 0.0,
+    "delta_vs_head_only_test": 0.0
+  },
+  "config": {
+    "obs_minutes": 60.0,
+    "source_replay_weight": 0.2,
+    "conditional_align_weight": 0.1,
+    "pretrain_max_epochs": 24,
+    "head_only_max_epochs": 3,
+    "partial_unfreeze_max_epochs": 5,
+    "full_finetune_max_epochs": 12
+  }
+}

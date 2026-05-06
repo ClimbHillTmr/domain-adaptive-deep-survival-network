@@ -1,0 +1,211 @@
+{
+  "feature_names": [
+    "动脉压_mean",
+    "动脉压_std",
+    "动脉压偏离历史",
+    "动脉压偏离历史_ratio",
+    "容量超负荷比",
+    "平均动脉压",
+    "性别",
+    "脉压差",
+    "血流速_mean",
+    "血流速_std",
+    "血流速偏离历史",
+    "血流速偏离历史_ratio",
+    "超滤比",
+    "超滤率_mean",
+    "超滤率_std",
+    "超滤率偏离历史",
+    "超滤率偏离历史_ratio",
+    "透前收缩压偏离历史",
+    "透前收缩压偏离历史_ratio",
+    "透前舒张压偏离历史",
+    "透前舒张压偏离历史_ratio",
+    "透析中收缩压_mean",
+    "透析中收缩压_std",
+    "透析中收缩压偏离历史",
+    "透析中收缩压偏离历史_ratio",
+    "透析中脉搏_mean",
+    "透析中脉搏_std",
+    "透析中脉搏偏离历史",
+    "透析中脉搏偏离历史_ratio",
+    "透析中舒张压_mean",
+    "透析中舒张压_std",
+    "透析中舒张压偏离历史",
+    "透析中舒张压偏离历史_ratio",
+    "透析年龄",
+    "透析液温度_mean",
+    "透析液温度_std",
+    "透析龄",
+    "静脉压_mean",
+    "静脉压_std",
+    "静脉压偏离历史",
+    "静脉压偏离历史_ratio"
+  ],
+  "split": {
+    "source_n": 216604,
+    "adapt_train_n": 7522,
+    "adapt_val_n": 7522,
+    "test_n": 60180
+  },
+  "source_pretrain": {
+    "best_adapt_val_cindex": 0.7302813489474023,
+    "best_epoch": 17,
+    "zero_shot_test_cindex": 0.7121166858615935,
+    "history": [
+      {
+        "epoch": 1,
+        "adapt_val_cindex": 0.671475974422774
+      },
+      {
+        "epoch": 2,
+        "adapt_val_cindex": 0.6800721867461752
+      },
+      {
+        "epoch": 3,
+        "adapt_val_cindex": 0.6873902379841142
+      },
+      {
+        "epoch": 4,
+        "adapt_val_cindex": 0.7001123305918133
+      },
+      {
+        "epoch": 5,
+        "adapt_val_cindex": 0.7012302502432572
+      },
+      {
+        "epoch": 6,
+        "adapt_val_cindex": 0.7010153382023389
+      },
+      {
+        "epoch": 7,
+        "adapt_val_cindex": 0.7074721253965975
+      },
+      {
+        "epoch": 8,
+        "adapt_val_cindex": 0.7120023796526235
+      },
+      {
+        "epoch": 9,
+        "adapt_val_cindex": 0.7145793042936356
+      },
+      {
+        "epoch": 10,
+        "adapt_val_cindex": 0.7125869242451215
+      },
+      {
+        "epoch": 11,
+        "adapt_val_cindex": 0.7185718744773638
+      },
+      {
+        "epoch": 12,
+        "adapt_val_cindex": 0.7171260658411854
+      },
+      {
+        "epoch": 13,
+        "adapt_val_cindex": 0.717408979499061
+      },
+      {
+        "epoch": 14,
+        "adapt_val_cindex": 0.7204619154587739
+      },
+      {
+        "epoch": 15,
+        "adapt_val_cindex": 0.7207969412468722
+      },
+      {
+        "epoch": 16,
+        "adapt_val_cindex": 0.7102581718418366
+      },
+      {
+        "epoch": 17,
+        "adapt_val_cindex": 0.7302813489474023
+      },
+      {
+        "epoch": 18,
+        "adapt_val_cindex": 0.7300602426997908
+      },
+      {
+        "epoch": 19,
+        "adapt_val_cindex": 0.7240583257274759
+      },
+      {
+        "epoch": 20,
+        "adapt_val_cindex": 0.7285001105531238
+      }
+    ]
+  },
+  "head_only_clean": {
+    "best_adapt_val_cindex": 0.7302813489474023,
+    "best_epoch": 0,
+    "test_cindex": 0.7121166858615935,
+    "history": [
+      {
+        "epoch": 1,
+        "adapt_val_cindex": 0.7059774363902103
+      }
+    ]
+  },
+  "v11_1_clean_da": {
+    "phase_results": [
+      {
+        "phase": "head_only",
+        "best_adapt_val_cindex": 0.7302813489474023,
+        "best_epoch": 0
+      },
+      {
+        "phase": "partial_unfreeze",
+        "best_adapt_val_cindex": 0.7302813489474023,
+        "best_epoch": 0
+      },
+      {
+        "phase": "full_finetune",
+        "best_adapt_val_cindex": 0.7302813489474023,
+        "best_epoch": 0
+      }
+    ],
+    "test_cindex": 0.7121166858615935,
+    "history": [
+      {
+        "phase": "head_only",
+        "epoch": 1,
+        "adapt_val_cindex": 0.7173464988054608
+      },
+      {
+        "phase": "partial_unfreeze",
+        "epoch": 1,
+        "adapt_val_cindex": 0.7175280159929031
+      },
+      {
+        "phase": "partial_unfreeze",
+        "epoch": 2,
+        "adapt_val_cindex": 0.7160120512330915
+      },
+      {
+        "phase": "full_finetune",
+        "epoch": 1,
+        "adapt_val_cindex": 0.7181245450287855
+      },
+      {
+        "phase": "full_finetune",
+        "epoch": 2,
+        "adapt_val_cindex": 0.7169860229072536
+      },
+      {
+        "phase": "full_finetune",
+        "epoch": 3,
+        "adapt_val_cindex": 0.7180515611151403
+      }
+    ],
+    "delta_vs_zero_shot_test": 0.0,
+    "delta_vs_head_only_test": 0.0
+  },
+  "config": {
+    "source_replay_weight": 0.2,
+    "conditional_align_weight": 0.1,
+    "pretrain_max_epochs": 24,
+    "head_only_max_epochs": 3,
+    "partial_unfreeze_max_epochs": 5,
+    "full_finetune_max_epochs": 12
+  }
+}

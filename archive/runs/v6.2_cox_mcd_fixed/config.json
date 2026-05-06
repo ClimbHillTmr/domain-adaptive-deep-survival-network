@@ -1,0 +1,32 @@
+{
+  "source_data": "data_preprocessing/data/\u6df1\u533b_final_data.csv",
+  "target_data": "data_preprocessing/data/\u798f\u9f0e_final_data.csv",
+  "static_features": [
+    "\u900f\u6790\u5e74\u9f84",
+    "\u6027\u522b",
+    "\u9996\u6b21\u900f\u6790\u5e74\u9f84",
+    "\u900f\u6790\u9f84",
+    "\u900f\u524d\u6536\u7f29\u538b",
+    "\u900f\u524d\u8212\u5f20\u538b",
+    "\u900f\u524d\u52a8\u8109\u538b",
+    "\u900f\u524d\u4f53\u91cd",
+    "\u5e72\u4f53\u91cd",
+    "\u9ad8\u8840\u538b\u8bca\u65ad",
+    "\u900f\u6790\u65b9\u5f0f",
+    "\u5b9e\u9645\u900f\u6790\u65f6\u957f",
+    "\u8d85\u6ee4\u91cfMAX",
+    "\u8d85\u6ee4\u7387_mean",
+    "\u8d85\u6ee4\u7387_std"
+  ],
+  "event_col": "\u900f\u4e2d\u4f4e\u8840\u538b_\u8ba1\u7b97",
+  "duration_col": "et_min",
+  "d_model": 64,
+  "dropout": 0.1,
+  "learning_rate": 0.001,
+  "batch_size": 256,
+  "epochs": 50,
+  "patience": 10,
+  "mcd_weight": 0.3,
+  "device": "cuda",
+  "seed": 42
+}

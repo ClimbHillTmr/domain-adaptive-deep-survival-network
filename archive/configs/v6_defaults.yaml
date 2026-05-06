@@ -1,0 +1,107 @@
+# v6.0 Configuration
+# Key improvements over v5.x:
+# 1. DeepHit survival model (handles non-PH data)
+# 2. MCD (Maximum Classifier Discrepancy) domain adaptation
+# 3. Previous session features (fixes data leakage)
+# 4. Historical IDH frequency features
+
+# Data Column Definitions
+columns:
+  # Static Patient Features (v6.0: No data leakage - only pre-dialysis and historical features)
+  static_cols:
+    # Demographics
+    - "年龄"
+    - "性别"
+    - "透析年龄"
+    - "首次透析年龄"
+    - "透析龄"
+    
+    # Pre-dialysis vitals (available BEFORE dialysis starts)
+    - "透前收缩压"
+    - "透前舒张压"
+    - "透前动脉压"
+    - "透前体重"
+    
+    # Dry weight
+    - "干体重"
+    
+    # Comorbidities
+    - "高血压诊断"
+    
+    # Dialysis prescription
+    - "透析方式"
+    - "实际透析时长"
+    
+    # Derived features (pre-dialysis only)
+    - "超滤量MAX"
+    - "超滤率_mean"
+    - "超滤率_std"
+    
+    # Historical IDH features
+    - "history_HBP_rate"
+    - "history_HBP_count"
+    
+    # Previous session features (fix data leakage)
+    - "prev_SBP_mean"
+    - "prev_SBP_std"
+    - "prev_DBP_mean"
+    - "prev_DBP_std"
+    - "prev_UF_rate_mean"
+    - "prev_UF_rate_std"
+    - "prev_IDH_event"
+    - "prev_duration"
+    - "prev_pre_SBP"
+    - "prev_pre_DBP"
+    - "prev_pre_weight"
+    - "prev_dry_weight"
+
+  # Target Definition (v6.0: KDOQI criteria if available, fallback to v5 definition)
+  targets:
+    event_col: "透中低血压_计算_v6" # KDOQI: SBP drop >= 20mmHg
+    duration_col: "et_min_v6" # Time to event in minutes
+    label_col: "stage_30_60_120_v6" # Risk stage label
+
+# Model Hyperparameters
+model:
+  name: "v6_deephit_mcd" # v6.0 model
+
+  # DeepHit parameters
+  deephit:
+    d_model: 64
+    num_time_bins: 10
+    dropout: 0.1
+    alpha: 0.5 # Log-likelihood vs ranking loss weight
+    sigma: 0.1 # Ranking loss bandwidth
+
+  # MCD domain adaptation parameters
+  mcd:
+    weight: 0.5 # MCD loss weight
+    num_classifiers: 2 # Number of classifiers for discrepancy
+
+  # Legacy Transformer Config (kept for backward compatibility)
+  transformer:
+    d_model: 64
+    nhead: 4
+    num_layers: 2
+    dropout: 0.1
+    max_len: 48
+
+# Training Configuration
+training:
+  batch_size: 128
+  epochs: 100
+  learning_rate: 1e-3
+  weight_decay: 1e-3
+  early_stopping_patience: 15
+  cv_folds: 5
+  
+  # DeepHit specific
+  use_deephit: true
+  alpha: 0.5
+  sigma: 0.1
+  
+  # Domain Adaptation (MCD)
+  domain_adaptation:
+    enabled: true
+    method: "mcd"  # "mcd" (v6.0), "mmd", "coral", or "dann"
+    lambda_da: 0.5  # Domain adaptation loss weight

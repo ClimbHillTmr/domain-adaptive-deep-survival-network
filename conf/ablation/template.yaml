@@ -1,0 +1,46 @@
+# Ablation Study Configurations
+
+defaults:
+  - ../config
+  - _self_
+
+experiment_name: "ablation_study"
+
+ablations:
+  # 1. 移除临床变量 (处方等)
+  no_clinical:
+    remove_features:
+      - "超滤率_体重归一化"
+      - "超滤率高危Flag"
+      - "超滤率_绝对"
+      - "超滤量MAX"
+      - "透析液温度_mean"
+      - "透析液温度_std"
+      - "透析液钙浓度"
+      - "透析液电导率"
+      - "实际透析时长"
+
+  # 2. 移除历史波动特征
+  no_history:
+    remove_features:
+      - "历史平均透中低血压_计算"
+      - "历史平均超滤率_mean"
+      - "历史平均超滤量MAX"
+      - "历史平均透前体重"
+      - "历史平均透前收缩压"
+      - "历史平均透前舒张压"
+      
+  # 3. 架构消融：退化 KAN 为 Linear
+  no_kan:
+    model:
+      name: "cdan_gsn_linear"
+      
+  # 4. 架构消融：移除 IPCW 删失权重
+  no_ipcw:
+    training:
+      use_ipcw: false
+      
+  # 5. 架构消融：移除 CDAN 鉴别器 (退化为无监督模型)
+  no_cdan:
+    training:
+      adv_weight: 0.0

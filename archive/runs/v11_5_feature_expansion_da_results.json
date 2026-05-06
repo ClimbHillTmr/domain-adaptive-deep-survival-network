@@ -1,0 +1,332 @@
+{
+  "config": {
+    "source_data": "data_preprocessing/data/深医_final_data.csv",
+    "target_data": "data_preprocessing/data/福鼎_final_data.csv",
+    "event_col": "透中低血压_计算",
+    "duration_col": "et_min",
+    "batch_size": 512,
+    "pretrain_max_epochs": 24,
+    "pretrain_patience": 3,
+    "head_only_max_epochs": 3,
+    "head_only_patience": 1,
+    "partial_unfreeze_max_epochs": 5,
+    "partial_unfreeze_patience": 2,
+    "full_finetune_max_epochs": 12,
+    "full_finetune_patience": 3,
+    "lr": 0.001,
+    "head_lr": 0.0001,
+    "top_encoder_lr": 5e-05,
+    "full_lr": 2e-05,
+    "d_model": 64,
+    "dropout": 0.2,
+    "target_adapt_ratio": 0.2,
+    "target_val_ratio_within_adapt": 0.5,
+    "source_replay_weight": 0.2,
+    "conditional_align_weight": 0.1,
+    "device": "cuda",
+    "seed": 42,
+    "results_path": "runs/v11_5_feature_expansion_da_results.json"
+  },
+  "groups": {
+    "A_core7": {
+      "group_name": "A_core7",
+      "feature_count": 7,
+      "feature_names": [
+        "透析年龄",
+        "性别",
+        "透析龄",
+        "超滤比",
+        "容量超负荷比",
+        "脉压差",
+        "平均动脉压"
+      ],
+      "split": {
+        "source_n": 216604,
+        "adapt_train_n": 7522,
+        "adapt_val_n": 7522,
+        "test_n": 60180,
+        "source_event_rate": 0.13760133700208677,
+        "adapt_train_event_rate": 0.38061685721882477,
+        "adapt_val_event_rate": 0.38061685721882477,
+        "test_event_rate": 0.3806081754735793
+      },
+      "source_pretrain": {
+        "best_adapt_val_cindex": 0.5730500300688338,
+        "best_epoch": 1,
+        "zero_shot_test_cindex": 0.5595572298773661
+      },
+      "head_only": {
+        "best_adapt_val_cindex": 0.5730500300688338,
+        "best_epoch": 0,
+        "test_cindex": 0.5595572298773661
+      },
+      "layerwise_da": {
+        "phase_results": [
+          {
+            "phase": "head_only",
+            "best_adapt_val_cindex": 0.5730500300688338,
+            "best_epoch": 0
+          },
+          {
+            "phase": "partial_unfreeze",
+            "best_adapt_val_cindex": 0.5814254054579578,
+            "best_epoch": 5
+          },
+          {
+            "phase": "full_finetune",
+            "best_adapt_val_cindex": 0.5955044333014556,
+            "best_epoch": 12
+          }
+        ],
+        "test_cindex": 0.5723277015800354,
+        "gain_vs_zero_shot": 0.012770471702669317
+      }
+    },
+    "B_core7_baseline": {
+      "group_name": "B_core7_baseline",
+      "feature_count": 16,
+      "feature_names": [
+        "透析年龄",
+        "性别",
+        "透析龄",
+        "超滤比",
+        "容量超负荷比",
+        "脉压差",
+        "平均动脉压",
+        "透前体重",
+        "透前体重-干体重",
+        "透前动脉压",
+        "超滤量MAX",
+        "超滤率_绝对",
+        "透析龄_天数",
+        "透析龄占比",
+        "首次透析年龄",
+        "高血压诊断"
+      ],
+      "split": {
+        "source_n": 216604,
+        "adapt_train_n": 7522,
+        "adapt_val_n": 7522,
+        "test_n": 60180,
+        "source_event_rate": 0.13760133700208677,
+        "adapt_train_event_rate": 0.38061685721882477,
+        "adapt_val_event_rate": 0.38061685721882477,
+        "test_event_rate": 0.3806081754735793
+      },
+      "source_pretrain": {
+        "best_adapt_val_cindex": 0.5766739102976531,
+        "best_epoch": 15,
+        "zero_shot_test_cindex": 0.5620932737089025
+      },
+      "head_only": {
+        "best_adapt_val_cindex": 0.5766739102976531,
+        "best_epoch": 0,
+        "test_cindex": 0.5620932737089025
+      },
+      "layerwise_da": {
+        "phase_results": [
+          {
+            "phase": "head_only",
+            "best_adapt_val_cindex": 0.5774360670342434,
+            "best_epoch": 1
+          },
+          {
+            "phase": "partial_unfreeze",
+            "best_adapt_val_cindex": 0.5797726295242284,
+            "best_epoch": 5
+          },
+          {
+            "phase": "full_finetune",
+            "best_adapt_val_cindex": 0.5863954483891965,
+            "best_epoch": 12
+          }
+        ],
+        "test_cindex": 0.5700023943937172,
+        "gain_vs_zero_shot": 0.007909120684814752
+      }
+    },
+    "C_core7_history": {
+      "group_name": "C_core7_history",
+      "feature_count": 20,
+      "feature_names": [
+        "透析年龄",
+        "性别",
+        "透析龄",
+        "超滤比",
+        "容量超负荷比",
+        "脉压差",
+        "平均动脉压",
+        "history_HBP",
+        "history_HBP_rate",
+        "history_LBP_times_0_rate",
+        "history_LBP_times_1_rate",
+        "history_LBP_times_2_rate",
+        "history_LBP_times_3_rate",
+        "history_LBP_times_4_rate",
+        "历史平均透前收缩压",
+        "历史平均透前舒张压",
+        "历史平均透前体重",
+        "历史平均超滤量MAX",
+        "历史平均超滤率_mean",
+        "历史平均透中低血压_计算"
+      ],
+      "split": {
+        "source_n": 216604,
+        "adapt_train_n": 7522,
+        "adapt_val_n": 7522,
+        "test_n": 60180,
+        "source_event_rate": 0.13760133700208677,
+        "adapt_train_event_rate": 0.38061685721882477,
+        "adapt_val_event_rate": 0.38061685721882477,
+        "test_event_rate": 0.3806081754735793
+      },
+      "source_pretrain": {
+        "best_adapt_val_cindex": 0.5792329256019221,
+        "best_epoch": 5,
+        "zero_shot_test_cindex": 0.5746318799400382
+      },
+      "head_only": {
+        "best_adapt_val_cindex": 0.5857064102229187,
+        "best_epoch": 3,
+        "test_cindex": 0.5789306571051348
+      },
+      "layerwise_da": {
+        "phase_results": [
+          {
+            "phase": "head_only",
+            "best_adapt_val_cindex": 0.5794314095294368,
+            "best_epoch": 1
+          },
+          {
+            "phase": "partial_unfreeze",
+            "best_adapt_val_cindex": 0.5822338840880794,
+            "best_epoch": 5
+          },
+          {
+            "phase": "full_finetune",
+            "best_adapt_val_cindex": 0.5876220359711049,
+            "best_epoch": 12
+          }
+        ],
+        "test_cindex": 0.5844703948843969,
+        "gain_vs_zero_shot": 0.009838514944358723
+      }
+    },
+    "D_core7_baseline_history_delta": {
+      "group_name": "D_core7_baseline_history_delta",
+      "feature_count": 39,
+      "feature_names": [
+        "透析年龄",
+        "性别",
+        "透析龄",
+        "超滤比",
+        "容量超负荷比",
+        "脉压差",
+        "平均动脉压",
+        "透前体重",
+        "透前体重-干体重",
+        "透前动脉压",
+        "超滤量MAX",
+        "超滤率_绝对",
+        "透析龄_天数",
+        "透析龄占比",
+        "首次透析年龄",
+        "高血压诊断",
+        "history_HBP",
+        "history_HBP_rate",
+        "history_LBP_times_0_rate",
+        "history_LBP_times_1_rate",
+        "history_LBP_times_2_rate",
+        "history_LBP_times_3_rate",
+        "history_LBP_times_4_rate",
+        "历史平均透前收缩压",
+        "历史平均透前舒张压",
+        "历史平均透前体重",
+        "历史平均超滤量MAX",
+        "历史平均超滤率_mean",
+        "历史平均透中低血压_计算",
+        "delta_透前收缩压_vs_hist",
+        "delta_透前舒张压_vs_hist",
+        "delta_透前体重_vs_hist",
+        "delta_超滤量MAX_vs_hist",
+        "delta_超滤率绝对_vs_hist",
+        "delta_透前收缩压_vs_hist_ratio",
+        "delta_透前舒张压_vs_hist_ratio",
+        "delta_透前体重_vs_hist_ratio",
+        "delta_超滤量MAX_vs_hist_ratio",
+        "delta_超滤率绝对_vs_hist_ratio"
+      ],
+      "split": {
+        "source_n": 216604,
+        "adapt_train_n": 7522,
+        "adapt_val_n": 7522,
+        "test_n": 60180,
+        "source_event_rate": 0.13760133700208677,
+        "adapt_train_event_rate": 0.38061685721882477,
+        "adapt_val_event_rate": 0.38061685721882477,
+        "test_event_rate": 0.3806081754735793
+      },
+      "source_pretrain": {
+        "best_adapt_val_cindex": 0.5936853563836821,
+        "best_epoch": 10,
+        "zero_shot_test_cindex": 0.5781843428302411
+      },
+      "head_only": {
+        "best_adapt_val_cindex": 0.5936853563836821,
+        "best_epoch": 0,
+        "test_cindex": 0.5781843428302411
+      },
+      "layerwise_da": {
+        "phase_results": [
+          {
+            "phase": "head_only",
+            "best_adapt_val_cindex": 0.5936853563836821,
+            "best_epoch": 0
+          },
+          {
+            "phase": "partial_unfreeze",
+            "best_adapt_val_cindex": 0.5936853563836821,
+            "best_epoch": 0
+          },
+          {
+            "phase": "full_finetune",
+            "best_adapt_val_cindex": 0.5995119503752477,
+            "best_epoch": 12
+          }
+        ],
+        "test_cindex": 0.5876162843663758,
+        "gain_vs_zero_shot": 0.009431941536134691
+      }
+    }
+  },
+  "summary": {
+    "A_core7": {
+      "feature_count": 7,
+      "zero_shot_test_cindex": 0.5595572298773661,
+      "head_only_test_cindex": 0.5595572298773661,
+      "layerwise_da_test_cindex": 0.5723277015800354,
+      "gain_vs_zero_shot": 0.012770471702669317
+    },
+    "B_core7_baseline": {
+      "feature_count": 16,
+      "zero_shot_test_cindex": 0.5620932737089025,
+      "head_only_test_cindex": 0.5620932737089025,
+      "layerwise_da_test_cindex": 0.5700023943937172,
+      "gain_vs_zero_shot": 0.007909120684814752
+    },
+    "C_core7_history": {
+      "feature_count": 20,
+      "zero_shot_test_cindex": 0.5746318799400382,
+      "head_only_test_cindex": 0.5789306571051348,
+      "layerwise_da_test_cindex": 0.5844703948843969,
+      "gain_vs_zero_shot": 0.009838514944358723
+    },
+    "D_core7_baseline_history_delta": {
+      "feature_count": 39,
+      "zero_shot_test_cindex": 0.5781843428302411,
+      "head_only_test_cindex": 0.5781843428302411,
+      "layerwise_da_test_cindex": 0.5876162843663758,
+      "gain_vs_zero_shot": 0.009431941536134691
+    }
+  }
+}
