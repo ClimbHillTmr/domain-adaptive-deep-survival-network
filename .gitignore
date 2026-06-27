@@ -68,3 +68,8 @@ Thumbs.db
 data_preprocessing/data_10_20_90/福鼎_final_data.csv
 data_preprocessing/data_10_20_90/深医_final_data.csv
 backup/data_preprocessing/data/
+
+# 大型数据文件 - 存储在 Hugging Face
+data/raw/
+data/processed/
+data_preprocessing/data/
