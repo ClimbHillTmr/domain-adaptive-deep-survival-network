@@ -13,27 +13,16 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import partial
 import threading
 
-dataset = pd.read_csv("/home/cht/Works/domain-adaptive-deep-survival-network/data_preprocessing/updated_dataset_shenyi.csv")
-dataset["患者id"].nunique()
+# Raw data hosted on Hugging Face: https://huggingface.co/datasets/LongGoodbye/Shenyi-Fuding-original
+# Final processed data is in data/processed/深医_final_data.csv
 
 def shengyi_dataset(first_pressure_sd="透前动脉压", use_parallel=True, n_threads=30):
     """主函数，支持选择是否使用并行处理"""
-    # 检查优化数据文件是否存在
-    optimized_file_path = "/home/cht/Works/domain-adaptive-deep-survival-network/data_preprocessing/data/深医_optimized_data透前动脉压.csv"
-    if os.path.exists(optimized_file_path):
-        print(f"发现优化数据文件: {optimized_file_path}")
-        print("跳过中间计算步骤，直接进行历史平均值计算...")
-        dataset = pd.read_csv(optimized_file_path)
-
-        if use_parallel:
-            print(f"使用并行处理模式，线程数: {n_threads}")
-            return process_historical_averages(dataset,first_pressure_sd="透前动脉压", use_parallel=use_parallel, n_threads=30)
-        else:
-            print("使用串行处理模式")
-            return process_historical_averages_shenyi(dataset, first_pressure_sd)
-    else:
-        # Read the dataset
-        dataset = pd.read_csv("/home/cht/Works/domain-adaptive-deep-survival-network/data_preprocessing/updated_dataset_shenyi.csv")
+    # Raw data is hosted on Hugging Face: https://huggingface.co/datasets/LongGoodbye/Shenyi-Fuding-original
+    raise FileNotFoundError(
+        "Raw data not found. To re-run data pipeline, download from Hugging Face: "
+        "https://huggingface.co/datasets/LongGoodbye/Shenyi-Fuding-original and save to data/raw/updated_dataset_shenyi.csv."
+    )
 
     # 解析字符串为列表
     def safe_literal_eval(x):
@@ -438,7 +427,7 @@ def shengyi_dataset(first_pressure_sd="透前动脉压", use_parallel=True, n_th
 
     # Save the resulting DataFrame
     dataset = dataset[keep_columns]
-    dataset.to_csv("/home/cht/Works/domain-adaptive-deep-survival-network/data_preprocessing/data/深医_optimized_data" + str(first_pressure_sd) + ".csv")
+    dataset.to_csv("/home/cht/Works/domain-adaptive-deep-survival-network/data/processed/深医_optimized_data" + str(first_pressure_sd) + ".csv")
     # dataset.to_csv("Final_data/深医_optimized_data"+str(first_pressure_sd)".csv")
     # del X['涨幅时间点区间']
     # del X['透中高血压_计算']
@@ -533,7 +522,7 @@ def process_historical_averages_shenyi_parallel(dataset, mean_columns, first_pre
     result_df = pd.concat(result_dfs, ignore_index=True)
     
     print("保存历史平均值结果...")
-    result_df.to_csv(f"/home/cht/Works/domain-adaptive-deep-survival-network/data_preprocessing/data/深医_result_df{first_pressure_sd}.csv")
+    result_df.to_csv(f"/home/cht/Works/domain-adaptive-deep-survival-network/data/processed/深医_result_df{first_pressure_sd}.csv")
     return result_df
 
 
@@ -701,7 +690,7 @@ def process_historical_averages(dataset, first_pressure_sd='', use_parallel=True
         "透析龄占比",
     ]
     
-    target_file = f'/home/cht/Works/domain-adaptive-deep-survival-network/data_preprocessing/data/深医_result_df{first_pressure_sd}.csv'
+    target_file = f'/home/cht/Works/domain-adaptive-deep-survival-network/data/processed/深医_result_df{first_pressure_sd}.csv'
     
     if os.path.exists(target_file):
         print(f"检测到已存在文件: {target_file}")
@@ -755,7 +744,7 @@ def process_historical_averages(dataset, first_pressure_sd='', use_parallel=True
 
             print(result_df)
             result_df.to_csv(
-                path_or_buf=("/home/cht/Works/domain-adaptive-deep-survival-network/data_preprocessing/data/深医_result_df" + str(first_pressure_sd) + ".csv")
+                path_or_buf=("/home/cht/Works/domain-adaptive-deep-survival-network/data/processed/深医_result_df" + str(first_pressure_sd) + ".csv")
             )
     
     whole_data = pd.merge(
@@ -846,7 +835,6 @@ def process_historical_averages(dataset, first_pressure_sd='', use_parallel=True
                 ]
 
                 if dataset["透中低血压_计算"].iloc[i] == 0:
-                    history_HBP = 0
                     history_LBP_times_0 += 1
                 if dataset["透中低血压_计算"].iloc[i] == 1:
                     history_HBP += 1
@@ -871,7 +859,6 @@ def process_historical_averages(dataset, first_pressure_sd='', use_parallel=True
                 history_LBP_times_4 = 0
 
                 if dataset["透中低血压_计算"].iloc[i] == 0:
-                    history_HBP = 0
                     history_LBP_times_0 += 1
                 if dataset["透中低血压_计算"].iloc[i] == 1:
                     history_HBP += 1
@@ -1029,7 +1016,7 @@ def process_historical_averages(dataset, first_pressure_sd='', use_parallel=True
         final_data.drop(columns=drop_cols, inplace=True, errors='ignore')
 
     final_data.to_csv(
-        path_or_buf=("/home/cht/Works/domain-adaptive-deep-survival-network/data_preprocessing/data/深医_final_data.csv"),
+        path_or_buf=("/home/cht/Works/domain-adaptive-deep-survival-network/data/processed/深医_final_data.csv"),
         index=False
     )
     

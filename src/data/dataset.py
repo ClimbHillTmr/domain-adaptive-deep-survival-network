@@ -25,7 +25,12 @@ def encode_categorical(df: pd.DataFrame, col: str) -> pd.DataFrame:
         df[col + "_code"] = df[col].astype('category').cat.codes
     return df
 
-def build_feature_tables(source_path: str, target_path: str, remove_features: Optional[List[str]] = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, List[str]]:
+def build_feature_tables(
+    source_path: str,
+    target_path: str,
+    remove_features: Optional[List[str]] = None,
+    return_dataframes: bool = False,
+):
     """
     Load data from files and build feature matrices.
     Returns:
@@ -77,6 +82,9 @@ def build_feature_tables(source_path: str, target_path: str, remove_features: Op
     e_t = df_t["events"].values.astype(np.float32)
     t_t = df_t["et_min"].values.astype(np.float32)
 
+    if return_dataframes:
+        return x_s, x_t, e_s, t_s, e_t, t_t, final_cols, df_s.copy(), df_t.copy()
+
     return x_s, x_t, e_s, t_s, e_t, t_t, final_cols
 
 def prepare_dataloaders(
@@ -95,15 +103,21 @@ def prepare_dataloaders(
     from torch.utils.data import DataLoader, TensorDataset
     from src.evaluate.metrics import compute_ipcw_weights
     
-    x_s, x_t, e_s, t_s, e_t, t_t, feature_names = build_feature_tables(source_path, target_path, remove_features)
+    x_s, x_t, e_s, t_s, e_t, t_t, feature_names, df_s, df_t = build_feature_tables(
+        source_path,
+        target_path,
+        remove_features,
+        return_dataframes=True,
+    )
 
     # Split target data
-    x_adapt_pool, x_test, e_adapt_pool, e_test, t_adapt_pool, t_test = train_test_split(
-        x_t, e_t, t_t, test_size=1 - target_adapt_ratio, random_state=seed, stratify=e_t
+    target_indices = np.arange(len(x_t))
+    x_adapt_pool, x_test, e_adapt_pool, e_test, t_adapt_pool, t_test, idx_adapt_pool, idx_test = train_test_split(
+        x_t, e_t, t_t, target_indices, test_size=1 - target_adapt_ratio, random_state=seed, stratify=e_t
     )
     
-    x_train, x_val, e_train, e_val, t_train, t_val = train_test_split(
-        x_adapt_pool, e_adapt_pool, t_adapt_pool, test_size=target_val_ratio, random_state=seed, stratify=e_adapt_pool
+    x_train, x_val, e_train, e_val, t_train, t_val, idx_train, idx_val = train_test_split(
+        x_adapt_pool, e_adapt_pool, t_adapt_pool, idx_adapt_pool, test_size=target_val_ratio, random_state=seed, stratify=e_adapt_pool
     )
 
     # Compute IPCW
@@ -122,7 +136,13 @@ def prepare_dataloaders(
         "target_loader": target_loader,
         "x_val": x_val, "e_val": e_val, "t_val": t_val,
         "x_test": x_test, "e_test": e_test, "t_test": t_test,
+        "x_train": x_train,
         "t_train": t_train, "e_train": e_train,
+        "df_source": df_s,
+        "df_target": df_t,
+        "idx_train": idx_train,
+        "idx_val": idx_val,
+        "idx_test": idx_test,
         "feature_names": feature_names,
         "input_dim": x_s.shape[1]
     }
