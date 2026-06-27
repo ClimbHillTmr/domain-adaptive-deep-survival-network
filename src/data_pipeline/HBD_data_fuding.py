@@ -12,53 +12,19 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import partial
 import threading
 
-# Raw data hosted on Hugging Face: https://huggingface.co/datasets/LongGoodbye/Shenyi-Fuding-original
-# Final processed data is in data/processed/福鼎_final_data.csv
+# Processed data hosted on Hugging Face: https://huggingface.co/datasets/LongGoodbye/Shenyi_Fuding_Dataset
 
 
 def fuding_dataset(first_pressure_sd="透前动脉压", use_parallel=True, n_threads=30):
-    # Raw data is hosted on Hugging Face: https://huggingface.co/datasets/LongGoodbye/Shenyi-Fuding-original
+    """福鼎数据集加载函数 - 数据已迁移至Hugging Face"""
+    # Processed data is hosted on Hugging Face: https://huggingface.co/datasets/LongGoodbye/Shenyi_Fuding_Dataset
     raise FileNotFoundError(
-        "Raw data not found. To re-run data pipeline, download from Hugging Face: "
-        "https://huggingface.co/datasets/LongGoodbye/Shenyi-Fuding-original and save to data/raw/updated_dataset_fuding.csv."
+        "Data not found. Download from Hugging Face: "
+        "https://huggingface.co/datasets/LongGoodbye/Shenyi_Fuding_Dataset"
     )
 
-        dataset["透前动脉压"] = (
-            1 / 3 * dataset["透前收缩压"] + 2 / 3 * dataset["透前舒张压"]
-        )
-        dataset["透后动脉压"] = (
-            1 / 3 * dataset["透后收缩压"] + 2 / 3 * dataset["透后舒张压"]
-        )
-
-        # Data filtering
-        dataset = dataset[dataset["透中血压"].notnull() & (dataset["透中血压"] != "")]
-        # dataset = dataset[(dataset["干体重"] > 0) & (dataset["实际透析时长"] > 0)]
-
-        # 将逗号分隔的血压值拆分为列表
-        dataset["透中血压"] = dataset["透中血压"].str.split(",")
-
-        # 初始化两个空列表，一个用于透中舒张压，另一个用于透中收缩压
-        diastolic_list, systolic_list = [], []
-
-        # 遍历每行数据
-        for index, row in dataset.iterrows():
-            diastolic_row, systolic_row = [], []
-            for bp in row["透中血压"]:
-                if "/" in bp:
-                    diastolic, systolic = bp.split("/")
-                    if diastolic and systolic:
-                        diastolic_row.append(int(diastolic))
-                        systolic_row.append(int(systolic))
-                    else:
-                        diastolic_row.append(None)
-                        systolic_row.append(None)
-                        print(bp)
-                        print(index)
-                        print(row["透中血压"])
-                else:
-                    diastolic_row.append(None)
-                    systolic_row.append(None)
-                    print(bp)
+# 以下为原始处理逻辑，已迁移至Hugging Face存储
+# 如需重新处理原始数据，请从Hugging Face下载数据后运行
                     print(index)
                     print(row["透中血压"])
 

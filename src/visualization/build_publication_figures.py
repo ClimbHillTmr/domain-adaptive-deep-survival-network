@@ -77,9 +77,9 @@ def build_cohort_flow() -> None:
     shenyi_event_rate = extract_rate(event_row[shenyi_header])
     fuding_event_rate = extract_rate(event_row[fuding_header])
 
-    fig, ax = plt.subplots(figsize=(12, 6.5))
-    ax.set_xlim(0, 14)
-    ax.set_ylim(0, 8)
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.set_xlim(0, 11)
+    ax.set_ylim(0, 6)
     ax.axis("off")
 
     box_fc = "#F7FAFC"
@@ -93,43 +93,28 @@ def build_cohort_flow() -> None:
         ax.text(x + w / 2, y + h * 0.63, title, ha="center", va="center", fontsize=12, fontweight="bold")
         ax.text(x + w / 2, y + h * 0.30, subtitle, ha="center", va="center", fontsize=10, color="#34495E")
 
-    draw_box(0.8, 4.4, 3.2, 1.8, "Shenyi Raw Cohort", f"{counts['Shenyi raw sessions']:,} sessions", accent[0])
     draw_box(
-        5.2,
-        4.4,
-        3.2,
+        1.0,
+        2.8,
+        4.2,
         1.8,
-        "Shenyi Analysis Cohort",
+        "Shenyi (Source) Cohort",
         f"{counts['Shenyi analysis cohort']:,} sessions\nIDH rate: {shenyi_event_rate}",
         accent[0],
     )
-    draw_box(0.8, 1.4, 3.2, 1.8, "Fuding Raw Cohort", f"{counts['Fuding raw sessions']:,} sessions", accent[1])
     draw_box(
-        5.2,
-        1.4,
-        3.2,
+        5.8,
+        2.8,
+        4.2,
         1.8,
-        "Fuding Analysis Cohort",
+        "Fuding (Target) Cohort",
         f"{counts['Fuding analysis cohort']:,} sessions\nIDH rate: {fuding_event_rate}",
         accent[1],
     )
-    draw_box(
-        9.6,
-        1.4,
-        3.0,
-        1.8,
-        "Removed Rows Log",
-        f"{counts['Fuding removed inconsistent rows']:,} rows\nFuding inconsistency exclusions",
-        "#9B59B6",
-    )
 
     arrowprops = dict(arrowstyle="->", lw=2.0, color="#5D6D7E")
-    ax.annotate("", xy=(5.2, 5.3), xytext=(4.0, 5.3), arrowprops=arrowprops)
-    ax.annotate("", xy=(5.2, 2.3), xytext=(4.0, 2.3), arrowprops=arrowprops)
-    ax.annotate("", xy=(9.6, 2.3), xytext=(8.4, 2.3), arrowprops=arrowprops)
-    ax.text(4.6, 5.75, "Preprocessing + feature construction", ha="center", fontsize=10, color="#5D6D7E")
-    ax.text(4.6, 2.75, "Preprocessing + final assembly", ha="center", fontsize=10, color="#5D6D7E")
-    ax.text(9.0, 2.75, "Audit trail retained", ha="center", fontsize=10, color="#5D6D7E")
+    ax.annotate("", xy=(5.8, 3.7), xytext=(5.2, 3.7), arrowprops=arrowprops)
+    ax.text(5.5, 4.5, "Domain Adaptation", ha="center", fontsize=11, fontweight="bold", color="#5D6D7E")
 
     ax.set_title("Study Cohort Flow and Analysis Population", loc="left", fontsize=15, fontweight="bold", pad=8)
     fig.subplots_adjust(left=0.03, right=0.97, top=0.90, bottom=0.08)

@@ -13,15 +13,14 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import partial
 import threading
 
-# Raw data hosted on Hugging Face: https://huggingface.co/datasets/LongGoodbye/Shenyi-Fuding-original
-# Final processed data is in data/processed/深医_final_data.csv
+# Processed data hosted on Hugging Face: https://huggingface.co/datasets/LongGoodbye/Shenyi_Fuding_Dataset
 
 def shengyi_dataset(first_pressure_sd="透前动脉压", use_parallel=True, n_threads=30):
     """主函数，支持选择是否使用并行处理"""
-    # Raw data is hosted on Hugging Face: https://huggingface.co/datasets/LongGoodbye/Shenyi-Fuding-original
+    # Processed data is hosted on Hugging Face: https://huggingface.co/datasets/LongGoodbye/Shenyi_Fuding_Dataset
     raise FileNotFoundError(
-        "Raw data not found. To re-run data pipeline, download from Hugging Face: "
-        "https://huggingface.co/datasets/LongGoodbye/Shenyi-Fuding-original and save to data/raw/updated_dataset_shenyi.csv."
+        "Data not found. Download from Hugging Face: "
+        "https://huggingface.co/datasets/LongGoodbye/Shenyi_Fuding_Dataset"
     )
 
     # 解析字符串为列表
