@@ -51,7 +51,11 @@ def main():
         source_path=os.path.join(config["paths"]["data_dir"], config["data"]["source_file"]),
         target_path=os.path.join(config["paths"]["data_dir"], config["data"]["target_file"]),
         batch_size=config["training"]["batch_size"],
-        seed=config["training"]["seed"]
+        seed=config["training"]["seed"],
+        target_adapt_ratio=config["data"].get("target_adapt_ratio", 0.2),
+        target_val_ratio=config["data"].get("target_val_ratio", 0.2),
+        patient_col=config["data"].get("patient_col", "患者id"),
+        split_strategy=config["data"].get("split_strategy", "patient"),
     )
     
     treat_indices, physio_indices = get_indices(data_dict["feature_names"])

@@ -1,4 +1,4 @@
-# Causal-Aware Unsupervised Domain Adaptation Survival Network (CDAN-GSN)
+# Transport-Aware Deep Survival Network (CDAN-GSN)
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -6,14 +6,14 @@
 
 This repository contains the official PyTorch implementation of our paper on multi-center hemodialysis complication (Intradialytic Hypotension, IDH) prediction.
 
-We propose **CDAN-GSN**, a causal-aware unsupervised domain adaptation survival framework that addresses extreme epidemiological biases (e.g., label shift and censoring shift) across different hospitals without requiring target domain labels.
+We propose **CDAN-GSN**, a transport-aware survival framework for cross-center intradialytic hypotension timing prediction. The current manuscript-ready workflow should be interpreted as target-center labeled updating with patient-level held-out testing, not as strictly unsupervised domain adaptation.
 
 ## 🌟 Key Innovations
 
-1. **Domain-Stratified Cox & IPCW**: Resolves baseline hazard discrepancies and censoring shifts (e.g., hospital transfer vs. treatment abandonment) using Inverse Probability of Censoring Weighting.
+1. **Domain-Stratified Cox & IPCW**: Models target-center updating under baseline hazard and censoring differences using Inverse Probability of Censoring Weighting.
 2. **KAN Tokenizer & CLS Pooling**: Employs Kolmogorov-Arnold Networks (KAN) to capture non-linear physiological risks (e.g., U-shaped blood pressure curves) and isolates acute deterioration signals using Attention Pooling.
 3. **Gated Sparsity Mask**: Prevents negative transfer by adaptively masking out hospital-specific idiosyncratic features.
-4. **Treatment-Conditioned Domain Adversarial Network (CDAN)**: Aligns latent representations strictly under identical treatment policies and absolute risk levels, ensuring causal consistency.
+4. **Treatment-Conditioned Domain Adversarial Network (CDAN)**: Aligns latent representations conditional on treatment-context features and model-derived risk terms.
 
 ## 📂 Project Structure
 
@@ -53,7 +53,7 @@ Place your source and target center datasets in `data/raw/`. The pipeline expect
 *Note: Due to patient privacy, the raw clinical data is not included in this repository.*
 
 ### 3. Run the Full Pipeline
-The entire process (Data formatting -> Pretraining -> Domain Adaptation -> Evaluation -> Plotting) can be executed with a single command:
+The entire process (Data formatting -> source pretraining -> target-center updating -> evaluation -> plotting) can be executed with a single command after the processed data files are available:
 ```bash
 python run_all.py
 ```
@@ -80,3 +80,7 @@ To run ablation experiments (e.g., removing IPCW or reverting KAN to Linear), mo
 
 If you find this code or our methodology useful in your research, please consider citing our paper:
 *(Citation details will be updated upon publication)*
+
+## Manuscript Readiness Notes
+
+Before using generated outputs in a submission, follow `docs/投稿前整改计划.md`. In particular, regenerate final CSV files with prior-only historical features, keep the default patient-level target split, and replace placeholder or simulated statistics with results from real held-out predictions.

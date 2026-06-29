@@ -17,6 +17,10 @@ data:
   target_file: "福鼎_final_data.csv"
   duration_col: "et_min"
   event_col: "events"
+  patient_col: "患者id"
+  split_strategy: "patient"
+  target_adapt_ratio: 0.20
+  target_val_ratio: 0.20
 
 model:
   name: "cdan_gsn_kan"

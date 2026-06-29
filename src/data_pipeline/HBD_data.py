@@ -770,12 +770,12 @@ def process_historical_averages(dataset, first_pressure_sd='', use_parallel=True
                 is_nan = np.isnan(v_float)
             except (ValueError, TypeError):
                 is_nan = True
+            result[i] = cumsum / count if count > 0 else 0.0
             if is_nan:
-                result[i] = cumsum / count if count > 0 else 0.0
+                continue
             else:
                 cumsum += v_float
                 count += 1
-                result[i] = cumsum / count
         whole_data['历史平均' + col] = result
 
     # 计算历史比率

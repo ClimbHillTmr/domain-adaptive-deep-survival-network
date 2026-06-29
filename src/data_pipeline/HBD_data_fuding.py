@@ -25,6 +25,7 @@ def fuding_dataset(first_pressure_sd="透前动脉压", use_parallel=True, n_thr
 
 # 以下为原始处理逻辑，已迁移至Hugging Face存储
 # 如需重新处理原始数据，请从Hugging Face下载数据后运行
+"""
                     print(index)
                     print(row["透中血压"])
 
@@ -448,6 +449,7 @@ def fuding_dataset(first_pressure_sd="透前动脉压", use_parallel=True, n_thr
 
     # 继续执行历史平均值计算
     return process_historical_averages(dataset, first_pressure_sd=first_pressure_sd, use_parallel=use_parallel, n_threads=n_threads)
+"""
 
 
 def process_patient_historical_averages_fuding(patient_data, mean_columns):
@@ -789,12 +791,12 @@ def process_historical_averages(dataset, first_pressure_sd='', use_parallel=True
                 is_nan = np.isnan(v_float)
             except (ValueError, TypeError):
                 is_nan = True
+            result[i] = cumsum / count if count > 0 else 0.0
             if is_nan:
-                result[i] = cumsum / count if count > 0 else 0.0
+                continue
             else:
                 cumsum += v_float
                 count += 1
-                result[i] = cumsum / count
         whole_data['历史平均' + col] = result
 
     # 计算历史比率
