@@ -7,6 +7,10 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from src.reproducibility import seed_everything, record_environment
 
 def main():
+    if "--train" not in sys.argv:
+        print("Refusing to run training by default. Use: python run_all.py --train")
+        return
+
     print("==================================================")
     print("🚀 Starting DA-DSN Full Pipeline Execution")
     print("==================================================")

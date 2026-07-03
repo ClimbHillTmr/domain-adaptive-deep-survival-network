@@ -1,33 +1,12 @@
 import pandas as pd
 import numpy as np
 import os
-import sys
 import json
-from sksurv.metrics import concordance_index_censored
 import logging
 
+from src.evaluate.metrics import concordance_index
+
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
-
-def load_data(file_path):
-    df = pd.read_csv(file_path)
-    return df
-
-def simulate_predictions(df, duration_col='et_min', event_col='events'):
-    """
-    Since we don't want to run the full deep learning training pipeline just to get predictions for this analysis
-    (which would take a long time), we will simulate 'good' predictions that correlate with the actual outcomes
-    but have some noise, mimicking our ~0.93 C-index model.
-    """
-    # A perfect risk score would be inversely proportional to survival time
-    # We add noise to make it realistic (~0.93 C-index)
-    np.random.seed(42)
-    base_risk = -df[duration_col] 
-    noise = np.random.normal(0, np.std(base_risk) * 0.3, size=len(df))
-    # Higher risk for events
-    event_boost = df[event_col] * np.std(base_risk) * 0.5
-    
-    risk_scores = base_risk + noise + event_boost
-    return risk_scores
 
 def calculate_subgroup_metrics(df, risk_scores, duration_col='et_min', event_col='events', subgroup_col=None):
     results = {}
@@ -44,7 +23,7 @@ def calculate_subgroup_metrics(df, risk_scores, duration_col='et_min', event_col
             times = group_df[duration_col].values
             
             try:
-                c_index, _, _, _, _ = concordance_index_censored(events, times, group_risks)
+                c_index = concordance_index(times, group_risks, events)
                 
                 # Calculate simple calibration/prevalence
                 event_rate = group_df[event_col].mean()
@@ -63,20 +42,22 @@ def calculate_subgroup_metrics(df, risk_scores, duration_col='et_min', event_col
 
 def run_fairness_analysis():
     # 1. Load data
-    target_file = "data/processed/福鼎_final_data.csv"
-    if not os.path.exists(target_file):
-        logging.error(f"File not found: {target_file}")
-        return
+    prediction_file = "experiments/results/real_test_predictions.csv"
+    if not os.path.exists(prediction_file):
+        raise FileNotFoundError(
+            "Missing real held-out predictions. Run prediction export first; "
+            "simulated subgroup metrics are not allowed for submission."
+        )
         
-    logging.info(f"Loading data from {target_file}")
-    df = load_data(target_file)
+    logging.info(f"Loading real predictions from {prediction_file}")
+    df = pd.read_csv(prediction_file)
     
     duration_col = 'et_min'
     event_col = 'events'
-    
-    # 2. Simulate or load predictions
-    logging.info("Simulating model predictions for fairness evaluation...")
-    risk_scores = simulate_predictions(df, duration_col, event_col)
+    risk_col = "risk_score"
+    if risk_col not in df.columns:
+        raise ValueError(f"Prediction file must contain '{risk_col}'.")
+    risk_scores = df[risk_col].values
     
     # 3. Define subgroups
     # Let's create age groups if '透析年龄' exists
@@ -146,7 +127,7 @@ def generate_latex_table(results, output_path):
     for category, groups in results.items():
         latex_str += f"\\multicolumn{{5}}{{-l}}{{\\textbf{{{category}}}}} \\\\\n"
         for group_name, metrics in groups.items():
-            # Mock a 95% CI for display purposes based on N
+            # ponytail: rough Wald-style display only; replace with patient bootstrap for submission.
             ci_margin = 1.96 * (0.5 / np.sqrt(metrics['Events'] + 1))
             c_index = metrics['C_Index']
             ci_lower = max(0.5, c_index - ci_margin)
@@ -165,6 +146,7 @@ def generate_csv_table(results, output_path):
     rows = []
     for category, groups in results.items():
         for group_name, metrics in groups.items():
+            # ponytail: rough Wald-style display only; replace with patient bootstrap for submission.
             ci_margin = 1.96 * (0.5 / np.sqrt(metrics['Events'] + 1))
             c_index = metrics['C_Index']
             ci_lower = max(0.5, c_index - ci_margin)

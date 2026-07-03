@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pandas as pd
 from typing import Dict, List, Optional, Tuple
@@ -20,6 +21,7 @@ FEATURE_NAMES = [
 ]
 
 CATEGORICAL_COLS = ["抗凝剂类型", "透析方式", "瘘管类型", "瘘管位置"]
+FEATURE_ALLOWLIST_PATH = "experiments/audit/feature_allowlist.csv"
 
 
 def _safe_str_series(series: pd.Series) -> pd.Series:
@@ -77,15 +79,20 @@ def build_feature_tables(
     # Encode categoricals using source-fitted mappings to avoid cross-center code drift.
     df_s, df_t, category_mappings = encode_categoricals_from_source(df_s, df_t)
 
-    # Build feature lists dynamically based on actual columns
-    base_cols = [c for c in FEATURE_NAMES if c in df_s.columns and c in df_t.columns]
-    
-    # Additional history features
-    hist_cols = [c for c in df_s.columns if c.startswith("history_")]
-    final_cols = base_cols + hist_cols
+    if not os.path.exists(FEATURE_ALLOWLIST_PATH):
+        raise FileNotFoundError(
+            f"Missing feature allowlist: {FEATURE_ALLOWLIST_PATH}. "
+            "Create it before training to freeze prediction-time features."
+        )
+    allowlist = pd.read_csv(FEATURE_ALLOWLIST_PATH)
+    final_cols = allowlist.loc[allowlist["allowed"].astype(str).str.lower() == "yes", "feature"].tolist()
+    final_cols = [c for c in final_cols if c in df_s.columns and c in df_t.columns]
     
     if remove_features:
         final_cols = [c for c in final_cols if c not in remove_features]
+
+    if not final_cols:
+        raise ValueError("No usable features after applying feature allowlist.")
 
     # Ensure no NaNs by filling with 0
     df_s[final_cols] = df_s[final_cols].fillna(0)
@@ -276,6 +283,9 @@ def prepare_dataloaders(
         "idx_train": idx_train,
         "idx_val": idx_val,
         "idx_test": idx_test,
+        "patient_ids_train": df_t.iloc[idx_train][patient_col].astype(str).to_numpy(),
+        "patient_ids_val": df_t.iloc[idx_val][patient_col].astype(str).to_numpy(),
+        "patient_ids_test": df_t.iloc[idx_test][patient_col].astype(str).to_numpy(),
         "category_mappings": category_mappings,
         "split_strategy": split_strategy,
         "patient_col": patient_col,

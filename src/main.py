@@ -89,7 +89,8 @@ def main():
     # Zero-shot evaluation
     zero_shot_metrics = evaluate_survival_metrics(
         model, data_dict["x_test"], data_dict["e_test"], data_dict["t_test"], 
-        device=device, t_train=data_dict["t_train"], e_train=data_dict["e_train"]
+        device=device, t_train=data_dict["t_train"], e_train=data_dict["e_train"],
+        patient_ids=data_dict["patient_ids_test"], n_bootstrap=200, seed=config["training"]["seed"],
     )
     print(f"   Zero-shot Metrics: {zero_shot_metrics}")
     
@@ -122,12 +123,21 @@ def main():
     print("\n[4/4] Final Evaluation...")
     da_metrics = evaluate_survival_metrics(
         da_model, data_dict["x_test"], data_dict["e_test"], data_dict["t_test"], 
-        device=device, t_train=data_dict["t_train"], e_train=data_dict["e_train"]
+        device=device, t_train=data_dict["t_train"], e_train=data_dict["e_train"],
+        patient_ids=data_dict["patient_ids_test"], n_bootstrap=200, seed=config["training"]["seed"],
     )
     print(f"   DA Metrics: {da_metrics}")
     
     # Save Results
     results = {
+        "metadata": {
+            "split_strategy": data_dict["split_strategy"],
+            "patient_col": data_dict["patient_col"],
+            "target_adapt_ratio": config["data"].get("target_adapt_ratio", 0.2),
+            "target_val_ratio": config["data"].get("target_val_ratio", 0.2),
+            "n_features": len(data_dict["feature_names"]),
+            "feature_names": data_dict["feature_names"],
+        },
         "sweeps": {
             "Zero-shot": {"metrics": zero_shot_metrics},
             "CDAN-GSN (Ours)": {"metrics": da_metrics}
@@ -139,6 +149,15 @@ def main():
     with open(out_path, "w") as f:
         json.dump(results, f, indent=4)
     print(f"\nResults saved to {out_path}")
+
+    torch.save(
+        {
+            "model_state_dict": da_model.state_dict(),
+            "feature_names": data_dict["feature_names"],
+            "config": config,
+        },
+        out_path.parent / "cdan_gsn_final.pt",
+    )
     
     print("\nExecuting Table Generator...")
     os.system("PYTHONPATH=. python src/evaluate/generate_tables.py")

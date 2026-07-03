@@ -124,6 +124,47 @@ def plot_dca_panel(ax, y_true, y_prob, title, color):
     remove_top_right_spines(ax)
 
 
+def calibration_metrics(y_true, y_prob):
+    y_true = np.asarray(y_true, dtype=float)
+    y_prob = np.clip(np.asarray(y_prob, dtype=float), 1e-6, 1 - 1e-6)
+    observed_rate = float(np.mean(y_true))
+    mean_predicted_rate = float(np.mean(y_prob))
+    brier = float(np.mean((y_true - y_prob) ** 2))
+    x = np.log(y_prob / (1 - y_prob))
+    if len(np.unique(y_true)) < 2 or np.std(x) == 0:
+        intercept = None
+        slope = None
+    else:
+        slope, intercept = np.polyfit(x, y_true, deg=1)
+        intercept = float(intercept)
+        slope = float(slope)
+    return {
+        "observed_rate": observed_rate,
+        "mean_predicted_rate": mean_predicted_rate,
+        "brier": brier,
+        "calibration_intercept": intercept,
+        "calibration_slope": slope,
+    }
+
+
+def write_calibration_dca_metrics(pred_df, out_path):
+    thresholds = np.linspace(0.01, 0.6, 60)
+    metrics = {}
+    for horizon in [30, 60, 120]:
+        y_true = pred_df[f"event_by_{horizon}m"].values
+        y_prob = pred_df[f"event_prob_{horizon}m"].values
+        horizon_metrics = calibration_metrics(y_true, y_prob)
+        nb = calculate_net_benefit(y_true, y_prob, thresholds)
+        horizon_metrics["net_benefit_threshold_range"] = {
+            "min": float(thresholds.min()),
+            "max": float(thresholds.max()),
+            "n_thresholds": int(len(thresholds)),
+            "max_net_benefit": float(np.max(nb)),
+        }
+        metrics[f"{horizon}m"] = horizon_metrics
+    out_path.write_text(json.dumps(metrics, indent=2))
+
+
 def main():
     config = load_config()
     seed_everything(config["training"]["seed"])
@@ -143,6 +184,10 @@ def main():
         target_path=target_path,
         batch_size=config["training"]["batch_size"],
         seed=config["training"]["seed"],
+        target_adapt_ratio=config["data"].get("target_adapt_ratio", 0.2),
+        target_val_ratio=config["data"].get("target_val_ratio", 0.2),
+        patient_col=config["data"].get("patient_col", "患者id"),
+        split_strategy=config["data"].get("split_strategy", "patient"),
     )
     treat_indices, physio_indices = get_indices(data_dict["feature_names"])
 
@@ -159,17 +204,6 @@ def main():
         kan_basis_dim=config["model"]["kan_bases"],
     ).to(device)
 
-    _, _, source_state = run_source_pretrain(
-        model,
-        data_dict["source_loader"],
-        data_dict["x_val"],
-        data_dict["e_val"],
-        data_dict["t_val"],
-        lr=config["training"]["learning_rate"],
-        device=device,
-        max_epochs=config["training"]["pretrain_epochs"],
-    )
-
     da_model = DomainStratifiedGatedNet(
         input_dim=data_dict["input_dim"],
         d_model=config["model"]["d_model"],
@@ -182,21 +216,36 @@ def main():
         tokenizer_type="kan",
         kan_basis_dim=config["model"]["kan_bases"],
     ).to(device)
-    da_model.load_state_dict(source_state)
-
-    run_domain_stratified_da(
-        da_model,
-        data_dict["source_loader"],
-        data_dict["target_loader"],
-        data_dict["x_val"],
-        data_dict["e_val"],
-        data_dict["t_val"],
-        adv_weight=config["training"]["adv_weight"],
-        source_replay_weight=0.1,
-        mask_l1_weight=config["training"]["mask_l1_weight"],
-        lr=config["training"]["learning_rate"],
-        device=device,
-    )
+    checkpoint_path = Path(config["paths"]["output_dir"]) / "cdan_gsn_final.pt"
+    if checkpoint_path.exists():
+        checkpoint = torch.load(checkpoint_path, map_location=device)
+        state_dict = checkpoint.get("model_state_dict", checkpoint)
+        da_model.load_state_dict(state_dict)
+    else:
+        _, _, source_state = run_source_pretrain(
+            model,
+            data_dict["source_loader"],
+            data_dict["x_val"],
+            data_dict["e_val"],
+            data_dict["t_val"],
+            lr=config["training"]["learning_rate"],
+            device=device,
+            max_epochs=config["training"]["pretrain_epochs"],
+        )
+        da_model.load_state_dict(source_state)
+        run_domain_stratified_da(
+            da_model,
+            data_dict["source_loader"],
+            data_dict["target_loader"],
+            data_dict["x_val"],
+            data_dict["e_val"],
+            data_dict["t_val"],
+            adv_weight=config["training"]["adv_weight"],
+            source_replay_weight=0.1,
+            mask_l1_weight=config["training"]["mask_l1_weight"],
+            lr=config["training"]["learning_rate"],
+            device=device,
+        )
 
     train_scores = predict_risk_scores(da_model, data_dict["x_train"], device=device)
     test_scores = predict_risk_scores(da_model, data_dict["x_test"], device=device)
@@ -214,6 +263,7 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
     pred_path = out_dir / "real_test_predictions.csv"
     pred_df.to_csv(pred_path, index=False)
+    write_calibration_dca_metrics(pred_df, out_dir / "calibration_dca_metrics.json")
 
     torch.save(da_model.state_dict(), out_dir / "cdan_gsn_real_export.pt")
     with open(out_dir / "prediction_metadata.json", "w") as f:
