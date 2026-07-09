@@ -1,0 +1,23 @@
+{
+  "30m": {
+    "observed_rate": 0.0010454959360561196,
+    "mean_predicted_rate": 0.0005406158938428842,
+    "brier": 0.0010440727254029678,
+    "calibration_intercept": 0.00661943220750752,
+    "calibration_slope": 0.0006764928849913214
+  },
+  "60m": {
+    "observed_rate": 0.146487470911605,
+    "mean_predicted_rate": 0.12407773162594465,
+    "brier": 0.09512874734155241,
+    "calibration_intercept": 0.46297867408379384,
+    "calibration_slope": 0.12553891984238336
+  },
+  "120m": {
+    "observed_rate": 0.25186334356345486,
+    "mean_predicted_rate": 0.2213121871327171,
+    "brier": 0.12742074038287468,
+    "calibration_intercept": 0.5323867196020551,
+    "calibration_slope": 0.16816107892851187
+  }
+}

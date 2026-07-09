@@ -10,7 +10,7 @@ data_preprocessing/data_10_20_90/福鼎_optimized_data透前动脉压.csv
 data_preprocessing/data_10_20_90/深医_optimized_data.csv
 data_preprocessing/data_10_20_90/深医_result_df.csv
 data_preprocessing/data_10_20_90/福鼎_result_df透前动脉压.csv
-
+experiments/results/real_test_predictions.csv
 # 临时文件和目录
 __pycache__/
 *.py[cod]
@@ -38,9 +38,9 @@ logs/
 *.log
 
 # 输出目录
-output/
-results/
-reports/
+# output/
+# results/
+# reports/
 
 # 缓存目录
 .cache/
