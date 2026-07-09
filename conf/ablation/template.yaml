@@ -35,12 +35,14 @@ ablations:
     model:
       name: "cdan_gsn_linear"
       
-  # 4. 架构消融：移除 IPCW 删失权重
-  no_ipcw:
-    training:
-      use_ipcw: false
-      
-  # 5. 架构消融：移除 CDAN 鉴别器 (退化为无监督模型)
+  # 4. [DISABLED] 架构消融：移除 IPCW 删失权重
+  # no_ipcw 已禁用：trainer.py 未检查 use_ipcw 标志，设置该字段不会实际修改 loss。
+  # 若需严格消融，须在 trainer.py 中加入 use_ipcw 分支后重新启用。
+  # no_ipcw:
+  #   training:
+  #     use_ipcw: false
+
+  # 5. 架构消融：移除 CDAN 鉴别器（adv_weight=0 即禁用对抗损失）
   no_cdan:
     training:
       adv_weight: 0.0

@@ -30,7 +30,8 @@ We propose **CDAN-GSN**, a transport-aware survival framework for cross-center i
 │   ├── train/            # Stratified Cox & DA training loop
 │   ├── evaluate/         # C-index & Time-dependent AUC metrics
 │   └── visualization/    # SHAP and t-SNE plotting scripts
-├── tables/               # Auto-generated LaTeX tables for Overleaf
+├── tables/               # Auto-generated LaTeX tables (regenerated from experiments/results/ after each run)
+├── archive/legacy_outputs/ # Historical mock/placeholder outputs — NOT current results
 ├── run_all.py            # One-click execution pipeline
 └── pyproject.toml        # Ruff, Mypy, and Pytest configurations
 ```

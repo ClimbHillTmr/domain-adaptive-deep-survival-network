@@ -1,24 +1,39 @@
 {
-  "source": {
-    "path": "data/processed/深医_final_data.csv",
-    "sha256": "82a75ca4391e077efd03a3b9a70b2df4d43dcb1dbab31e9127d475ed8d387ce1",
-    "n_rows": 216604,
-    "n_cols": 138,
-    "n_patients": 1637,
-    "n_events": 23880,
-    "event_rate": 0.11024727151853152,
-    "min_dialysis_date": "2017-01-12 00:00:00",
-    "max_dialysis_date": "2022-10-08 00:00:00"
-  },
-  "target": {
-    "path": "data/processed/福鼎_final_data.csv",
-    "sha256": "0bed70a585f4d084665b470b4afdc114f154938bf17a4ba20ab4b954a287dbc5",
-    "n_rows": 75224,
-    "n_cols": 138,
-    "n_patients": 430,
-    "n_events": 26915,
-    "event_rate": 0.35779804317770925,
-    "min_dialysis_date": "2020-10-30 00:00:00",
-    "max_dialysis_date": "2022-08-20 00:00:00"
+  "generated_at": "2026-07-07T14:50:32.568605",
+  "files": {
+    "深医": {
+      "file_path": "data/processed/深医_final_data.csv",
+      "sha256": "82a75ca4391e077efd03a3b9a70b2df4d43dcb1dbab31e9127d475ed8d387ce1",
+      "n_rows": 216604,
+      "n_cols": 138,
+      "n_patients": 1637,
+      "n_events": 23880,
+      "event_rate": 0.110247,
+      "et_min_range": [
+        0.0,
+        820.0
+      ],
+      "dialysis_date_range": [
+        "2017-01-12 00:00:00",
+        "2022-10-08 00:00:00"
+      ]
+    },
+    "福鼎": {
+      "file_path": "data/processed/福鼎_final_data.csv",
+      "sha256": "0bed70a585f4d084665b470b4afdc114f154938bf17a4ba20ab4b954a287dbc5",
+      "n_rows": 75224,
+      "n_cols": 138,
+      "n_patients": 430,
+      "n_events": 26915,
+      "event_rate": 0.357798,
+      "et_min_range": [
+        -1260.0,
+        1351.0
+      ],
+      "dialysis_date_range": [
+        "2020-10-30 00:00:00",
+        "2022-08-20 00:00:00"
+      ]
+    }
   }
 }
