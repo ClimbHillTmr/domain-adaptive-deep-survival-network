@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pandas as pd
 import yaml
+
+from src.data.dataset import build_feature_tables
 from sklearn.model_selection import train_test_split
 
 
@@ -80,13 +82,40 @@ def main():
     out_dir = Path("experiments/audit")
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    (
+        _x_s,
+        _x_t,
+        e_s,
+        _t_s,
+        e_t,
+        _t_t,
+        feature_names,
+        df_s_model,
+        df_t_model,
+        _category_mappings,
+    ) = build_feature_tables(
+        source_path,
+        target_path,
+        return_dataframes=True,
+    )
+
     data = {
-        "source": manifest(source_path, patient_col, event_col),
-        "target": manifest(target_path, patient_col, event_col),
+        "source": {
+            **manifest(source_path, patient_col, event_col),
+            "model_ready_n_rows": int(len(df_s_model)),
+            "model_ready_n_events": int(e_s.sum()),
+            "model_ready_n_features": int(len(feature_names)),
+        },
+        "target": {
+            **manifest(target_path, patient_col, event_col),
+            "model_ready_n_rows": int(len(df_t_model)),
+            "model_ready_n_events": int(e_t.sum()),
+            "model_ready_n_features": int(len(feature_names)),
+        },
     }
     (out_dir / "data_manifest.json").write_text(json.dumps(data, ensure_ascii=False, indent=2))
 
-    target = pd.read_csv(target_path)
+    target = df_t_model.copy()
     sets = patient_split(
         target,
         event_col,
@@ -99,6 +128,10 @@ def main():
         name: {"n_patients": len(ids), "n_sessions": int(target[patient_col].astype(str).isin(ids).sum())}
         for name, ids in sets.items()
     }
+    split["audit_basis"] = "model_ready_target_dataset"
+    split["target_rows_before_model_filter"] = int(data["target"]["n_rows"])
+    split["target_rows_after_model_filter"] = int(data["target"]["model_ready_n_rows"])
+    split["target_rows_removed_before_split"] = int(data["target"]["n_rows"] - data["target"]["model_ready_n_rows"])
     split["overlap_train_val"] = len(sets["train"] & sets["val"])
     split["overlap_train_test"] = len(sets["train"] & sets["test"])
     split["overlap_val_test"] = len(sets["val"] & sets["test"])

@@ -1,0 +1,37 @@
+feature,category,available_at_prediction_time,source_column,allowed,reason
+性别,demographic,start,性别,yes,baseline demographic
+透析龄占比,demographic,start,透析龄占比,yes,baseline dialysis vintage ratio
+超负荷,pre_dialysis,start,超负荷,yes,pre-dialysis volume status
+历史平均超滤量MAX,history,start,历史平均超滤量MAX,yes,prior-session aggregate only
+历史平均透前体重,history,start,历史平均透前体重,yes,prior-session aggregate only
+历史平均透前收缩压,history,start,历史平均透前收缩压,yes,prior-session aggregate only
+历史平均透前舒张压,history,start,历史平均透前舒张压,yes,prior-session aggregate only
+历史平均透中低血压_计算,history,start,历史平均透中低血压_计算,yes,prior-session event burden only
+抗凝剂类型_code,treatment_context,start,抗凝剂类型,yes,prescribed treatment context
+透析方式_code,treatment_context,start,透析方式,yes,prescribed treatment context
+瘘管类型_code,treatment_context,start,瘘管类型,yes,baseline access context
+瘘管位置_code,treatment_context,start,瘘管位置,yes,baseline access context
+透析液钙浓度,treatment_context,start,透析液钙浓度,yes,prescribed dialysate setting
+透析液电导率,treatment_context,start,透析液电导率,yes,prescribed dialysate setting
+透前体重-干体重,pre_dialysis,start,透前体重-干体重,yes,pre-dialysis status
+透前呼吸频率,pre_dialysis,start,透前呼吸频率,yes,pre-dialysis vital sign
+透前体温,pre_dialysis,start,透前体温,yes,pre-dialysis vital sign
+透前收缩压,pre_dialysis,start,透前收缩压,yes,pre-dialysis vital sign
+透前舒张压,pre_dialysis,start,透前舒张压,yes,pre-dialysis vital sign
+透前动脉压,pre_dialysis,start,透前动脉压,yes,pre-dialysis vital sign
+脉压差,pre_dialysis,start,脉压差,yes,derived from pre-dialysis BP
+平均动脉压,pre_dialysis,start,平均动脉压,yes,derived from pre-dialysis BP
+history_HBP_rate,history,start,history_HBP_rate,yes,prior-session IDH burden legacy name
+history_LBP_times_0_rate,history,start,history_LBP_times_0_rate,yes,prior-session no-IDH burden legacy name
+history_LBP_times_1_rate,history,start,history_LBP_times_1_rate,yes,prior-session timing-bin burden
+history_LBP_times_2_rate,history,start,history_LBP_times_2_rate,yes,prior-session timing-bin burden
+history_LBP_times_3_rate,history,start,history_LBP_times_3_rate,yes,prior-session timing-bin burden
+history_LBP_times_4_rate,history,start,history_LBP_times_4_rate,yes,prior-session timing-bin burden
+透析中收缩压_mean,current_session_future,end,透析中收缩压,no,current-session intradialytic summary
+透析中收缩压_std,current_session_future,end,透析中收缩压,no,current-session intradialytic summary
+透析中舒张压_mean,current_session_future,end,透析中舒张压,no,current-session intradialytic summary
+透析中舒张压_std,current_session_future,end,透析中舒张压,no,current-session intradialytic summary
+动脉压_mean,current_session_future,end,动脉压,no,current-session intradialytic summary
+动脉压_std,current_session_future,end,动脉压,no,current-session intradialytic summary
+et_min,outcome,end,et_min,no,outcome
+events,outcome,end,events,no,outcome

@@ -1,0 +1,21 @@
+{
+  "train": {
+    "n_patients": 68,
+    "n_sessions": 12722
+  },
+  "val": {
+    "n_patients": 18,
+    "n_sessions": 3154
+  },
+  "test": {
+    "n_patients": 344,
+    "n_sessions": 59302
+  },
+  "audit_basis": "model_ready_target_dataset",
+  "target_rows_before_model_filter": 75224,
+  "target_rows_after_model_filter": 75178,
+  "target_rows_removed_before_split": 46,
+  "overlap_train_val": 0,
+  "overlap_train_test": 0,
+  "overlap_val_test": 0
+}

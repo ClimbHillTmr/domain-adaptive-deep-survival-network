@@ -1,0 +1,73 @@
+{
+  "audit": {
+    "data_manifest": {
+      "exists": true,
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/experiments/audit/data_manifest.json",
+      "size_bytes": 750,
+      "modified_at_epoch": 1783048930.4775507
+    },
+    "split_audit": {
+      "exists": true,
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/experiments/audit/split_audit.json",
+      "size_bytes": 269,
+      "modified_at_epoch": 1783048930.8974028
+    },
+    "history_feature_audit": {
+      "exists": true,
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/experiments/audit/history_feature_audit.csv",
+      "size_bytes": 1037,
+      "modified_at_epoch": 1783048932.3809903
+    },
+    "feature_allowlist": {
+      "exists": true,
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/experiments/audit/feature_allowlist.csv",
+      "size_bytes": 3284,
+      "modified_at_epoch": 1783048222.5578828
+    }
+  },
+  "results": {
+    "evaluation_results": {
+      "exists": true,
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/experiments/results/evaluation_results.json",
+      "size_bytes": 2571,
+      "modified_at_epoch": 1783049097.7009926
+    },
+    "prediction_metadata": {
+      "exists": true,
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/experiments/results/prediction_metadata.json",
+      "size_bytes": 192,
+      "modified_at_epoch": 1783049105.0512261
+    },
+    "real_test_predictions": {
+      "exists": true,
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/experiments/results/real_test_predictions.csv",
+      "size_bytes": 104278968,
+      "modified_at_epoch": 1783049105.0071998
+    }
+  },
+  "checks": {
+    "expected_test_sessions": 59334,
+    "patient_overlap_zero": {
+      "overlap_train_val": true,
+      "overlap_train_test": true,
+      "overlap_val_test": true
+    },
+    "prediction_metadata_n_test": 59302,
+    "prediction_csv_rows": 59302,
+    "results_older_than_latest_audit": false
+  },
+  "inconsistencies": [
+    {
+      "type": "prediction_metadata_mismatch",
+      "expected": 59334,
+      "observed": 59302
+    },
+    {
+      "type": "prediction_row_count_mismatch",
+      "expected": 59334,
+      "observed": 59302
+    }
+  ],
+  "can_be_used_for_submission": false,
+  "summary": "这些结果文件存在，但不能作为当前审计版本的投稿证据。"
+}

@@ -1,0 +1,27 @@
+{
+  "run_id": "locked_run_20260703_114651_ea14e792db5b",
+  "run_dir": "/home/cht/Works/domain-adaptive-deep-survival-network/experiments/runs/locked_run_20260703_114651_ea14e792db5b",
+  "logs_dir": "/home/cht/Works/domain-adaptive-deep-survival-network/experiments/runs/locked_run_20260703_114651_ea14e792db5b/logs",
+  "snapshot_dir": "/home/cht/Works/domain-adaptive-deep-survival-network/experiments/runs/locked_run_20260703_114651_ea14e792db5b/snapshots",
+  "artifact_dir": "/home/cht/Works/domain-adaptive-deep-survival-network/experiments/runs/locked_run_20260703_114651_ea14e792db5b/artifacts",
+  "created_at": "20260703_114651",
+  "config_sha256": "f41344d09d113a604a53a056f83d45687e0c894790e259bb1d770269f3421e24",
+  "tracked_inputs": {
+    "config": {
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/conf/config.yaml",
+      "sha256": "0b9fb8338df9bf956edfd895199b8217a66956f73611a49629251014bbe8c0f1"
+    },
+    "source_data": {
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/data/processed/深医_final_data.csv",
+      "sha256": "d8709f995c9a7cd92fc96fd7a3090bf18205136b770dfc4ab1bf33825779f630"
+    },
+    "target_data": {
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/data/processed/福鼎_final_data.csv",
+      "sha256": "5636d6ab3a4b1d8d4ec56312296750b988cc9287548569415e24492ec146a36e"
+    },
+    "feature_allowlist": {
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/experiments/audit/feature_allowlist.csv",
+      "sha256": "b4d7138440a09b57319a8222e74ca45ef7ee865f6684bf1d3b6d45de28e26a48"
+    }
+  }
+}
