@@ -1,0 +1,202 @@
+{
+  "cox": {
+    "C-index": 0.8378216733639404,
+    "C-index_CI_lower": 0.8276757935743642,
+    "C-index_CI_upper": 0.8478276288915049,
+    "AUC_30m": 0.7393763534616457,
+    "AUC_60m": 0.8609568774920383,
+    "AUC_120m": 0.8652844855017394,
+    "penalizer": 0.001,
+    "n_features_used": 23
+  },
+  "cdan_gsn_grid": [
+    {
+      "name": "A_current",
+      "hparams": {
+        "d_model": 64,
+        "num_layers": 2,
+        "num_heads": 4,
+        "dropout": 0.25,
+        "kan_bases": 8,
+        "pretrain_epochs": 20,
+        "lr": 0.001,
+        "finetune_lr": 0.0001,
+        "adv_weight": 0.03,
+        "mask_l1_weight": 0.03
+      },
+      "metrics": {
+        "C-index": 0.8395445304135425,
+        "C-index_CI_lower": 0.8281899237756676,
+        "C-index_CI_upper": 0.8509495403888184,
+        "bootstrap_unit": "patient",
+        "n_bootstrap": 200,
+        "seed": 42,
+        "AUC_30m": 0.721791417415314,
+        "AUC_60m": 0.8556748462396294,
+        "AUC_120m": 0.8652419228642632
+      }
+    },
+    {
+      "name": "B_larger",
+      "hparams": {
+        "d_model": 128,
+        "num_layers": 2,
+        "num_heads": 4,
+        "dropout": 0.3,
+        "kan_bases": 12,
+        "pretrain_epochs": 30,
+        "lr": 0.001,
+        "finetune_lr": 5e-05,
+        "adv_weight": 0.01,
+        "mask_l1_weight": 0.02
+      },
+      "metrics": {
+        "C-index": 0.840462702494191,
+        "C-index_CI_lower": 0.8299081385389606,
+        "C-index_CI_upper": 0.8511532685960411,
+        "bootstrap_unit": "patient",
+        "n_bootstrap": 200,
+        "seed": 42,
+        "AUC_30m": 0.7251705153219601,
+        "AUC_60m": 0.8587939038145468,
+        "AUC_120m": 0.8668238355703728
+      }
+    },
+    {
+      "name": "C_deep",
+      "hparams": {
+        "d_model": 96,
+        "num_layers": 3,
+        "num_heads": 4,
+        "dropout": 0.3,
+        "kan_bases": 10,
+        "pretrain_epochs": 30,
+        "lr": 0.0008,
+        "finetune_lr": 5e-05,
+        "adv_weight": 0.005,
+        "mask_l1_weight": 0.01,
+        "phases_config": [
+          [
+            "head_only",
+            8,
+            4
+          ],
+          [
+            "partial_unfreeze",
+            10,
+            4
+          ],
+          [
+            "full_finetune",
+            15,
+            5
+          ]
+        ]
+      },
+      "metrics": {
+        "C-index": 0.8380074144141313,
+        "C-index_CI_lower": 0.8266259728026353,
+        "C-index_CI_upper": 0.8494662109882374,
+        "bootstrap_unit": "patient",
+        "n_bootstrap": 200,
+        "seed": 42,
+        "AUC_30m": 0.7422041800374979,
+        "AUC_60m": 0.8548232696763203,
+        "AUC_120m": 0.8641763972368047
+      }
+    },
+    {
+      "name": "D_pretrain_focus",
+      "hparams": {
+        "d_model": 64,
+        "num_layers": 2,
+        "num_heads": 4,
+        "dropout": 0.2,
+        "kan_bases": 8,
+        "pretrain_epochs": 40,
+        "lr": 0.001,
+        "finetune_lr": 3e-05,
+        "adv_weight": 0.001,
+        "mask_l1_weight": 0.01,
+        "phases_config": [
+          [
+            "head_only",
+            10,
+            5
+          ],
+          [
+            "partial_unfreeze",
+            12,
+            5
+          ],
+          [
+            "full_finetune",
+            18,
+            6
+          ]
+        ]
+      },
+      "metrics": {
+        "C-index": 0.8413608087775049,
+        "C-index_CI_lower": 0.8305893510717403,
+        "C-index_CI_upper": 0.8522505854844991,
+        "bootstrap_unit": "patient",
+        "n_bootstrap": 200,
+        "seed": 42,
+        "AUC_30m": 0.7291294725281532,
+        "AUC_60m": 0.8585044931384799,
+        "AUC_120m": 0.8675140537498351
+      }
+    },
+    {
+      "name": "E_balanced",
+      "hparams": {
+        "d_model": 96,
+        "num_layers": 2,
+        "num_heads": 4,
+        "dropout": 0.25,
+        "kan_bases": 10,
+        "pretrain_epochs": 25,
+        "lr": 0.001,
+        "finetune_lr": 8e-05,
+        "adv_weight": 0.02,
+        "mask_l1_weight": 0.02,
+        "phases_config": [
+          [
+            "head_only",
+            8,
+            4
+          ],
+          [
+            "partial_unfreeze",
+            10,
+            4
+          ],
+          [
+            "full_finetune",
+            14,
+            5
+          ]
+        ]
+      },
+      "metrics": {
+        "C-index": 0.8413336842454411,
+        "C-index_CI_lower": 0.8305604016102752,
+        "C-index_CI_upper": 0.8529661202230364,
+        "bootstrap_unit": "patient",
+        "n_bootstrap": 200,
+        "seed": 42,
+        "AUC_30m": 0.7301357690282712,
+        "AUC_60m": 0.8589747902859154,
+        "AUC_120m": 0.8676888961307255
+      }
+    }
+  ],
+  "summary": {
+    "cox_cindex": 0.8378216733639404,
+    "best_cdan_config": "D_pretrain_focus",
+    "best_cdan_cindex": 0.8413608087775049,
+    "cdan_beats_cox": true,
+    "gap": 0.0035391354135644315
+  }
+}
