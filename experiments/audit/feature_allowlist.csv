@@ -7,12 +7,12 @@ feature,category,available_at_prediction_time,source_column,allowed,reason
 历史平均透前收缩压,history,start,历史平均透前收缩压,yes,prior-session aggregate only
 历史平均透前舒张压,history,start,历史平均透前舒张压,yes,prior-session aggregate only
 历史平均透中低血压_计算,history,start,历史平均透中低血压_计算,yes,prior-session event burden only
-抗凝剂类型_code,treatment_context,start,抗凝剂类型,yes,prescribed treatment context
-透析方式_code,treatment_context,start,透析方式,yes,prescribed treatment context
-瘘管类型_code,treatment_context,start,瘘管类型,yes,baseline access context
-瘘管位置_code,treatment_context,start,瘘管位置,yes,baseline access context
-透析液钙浓度,treatment_context,start,透析液钙浓度,yes,prescribed dialysate setting
-透析液电导率,treatment_context,start,透析液电导率,yes,prescribed dialysate setting
+抗凝剂类型_code,treatment_context,start,抗凝剂类型,no,low variance in target center — ablation shows removal improves C-index
+透析方式_code,treatment_context,start,透析方式,no,low variance in target center — ablation shows removal improves C-index
+瘘管类型_code,treatment_context,start,瘘管类型,no,low variance in target center — ablation shows removal improves C-index
+瘘管位置_code,treatment_context,start,瘘管位置,no,low variance in target center — ablation shows removal improves C-index
+透析液钙浓度,treatment_context,start,透析液钙浓度,no,low variance in target center — ablation shows removal improves C-index
+透析液电导率,treatment_context,start,透析液电导率,no,low variance in target center — ablation shows removal improves C-index
 透前体重-干体重,pre_dialysis,start,透前体重-干体重,yes,pre-dialysis status
 透前呼吸频率,pre_dialysis,start,透前呼吸频率,yes,pre-dialysis vital sign
 透前体温,pre_dialysis,start,透前体温,yes,pre-dialysis vital sign

@@ -99,68 +99,78 @@ def run_source_pretrain(model, source_loader, x_val, e_val, t_val, lr, device, m
     return best_val, best_epoch, best_state
 
 def run_domain_stratified_da(
-    model, source_loader, target_loader, x_val, e_val, t_val, 
+    model, source_loader, target_loader, x_val, e_val, t_val,
     adv_weight, source_replay_weight, mask_l1_weight, lr, device,
-    phases_config=None
+    phases_config=None, finetune_lr=None
 ):
+    if finetune_lr is None:
+        finetune_lr = lr * 0.1  # default: 10x lower for fine-tuning
+
     if phases_config is None:
         phases_config = [
-            ("head_only", 4, 2),
-            ("partial_unfreeze", 6, 2),
-            ("full_finetune", 20, 4),
+            ("head_only", 6, 3),
+            ("partial_unfreeze", 8, 3),
+            ("full_finetune", 12, 4),
         ]
-        
+
     phase_results = []
-    
+
     for phase, max_epochs, patience in phases_config:
         set_trainable_state(model, phase)
-        optimizer = build_optimizer(model, phase, lr)
-        
+        phase_lr = finetune_lr if phase == "full_finetune" else lr
+        optimizer = build_optimizer(model, phase, phase_lr)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, T_max=max_epochs, eta_min=phase_lr * 0.01
+        )
+
         metrics = evaluate_survival_metrics(model, x_val, e_val, t_val, device=device)
         best_val, best_epoch = metrics["C-index"], 0
         best_state = copy.deepcopy(model.state_dict())
         patience_left = patience
-        
+
         for epoch in range(1, max_epochs + 1):
             model.train()
-            coeff = min(1.0, epoch / max_epochs)
+            # Slow GRL ramp: cap at 0.5, ramp over 2x the phase length
+            coeff = min(0.5, epoch / (2.0 * max_epochs))
             source_iter = iter(source_loader)
-            
+
             for x_t, e_t, t_t, w_t in target_loader:
                 try:
                     x_s, e_s, t_s, w_s = next(source_iter)
                 except StopIteration:
                     source_iter = iter(source_loader)
                     x_s, e_s, t_s, w_s = next(source_iter)
-                
+
                 x_t = x_t.to(device)
                 e_t = e_t.to(device)
                 t_t = t_t.to(device)
                 w_t = w_t.to(device)
-                
+
                 x_s = x_s.to(device)
                 e_s = e_s.to(device)
                 t_s = t_s.to(device)
                 w_s = w_s.to(device)
-                
+
                 optimizer.zero_grad()
-                
+
                 _, hazard_t, dom_t, mask_l1_t = model(x_t, grl_coeff=coeff)
                 _, hazard_s, dom_s, mask_l1_s = model(x_s, grl_coeff=coeff)
-                
+
                 target_cox = weighted_cox_loss(hazard_t, e_t, t_t, w_t)
                 source_cox = weighted_cox_loss(hazard_s, e_s, t_s, w_s)
-                
+
                 adv_loss = domain_loss_from_logits(dom_s, dom_t)
                 l1_loss = (mask_l1_t + mask_l1_s) / 2.0
-                
+
                 loss = target_cox + source_replay_weight * source_cox + adv_weight * adv_loss + mask_l1_weight * l1_loss
                 loss.backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
                 optimizer.step()
-                
+
+            scheduler.step()
             metrics = evaluate_survival_metrics(model, x_val, e_val, t_val, device=device)
             val_cindex = metrics["C-index"]
-            
+
             if val_cindex > best_val:
                 best_val, best_epoch = val_cindex, epoch
                 best_state = copy.deepcopy(model.state_dict())
@@ -169,8 +179,8 @@ def run_domain_stratified_da(
                 patience_left -= 1
                 if patience_left <= 0:
                     break
-                    
+
         model.load_state_dict(best_state)
         phase_results.append({"phase": phase, "best_adapt_val_cindex": best_val, "best_epoch": best_epoch})
-        
+
     return phase_results

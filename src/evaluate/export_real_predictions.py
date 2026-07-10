@@ -244,6 +244,7 @@ def main():
             source_replay_weight=0.1,
             mask_l1_weight=config["training"]["mask_l1_weight"],
             lr=config["training"]["learning_rate"],
+            finetune_lr=config["training"].get("finetune_lr", 0.0001),
             device=device,
         )
 

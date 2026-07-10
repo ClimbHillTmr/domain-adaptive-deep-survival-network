@@ -19,15 +19,15 @@ data:
   event_col: "events"
   patient_col: "患者id"
   split_strategy: "patient"
-  target_adapt_ratio: 0.20
-  target_val_ratio: 0.20
+  target_adapt_ratio: 0.40
+  target_val_ratio: 0.15
 
 model:
   name: "cdan_gsn_kan"
   d_model: 64
   num_layers: 2
   num_heads: 4
-  dropout: 0.15
+  dropout: 0.25
   domain_hidden: 64
   kan_bases: 8
 
@@ -35,7 +35,8 @@ training:
   seed: 42
   batch_size: 256
   learning_rate: 0.001
-  adv_weight: 0.05
-  mask_l1_weight: 0.05
-  pretrain_epochs: 18
-  finetune_epochs: 20
+  finetune_lr: 0.0001
+  adv_weight: 0.03
+  mask_l1_weight: 0.03
+  pretrain_epochs: 20
+  finetune_epochs: 12
