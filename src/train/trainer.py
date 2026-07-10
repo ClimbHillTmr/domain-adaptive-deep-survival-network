@@ -62,7 +62,7 @@ def build_optimizer(model, phase, lr, top_encoder_lr=None):
         return optim.AdamW(params_to_update, weight_decay=1e-4)
     raise ValueError(phase)
 
-def run_source_pretrain(model, source_loader, x_val, e_val, t_val, lr, device, max_epochs=18, patience=4):
+def run_source_pretrain(model, source_loader, x_val, e_val, t_val, lr, device, max_epochs=40, patience=5):
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
     best_val, best_epoch = -float('inf'), 0
     best_state = copy.deepcopy(model.state_dict())
@@ -108,9 +108,9 @@ def run_domain_stratified_da(
 
     if phases_config is None:
         phases_config = [
-            ("head_only", 6, 3),
-            ("partial_unfreeze", 8, 3),
-            ("full_finetune", 12, 4),
+            ("head_only", 10, 5),
+            ("partial_unfreeze", 12, 5),
+            ("full_finetune", 18, 6),
         ]
 
     phase_results = []
