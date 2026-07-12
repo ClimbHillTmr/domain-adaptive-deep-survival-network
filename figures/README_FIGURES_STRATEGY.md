@@ -1,15 +1,18 @@
-# Submission Figure Strategy
+# Publication Figure Manifest
 
 ## Main Figures
-- `Fig1_Cohort_Split_Audit`: 研究样本量与福鼎 patient-level split 审计合并图。
-- `Fig2_Cross_Center_Shift`: 基线偏移与事件时间结构偏移合并图。
-- `Fig3_Performance_Comparison`: held-out test 上的主性能比较图，仅引用当前 locked run。
-- `Fig4_Calibration_DCA`: 60/120 分钟校准与 DCA 合并图，仅引用当前 held-out predictions。
+- `Fig1_Cohort_Flow`: 研究样本流转与分析队列规模，基于原始 CSV 与 Table 1 冻结样本量。
+- `Fig2_Baseline_Shift`: 深医与福鼎关键基线变量的中心间偏移。
+- `Fig3_Event_Timing_Stages`: 两中心低血压发生时间阶段分布。
+- `Fig4_KM_Center_Comparison`: 两中心 IDH-free survival 曲线比较。
+- `Fig5_Performance_Comparison`: 外部验证模型性能比较，基于 `table2_performance.csv`。
+- `Fig6_Target_Subgroup_Burden`: 福鼎队列亚组 IDH 事件负担。
 
 ## Supplementary Figures
-- `FigS1_Target_Subgroup_Burden`: held-out test 亚组事件负担图；只作补充，不宣称亚组优势。
+- `FigS1_Architecture`: 方法学架构图，限定为统计学对齐而非因果 DAG。
+- `FigS2_Phenotype_Transition`: 定性状态转移概念图，仅作机制讨论辅助。
 
-## Net-room Rules
-- 禁止恢复 SHAP、mock、pseudo fairness 图，除非完全基于当前 held-out predictions 重建。
-- 不再沿用旧的 8 主图结构；投稿版以 4 个主图 + 1 个补图为上限。
-- 所有 PDF 导出均强制 `pdf.fonttype = 3` 以满足印刷兼容性要求。
+## Important Notes
+- 当前仓库没有可复核的逐例预测文件，因此没有导出真实校准曲线或 DCA 图。
+- 当前仓库没有可复核的真实 SHAP 结果缓存，因此没有保留任何基于模拟数据的 SHAP 图。
+- 若后续补齐逐例预测与解释结果，应新增到 `figures/Main_Figures`，而不是覆盖现有真实数据图。

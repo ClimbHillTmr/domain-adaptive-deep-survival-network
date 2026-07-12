@@ -1,0 +1,38 @@
+{
+  "delong_auc": {
+    "30m": {
+      "AUC_CDAN-GSN": 0.7291299489942991,
+      "AUC_CoxPH": 0.737367572190577,
+      "AUC_diff": -0.008237623196277966,
+      "z": -0.7126700293017331,
+      "p_value": 0.47604996647208675,
+      "significant_0.05": false
+    },
+    "60m": {
+      "AUC_CDAN-GSN": 0.8585044850562453,
+      "AUC_CoxPH": 0.8610689255510096,
+      "AUC_diff": -0.0025644404947642307,
+      "z": -3.3204056215031277,
+      "p_value": 0.0008988674532198317,
+      "significant_0.05": true
+    },
+    "120m": {
+      "AUC_CDAN-GSN": 0.8675140497101012,
+      "AUC_CoxPH": 0.8648373839010072,
+      "AUC_diff": 0.002676665809093981,
+      "z": 4.215159204291375,
+      "p_value": 2.4960204741635868e-05,
+      "significant_0.05": true
+    }
+  },
+  "cindex_bootstrap": {
+    "CDAN-GSN_vs_CoxPH": {
+      "cindex_model1": 0.8413608087775049,
+      "cindex_model2": 0.8375637784295814,
+      "observed_diff": 0.003797030347923447,
+      "p_value_one_sided": 0.004,
+      "significant_0.05": true,
+      "n_bootstrap": 2000
+    }
+  }
+}

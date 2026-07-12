@@ -73,3 +73,8 @@ backup/data_preprocessing/data/
 data/raw/
 data/processed/
 data_preprocessing/data/
+
+# 大型预测结果文件
+experiments/results/real_test_predictions.csv
+experiments/runs/**/real_test_predictions.csv
+delivery_domain-adaptive-deep-survival-network_*/**/real_test_predictions.csv
