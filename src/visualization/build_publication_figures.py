@@ -17,7 +17,7 @@ from src.visualization.generate_architecture import generate_architecture_diagra
 from src.visualization.generate_phenotype_transition import generate_phenotype_transition
 
 
-ROOT = Path("/home/cht/Works/domain-adaptive-deep-survival-network")
+ROOT = Path(__file__).resolve().parents[2]  # project root: src/visualization/../../
 FIG_ROOT = ROOT / "figures"
 MAIN_DIR = FIG_ROOT / "Main_Figures"
 SUPP_DIR = FIG_ROOT / "Supplementary_Figures"
