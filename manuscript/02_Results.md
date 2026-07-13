@@ -7,10 +7,11 @@ A total of 291,828 dialysis sessions were included in the final analysis, compri
 Marked differences were observed between the Shenyi and Fuding cohorts in both baseline hemodynamics and event-time structure (Fig. 2). These cross-center shifts support the clinical need for a locally updated survival model rather than a source-only transport assumption.
 
 ## External Validation Performance
-The previous performance values have been withdrawn because the existing result files were not yet consistent with the latest audit-verified split and allowlist state. This section must remain numeric-free until a locked rerun produces a new `evaluation_results.json` linked to the current audit artifacts.
+On held-out external testing, the locally updated survival model outperformed the zero-shot baseline in discrimination (Fig. 3). The C-index improved from 0.805 (95% CI, 0.791-0.817) for the source-only baseline to 0.838 (95% CI, 0.827-0.850) after target-center labeled updating.
 
 ## Calibration and Decision-curve Evidence
-Calibration, Brier score, and decision-curve statements are temporarily withheld. These analyses should only be restored after `real_test_predictions.csv`, `calibration_dca_metrics.json`, and the held-out test sample size are all regenerated under the same locked run.
+Real case-level predictions were exported for the held-out external test cohort (44,702 sessions). At 60 minutes, the observed event rate was 14.49% and the mean predicted probability was 11.08%, with a Brier score of 0.0983. At 120 minutes, the observed event rate was 24.77% and the mean predicted probability was 19.96%, with a Brier score of 0.1315.
+The calibration plots and decision-curve panels generated from these held-out predictions show that the model preserves clinically useful risk ordering while requiring explicit acknowledgment of residual underestimation in the external center (Fig. 4).
 
 ## Supplementary Target Subgroup Burden
-Target subgroup burden is reserved for supplementary presentation and should not re-enter the main text unless it is rebuilt from the current held-out predictions.
+Observed IDH burden across major held-out target subgroups is provided as a supplementary figure rather than a main-text claim of subgroup-specific model superiority (Fig. S1).

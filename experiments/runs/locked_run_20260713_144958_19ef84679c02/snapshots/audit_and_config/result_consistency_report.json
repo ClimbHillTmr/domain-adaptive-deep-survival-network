@@ -1,0 +1,64 @@
+{
+  "audit": {
+    "data_manifest": {
+      "exists": true,
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/experiments/audit/data_manifest.json",
+      "size_bytes": 955,
+      "modified_at_epoch": 1783925402.7471077
+    },
+    "split_audit": {
+      "exists": true,
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/experiments/audit/split_audit.json",
+      "size_bytes": 446,
+      "modified_at_epoch": 1783925402.7587097
+    },
+    "history_feature_audit": {
+      "exists": true,
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/experiments/audit/history_feature_audit.csv",
+      "size_bytes": 1037,
+      "modified_at_epoch": 1783925404.2776067
+    },
+    "feature_allowlist": {
+      "exists": true,
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/experiments/audit/feature_allowlist.csv",
+      "size_bytes": 5518,
+      "modified_at_epoch": 1783648037.0196173
+    }
+  },
+  "results": {
+    "evaluation_results": {
+      "exists": true,
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/experiments/results/evaluation_results.json",
+      "size_bytes": 2407,
+      "modified_at_epoch": 1783925562.3428452
+    },
+    "prediction_metadata": {
+      "exists": true,
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/experiments/results/prediction_metadata.json",
+      "size_bytes": 247,
+      "modified_at_epoch": 1783925570.434164
+    },
+    "real_test_predictions": {
+      "exists": true,
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/experiments/results/real_test_predictions.csv",
+      "size_bytes": 75562672,
+      "modified_at_epoch": 1783925570.344639
+    }
+  },
+  "checks": {
+    "expected_test_sessions": 44702,
+    "patient_overlap_zero": {
+      "overlap_train_val": true,
+      "overlap_train_test": true,
+      "overlap_val_test": true
+    },
+    "prediction_metadata_n_test": 44702,
+    "prediction_csv_rows": 44702,
+    "evaluation_run_id": "locked_run_20260713_144958_19ef84679c02",
+    "prediction_run_id": "locked_run_20260713_144958_19ef84679c02",
+    "results_older_than_latest_audit": false
+  },
+  "inconsistencies": [],
+  "can_be_used_for_submission": true,
+  "summary": "当前结果文件与审计版本一致，可作为投稿证据。"
+}

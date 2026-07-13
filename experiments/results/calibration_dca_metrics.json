@@ -1,0 +1,53 @@
+{
+  "30m": {
+    "observed_rate": 0.0010515952924329889,
+    "mean_predicted_rate": 0.0011091167214936836,
+    "brier": 0.0010512132970465888,
+    "calibration_intercept": -3.026676457882595,
+    "calibration_slope": 0.5198972445717062,
+    "net_benefit_threshold_range": {
+      "min": 0.01,
+      "max": 0.6,
+      "n_thresholds": 60,
+      "max_net_benefit": 0.0,
+      "max_delta_vs_treat_all": 1.4973710117689172,
+      "max_delta_vs_treat_none": 0.0
+    },
+    "n_eligible": 44694,
+    "n_excluded_censored_before_horizon": 8
+  },
+  "60m": {
+    "observed_rate": 0.14485197037169648,
+    "mean_predicted_rate": 0.11083079829065441,
+    "brier": 0.09825853474153885,
+    "calibration_intercept": 0.24685986640011764,
+    "calibration_slope": 0.8933762335463084,
+    "net_benefit_threshold_range": {
+      "min": 0.01,
+      "max": 0.6,
+      "n_thresholds": 60,
+      "max_net_benefit": 0.13785990231041365,
+      "max_delta_vs_treat_all": 1.139962405173764,
+      "max_delta_vs_treat_none": 0.13785990231041365
+    },
+    "n_eligible": 44687,
+    "n_excluded_censored_before_horizon": 15
+  },
+  "120m": {
+    "observed_rate": 0.24769735364155096,
+    "mean_predicted_rate": 0.19961788503072941,
+    "brier": 0.13148128383068228,
+    "calibration_intercept": 0.2978875437959623,
+    "calibration_slope": 0.8881115815931309,
+    "net_benefit_threshold_range": {
+      "min": 0.01,
+      "max": 0.6,
+      "n_thresholds": 60,
+      "max_net_benefit": 0.2417196632724332,
+      "max_delta_vs_treat_all": 0.9190254751314192,
+      "max_delta_vs_treat_none": 0.2417196632724332
+    },
+    "n_eligible": 44514,
+    "n_excluded_censored_before_horizon": 188
+  }
+}

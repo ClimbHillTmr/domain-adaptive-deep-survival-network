@@ -1,0 +1,42 @@
+defaults:
+  - _self_
+
+project:
+  name: "domain-adaptive-deep-survival-network"
+  version: "1.0.0"
+
+paths:
+  data_dir: "data/processed"
+  output_dir: "experiments/results"
+  figure_dir: "figures"
+  table_dir: "tables"
+  log_dir: "experiments/logs"
+
+data:
+  source_file: "深医_final_data.csv"
+  target_file: "福鼎_final_data.csv"
+  duration_col: "et_min"
+  event_col: "events"
+  patient_col: "患者id"
+  split_strategy: "patient"
+  target_adapt_ratio: 0.40
+  target_val_ratio: 0.15
+
+model:
+  name: "cdan_gsn_kan"
+  d_model: 64
+  num_layers: 2
+  num_heads: 4
+  dropout: 0.20
+  domain_hidden: 64
+  kan_bases: 8
+
+training:
+  seed: 42
+  batch_size: 256
+  learning_rate: 0.001
+  finetune_lr: 0.00003
+  adv_weight: 0.001
+  mask_l1_weight: 0.01
+  pretrain_epochs: 40
+  finetune_epochs: 18
