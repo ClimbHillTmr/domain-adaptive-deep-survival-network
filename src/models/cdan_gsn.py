@@ -128,7 +128,7 @@ class BSplineKANTokenizer(nn.Module):
         # Order-0 indicator basis: shape (B, F, G + 2k)
         basis = ((xb >= g[:-1]) & (xb < g[1:])).float()
         # Include right endpoint in the last interval to avoid zero basis at x=grid_hi
-        basis[..., -1] = basis[..., -1] | (xb[..., 0] >= g[-2])
+        basis[..., -1] = torch.logical_or(basis[..., -1] > 0, (xb[..., 0] >= g[-2])).float()
 
         # Recursive refinement from order 1 to k
         for p in range(1, self.spline_order + 1):
