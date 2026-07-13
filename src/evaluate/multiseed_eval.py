@@ -27,13 +27,12 @@ import numpy as np
 import pandas as pd
 import torch
 import yaml
-from sklearn.linear_model import Ridge
-from lifelines import CoxPHFitter
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from src.data.dataset import prepare_dataloaders
 from src.evaluate.metrics import concordance_index, compute_bootstrap_cindex
+from src.evaluate.run_local_cox_update import fit_linear_cox
 from src.models.cdan_gsn import DomainStratifiedGatedNet
 from src.reproducibility import seed_everything
 from src.train.trainer import run_domain_stratified_da, run_source_pretrain
@@ -81,11 +80,10 @@ def run_coxph_baseline(x_train, e_train, t_train, x_test, e_test, t_test, featur
     df_te = pd.DataFrame(x_test, columns=feature_names)
 
     try:
-        cph = CoxPHFitter(penalizer=0.1)
-        cph.fit(df_tr, duration_col="duration", event_col="event")
-        risk_scores = cph.predict_log_partial_hazard(df_te).values
+        train_frame = df_tr.rename(columns={"duration": "et_min", "event": "events"})
+        coefficients = fit_linear_cox(train_frame, feature_names, penalizer=0.1)
+        risk_scores = df_te.to_numpy(dtype=float) @ coefficients
     except Exception:
-        # lifelines may fail on small / degenerate datasets — fall back gracefully
         return None
 
     return concordance_index(t_test, risk_scores, e_test)

@@ -107,6 +107,9 @@ def train_and_eval(data_dict, config, device, tokenizer_type="kan", adv_weight_o
         model, data_dict["source_loader"],
         data_dict["x_val"], data_dict["e_val"], data_dict["t_val"],
         lr=lr, device=device, max_epochs=pretrain_epochs, patience=5,
+        x_source_val=data_dict["x_source_val"],
+        e_source_val=data_dict["e_source_val"],
+        t_source_val=data_dict["t_source_val"],
     )
 
     da_model = build_model(data_dict, config, tokenizer_type=tokenizer_type, device=device)

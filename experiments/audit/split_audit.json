@@ -1,18 +1,21 @@
 {
-  "split_strategy": "patient",
-  "seed": 42,
-  "target_n_patients_total": 430,
-  "adaptation_patients": 68,
-  "adaptation_sessions": 12722,
-  "adaptation_events": 4372,
-  "val_patients": 18,
-  "val_sessions": 3154,
-  "val_events": 1312,
-  "test_patients": 344,
-  "test_sessions": 59302,
-  "test_events": 21216,
-  "overlap_train_val": [],
-  "overlap_train_test": [],
-  "overlap_val_test": [],
-  "no_patient_overlap": true
+  "train": {
+    "n_patients": 146,
+    "n_sessions": 25907
+  },
+  "val": {
+    "n_patients": 26,
+    "n_sessions": 4569
+  },
+  "test": {
+    "n_patients": 258,
+    "n_sessions": 44702
+  },
+  "audit_basis": "model_ready_target_dataset",
+  "target_rows_before_model_filter": 75224,
+  "target_rows_after_model_filter": 75178,
+  "target_rows_removed_before_split": 46,
+  "overlap_train_val": 0,
+  "overlap_train_test": 0,
+  "overlap_val_test": 0
 }

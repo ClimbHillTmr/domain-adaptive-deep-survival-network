@@ -87,6 +87,26 @@ def concordance_index(t_eval, risk_scores, e_eval):
     return float(concordant / comparable)
 
 
+def _binary_auc(y_true, scores):
+    """Tie-aware binary AUC for observations with known horizon status."""
+    y_true = np.asarray(y_true, dtype=int)
+    scores = np.asarray(scores, dtype=float)
+    valid = np.isfinite(scores)
+    y_true, scores = y_true[valid], scores[valid]
+    n_pos = int(np.sum(y_true == 1))
+    n_neg = int(np.sum(y_true == 0))
+    if n_pos == 0 or n_neg == 0:
+        return None
+    order = np.argsort(scores, kind="mergesort")
+    ranks = np.empty(len(scores), dtype=float)
+    ranks[order] = np.arange(1, len(scores) + 1, dtype=float)
+    for value in np.unique(scores):
+        tied = scores == value
+        if tied.sum() > 1:
+            ranks[tied] = ranks[tied].mean()
+    return float((ranks[y_true == 1].sum() - n_pos * (n_pos + 1) / 2) / (n_pos * n_neg))
+
+
 def compute_ipcw_weights(t_fit, e_fit, t_eval=None):
     if t_eval is None:
         t_eval = t_fit

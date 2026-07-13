@@ -135,9 +135,13 @@ def calibration_metrics(y_true, y_prob):
         intercept = None
         slope = None
     else:
-        slope, intercept = np.polyfit(x, y_true, deg=1)
-        intercept = float(intercept)
-        slope = float(slope)
+        from sklearn.linear_model import LogisticRegression
+
+        # Logistic calibration model: logit(P(event)) = intercept + slope * logit(p).
+        model = LogisticRegression(C=1e6, solver="lbfgs")
+        model.fit(x.reshape(-1, 1), y_true.astype(int))
+        intercept = float(model.intercept_[0])
+        slope = float(model.coef_[0, 0])
     return {
         "observed_rate": observed_rate,
         "mean_predicted_rate": mean_predicted_rate,
@@ -151,16 +155,23 @@ def write_calibration_dca_metrics(pred_df, out_path):
     thresholds = np.linspace(0.01, 0.6, 60)
     metrics = {}
     for horizon in [30, 60, 120]:
-        y_true = pred_df[f"event_by_{horizon}m"].values
-        y_prob = pred_df[f"event_prob_{horizon}m"].values
+        eligible = pred_df[f"eligible_by_{horizon}m"].astype(bool).values
+        y_true = pred_df.loc[eligible, f"event_by_{horizon}m"].values
+        y_prob = pred_df.loc[eligible, f"event_prob_{horizon}m"].values
         horizon_metrics = calibration_metrics(y_true, y_prob)
         nb = calculate_net_benefit(y_true, y_prob, thresholds)
+        prevalence = float(np.mean(y_true))
+        nb_all = prevalence - (1 - prevalence) * (thresholds / (1 - thresholds))
         horizon_metrics["net_benefit_threshold_range"] = {
             "min": float(thresholds.min()),
             "max": float(thresholds.max()),
             "n_thresholds": int(len(thresholds)),
             "max_net_benefit": float(np.max(nb)),
+            "max_delta_vs_treat_all": float(np.max(nb - nb_all)),
+            "max_delta_vs_treat_none": float(np.max(nb)),
         }
+        horizon_metrics["n_eligible"] = int(eligible.sum())
+        horizon_metrics["n_excluded_censored_before_horizon"] = int((~eligible).sum())
         metrics[f"{horizon}m"] = horizon_metrics
     out_path.write_text(json.dumps(metrics, indent=2))
 
@@ -231,6 +242,9 @@ def main():
             lr=config["training"]["learning_rate"],
             device=device,
             max_epochs=config["training"]["pretrain_epochs"],
+            x_source_val=data_dict["x_source_val"],
+            e_source_val=data_dict["e_source_val"],
+            t_source_val=data_dict["t_source_val"],
         )
         da_model.load_state_dict(source_state)
         run_domain_stratified_da(
@@ -259,6 +273,9 @@ def main():
         pred_df[f"event_by_{horizon}m"] = (
             (pred_df["events"].astype(int) == 1) & (pred_df["et_min"].astype(float) <= horizon)
         ).astype(int)
+        pred_df[f"eligible_by_{horizon}m"] = (
+            (pred_df["events"].astype(int) == 1) | (pred_df["et_min"].astype(float) > horizon)
+        ).astype(int)
 
     out_dir = Path("experiments/results")
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -270,6 +287,7 @@ def main():
     with open(out_dir / "prediction_metadata.json", "w") as f:
         json.dump(
             {
+                "run_id": os.environ.get("LOCKED_RUN_ID"),
                 "source_path": source_path,
                 "target_path": target_path,
                 "n_test": int(len(pred_df)),
@@ -284,17 +302,19 @@ def main():
     colors = get_color_palette(3, "clinical")
 
     fig, axes = plt.subplots(1, 2, figsize=(11.8, 5.2))
+    eligible_60 = pred_df["eligible_by_60m"].astype(bool)
+    eligible_120 = pred_df["eligible_by_120m"].astype(bool)
     plot_calibration_panel(
         axes[0],
-        pred_df["event_by_60m"].values,
-        pred_df["event_prob_60m"].values,
+        pred_df.loc[eligible_60, "event_by_60m"].values,
+        pred_df.loc[eligible_60, "event_prob_60m"].values,
         "a  Calibration at 60 min",
         colors[0],
     )
     plot_calibration_panel(
         axes[1],
-        pred_df["event_by_120m"].values,
-        pred_df["event_prob_120m"].values,
+        pred_df.loc[eligible_120, "event_by_120m"].values,
+        pred_df.loc[eligible_120, "event_prob_120m"].values,
         "b  Calibration at 120 min",
         colors[1],
     )
@@ -306,15 +326,15 @@ def main():
     fig, axes = plt.subplots(1, 2, figsize=(11.8, 5.2))
     plot_dca_panel(
         axes[0],
-        pred_df["event_by_60m"].values,
-        pred_df["event_prob_60m"].values,
+        pred_df.loc[eligible_60, "event_by_60m"].values,
+        pred_df.loc[eligible_60, "event_prob_60m"].values,
         "a  Decision curve at 60 min",
         colors[0],
     )
     plot_dca_panel(
         axes[1],
-        pred_df["event_by_120m"].values,
-        pred_df["event_prob_120m"].values,
+        pred_df.loc[eligible_120, "event_by_120m"].values,
+        pred_df.loc[eligible_120, "event_prob_120m"].values,
         "b  Decision curve at 120 min",
         colors[1],
     )

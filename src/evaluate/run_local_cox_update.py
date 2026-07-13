@@ -1,11 +1,12 @@
 import json
+import os
 from pathlib import Path
 from typing import Dict, List
 
 import numpy as np
 import pandas as pd
+import torch
 import yaml
-from lifelines import CoxPHFitter
 
 from src.data.dataset import prepare_dataloaders
 from src.evaluate.dca_analysis import calculate_net_benefit
@@ -14,7 +15,7 @@ from src.evaluate.export_real_predictions import (
     calibration_metrics,
     event_probability_by_horizon,
 )
-from src.evaluate.metrics import _binary_auc, compute_bootstrap_cindex, concordance_index
+from src.evaluate.metrics import _binary_auc, compute_bootstrap_cindex, compute_ipcw_weights, concordance_index, weighted_cox_loss
 from src.reproducibility import record_environment, seed_everything
 
 
@@ -41,15 +42,31 @@ def keep_trainable_features(train_frame: pd.DataFrame, feature_names: List[str],
     return keep
 
 
+def fit_linear_cox(train_frame: pd.DataFrame, features: List[str], penalizer: float, epochs: int = 200) -> np.ndarray:
+    """Dependency-free linear CoxPH fitted with the project's weighted Cox loss."""
+    x = torch.tensor(train_frame[features].to_numpy(dtype=np.float32))
+    event = torch.tensor(train_frame["events"].to_numpy(dtype=np.float32))
+    duration = torch.tensor(train_frame["et_min"].to_numpy(dtype=np.float32))
+    weights = torch.tensor(compute_ipcw_weights(duration.numpy(), event.numpy()))
+    beta = torch.nn.Parameter(torch.zeros(x.shape[1]))
+    optimizer = torch.optim.Adam([beta], lr=0.03)
+    for _ in range(epochs):
+        optimizer.zero_grad()
+        risk = x @ beta
+        loss = weighted_cox_loss(risk.unsqueeze(-1), event, duration, weights)
+        (loss + penalizer * beta.square().sum()).backward()
+        optimizer.step()
+    return beta.detach().numpy()
+
+
 def select_penalizer(train_frame: pd.DataFrame, val_frame: pd.DataFrame, features: List[str]) -> Dict:
     grid = [0.01, 0.1, 1.0, 10.0, 100.0]
     candidates = []
     for penalizer in grid:
-        fitter = CoxPHFitter(penalizer=penalizer)
-        fitter.fit(train_frame[features + ["et_min", "events"]], duration_col="et_min", event_col="events", show_progress=False)
-        val_risk = fitter.predict_log_partial_hazard(val_frame[features]).to_numpy().reshape(-1)
+        coefficients = fit_linear_cox(train_frame, features, penalizer)
+        val_risk = val_frame[features].to_numpy(dtype=float) @ coefficients
         val_cindex = concordance_index(val_frame["et_min"].values, val_risk, val_frame["events"].values)
-        candidates.append({"penalizer": penalizer, "val_cindex": float(val_cindex), "fitter": fitter})
+        candidates.append({"penalizer": penalizer, "val_cindex": float(val_cindex), "coefficients": coefficients})
     best = max(candidates, key=lambda item: item["val_cindex"])
     return {"grid": [{"penalizer": item["penalizer"], "val_cindex": item["val_cindex"]} for item in candidates], "best": best}
 
@@ -119,10 +136,9 @@ def main() -> None:
 
     selection = select_penalizer(train_frame, val_frame, kept_features)
     best_penalizer = selection["best"]["penalizer"]
-    fitter = selection["best"]["fitter"]
-
-    train_risk = fitter.predict_log_partial_hazard(train_frame[kept_features]).to_numpy().reshape(-1)
-    test_risk = fitter.predict_log_partial_hazard(test_frame[kept_features]).to_numpy().reshape(-1)
+    coefficients = selection["best"]["coefficients"]
+    train_risk = train_frame[kept_features].to_numpy(dtype=float) @ coefficients
+    test_risk = test_frame[kept_features].to_numpy(dtype=float) @ coefficients
 
     c_index = concordance_index(test_frame["et_min"].values, test_risk, test_frame["events"].values)
     ci_lower, ci_upper = compute_bootstrap_cindex(
@@ -159,8 +175,10 @@ def main() -> None:
         observed = ((prediction_frame["events"].astype(int) == 1) & (prediction_frame["et_min"].astype(float) <= horizon)).astype(int)
         prediction_frame[f"event_prob_{horizon}m"] = probability
         prediction_frame[f"event_by_{horizon}m"] = observed
-        calibration[f"{horizon}m"] = calibration_metrics(observed.values, probability)
-        threshold_summary_rows.extend(threshold_rows("Local Cox update", horizon, observed.values.astype(int), probability))
+        eligible = ((prediction_frame["events"].astype(int) == 1) | (prediction_frame["et_min"].astype(float) > horizon)).values
+        prediction_frame[f"eligible_by_{horizon}m"] = eligible.astype(int)
+        calibration[f"{horizon}m"] = calibration_metrics(observed.values[eligible], probability[eligible])
+        threshold_summary_rows.extend(threshold_rows("Local Cox update", horizon, observed.values.astype(int)[eligible], probability[eligible]))
 
     RESULT_DIR.mkdir(parents=True, exist_ok=True)
     prediction_frame.to_csv(RESULT_DIR / "local_cox_test_predictions.csv", index=False)
@@ -169,6 +187,7 @@ def main() -> None:
 
     result_payload = {
         "metadata": {
+            "run_id": os.environ.get("LOCKED_RUN_ID"),
             "model_name": "Local Cox update",
             "split_strategy": data["split_strategy"],
             "patient_col": data["patient_col"],

@@ -133,6 +133,9 @@ def run_cdan_gsn(data_dict, config, device, hparams):
         model, data_dict["source_loader"],
         data_dict["x_val"], data_dict["e_val"], data_dict["t_val"],
         lr=lr, device=device, max_epochs=pretrain_epochs, patience=5,
+        x_source_val=data_dict["x_source_val"],
+        e_source_val=data_dict["e_source_val"],
+        t_source_val=data_dict["t_source_val"],
     )
 
     da_model = DomainStratifiedGatedNet(

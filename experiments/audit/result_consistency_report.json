@@ -1,0 +1,55 @@
+{
+  "audit": {
+    "data_manifest": {
+      "exists": true,
+      "path": "/Users/cht/GitHub/domain-adaptive-deep-survival-network/experiments/audit/data_manifest.json",
+      "size_bytes": 955,
+      "modified_at_epoch": 1783923880.22857
+    },
+    "split_audit": {
+      "exists": true,
+      "path": "/Users/cht/GitHub/domain-adaptive-deep-survival-network/experiments/audit/split_audit.json",
+      "size_bytes": 446,
+      "modified_at_epoch": 1783923880.2569513
+    },
+    "history_feature_audit": {
+      "exists": true,
+      "path": "/Users/cht/GitHub/domain-adaptive-deep-survival-network/experiments/audit/history_feature_audit.csv",
+      "size_bytes": 997,
+      "modified_at_epoch": 1783923882.6036065
+    },
+    "feature_allowlist": {
+      "exists": true,
+      "path": "/Users/cht/GitHub/domain-adaptive-deep-survival-network/experiments/audit/feature_allowlist.csv",
+      "size_bytes": 5518,
+      "modified_at_epoch": 1783647837.1719282
+    }
+  },
+  "results": {
+    "evaluation_results": {
+      "exists": false,
+      "path": "/Users/cht/GitHub/domain-adaptive-deep-survival-network/experiments/results/evaluation_results.json"
+    },
+    "prediction_metadata": {
+      "exists": false,
+      "path": "/Users/cht/GitHub/domain-adaptive-deep-survival-network/experiments/results/prediction_metadata.json"
+    },
+    "real_test_predictions": {
+      "exists": false,
+      "path": "/Users/cht/GitHub/domain-adaptive-deep-survival-network/experiments/results/real_test_predictions.csv"
+    }
+  },
+  "checks": {},
+  "inconsistencies": [
+    {
+      "type": "missing_files",
+      "files": [
+        "/Users/cht/GitHub/domain-adaptive-deep-survival-network/experiments/results/evaluation_results.json",
+        "/Users/cht/GitHub/domain-adaptive-deep-survival-network/experiments/results/prediction_metadata.json",
+        "/Users/cht/GitHub/domain-adaptive-deep-survival-network/experiments/results/real_test_predictions.csv"
+      ]
+    }
+  ],
+  "can_be_used_for_submission": false,
+  "summary": "这些结果文件存在，但不能作为当前审计版本的投稿证据。"
+}

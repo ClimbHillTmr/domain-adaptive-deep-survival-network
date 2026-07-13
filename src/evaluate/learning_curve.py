@@ -30,12 +30,8 @@ from src.reproducibility import seed_everything
 from src.train.trainer import run_domain_stratified_da, run_source_pretrain
 
 # -------------------------------------------------------------------
-# Adapt ratios to evaluate.  Each ratio means that fraction of Fuding
-# patients are used for fine-tuning; the rest form the test set.
-# The *test set changes* across ratios (larger adapt → smaller test),
-# so we also record the approximate adaptation patient count.
-# For a fair cross-ratio comparison, Section "Shared test" below
-# re-evaluates all models on the FULL held-out test from ratio=0.40.
+# Each point uses a nested subset of one fixed 40% target adaptation pool.
+# The patient-level validation and 60% held-out test sets never change.
 # -------------------------------------------------------------------
 RATIOS = [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40]
 BOOTSTRAP_N = 100   # fewer replicates — this is a supplementary figure
@@ -142,8 +138,9 @@ def main():
                 target_path=os.path.join(config["paths"]["data_dir"], config["data"]["target_file"]),
                 batch_size=config["training"]["batch_size"],
                 seed=seed,
-                target_adapt_ratio=ratio,
+                target_adapt_ratio=config["data"]["target_adapt_ratio"],
                 target_val_ratio=config["data"].get("target_val_ratio", 0.15),
+                target_train_fraction=ratio / config["data"]["target_adapt_ratio"],
                 patient_col=config["data"].get("patient_col", "患者id"),
                 split_strategy=config["data"].get("split_strategy", "patient"),
             )

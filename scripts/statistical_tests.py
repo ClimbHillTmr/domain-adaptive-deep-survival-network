@@ -1,9 +1,8 @@
 """
 Phase 4 – Statistical Tests
 ============================
-1. DeLong test: paired AUC comparison at 60m and 120m horizons
-   (CDAN-GSN vs CoxPH, using binary time-horizon labels)
-2. Bootstrap permutation test: C-index comparison
+1. Paired patient-cluster bootstrap comparison of horizon-eligible AUCs.
+2. Paired patient-cluster bootstrap comparison of C-index.
 
 Output: experiments/results/statistical_tests.json
 """
@@ -17,80 +16,16 @@ import pandas as pd
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.evaluate.metrics import concordance_index
+from src.evaluate.metrics import _binary_auc, concordance_index
 
 
 # ---------------------------------------------------------------------------
-# DeLong (1988) paired AUC test
+# Paired patient-cluster bootstrap comparisons
 # ---------------------------------------------------------------------------
 
-def _structural_components(y_true, scores):
-    """Compute structural components V10, V01 for DeLong variance."""
-    pos_idx = np.where(y_true == 1)[0]
-    neg_idx = np.where(y_true == 0)[0]
-    n1, n0 = len(pos_idx), len(neg_idx)
-    scores_pos = scores[pos_idx]
-    scores_neg = scores[neg_idx]
-
-    # V10: for each positive case, fraction of negatives scored lower
-    V10 = np.zeros(n1)
-    for i, sp in enumerate(scores_pos):
-        V10[i] = np.mean(scores_neg < sp) + 0.5 * np.mean(scores_neg == sp)
-
-    # V01: for each negative case, fraction of positives scored higher
-    V01 = np.zeros(n0)
-    for j, sn in enumerate(scores_neg):
-        V01[j] = np.mean(scores_pos > sn) + 0.5 * np.mean(scores_pos == sn)
-
-    return V10, V01, n1, n0
-
-
-def delong_variance(y_true, scores):
-    V10, V01, n1, n0 = _structural_components(y_true, scores)
-    auc = np.mean(V10)
-    var = np.var(V10, ddof=1) / n1 + np.var(V01, ddof=1) / n0
-    return auc, var
-
-
-def delong_covariance(y_true, scores1, scores2):
-    """Covariance between two AUCs on the same test set."""
-    V10_1, V01_1, n1, n0 = _structural_components(y_true, scores1)
-    V10_2, V01_2, _, _ = _structural_components(y_true, scores2)
-    cov = (np.cov(V10_1, V10_2, ddof=1)[0, 1] / n1 +
-           np.cov(V01_1, V01_2, ddof=1)[0, 1] / n0)
-    return cov
-
-
-def delong_test(y_true, scores1, scores2, label1="Model1", label2="Model2"):
-    """Paired DeLong test. Returns dict with AUC, variance, z, p."""
-    from scipy import stats
-    auc1, var1 = delong_variance(y_true, scores1)
-    auc2, var2 = delong_variance(y_true, scores2)
-    cov = delong_covariance(y_true, scores1, scores2)
-    diff_var = var1 + var2 - 2 * cov
-    if diff_var <= 0:
-        z, p = 0.0, 1.0
-    else:
-        z = (auc1 - auc2) / np.sqrt(diff_var)
-        p = float(2 * stats.norm.sf(abs(z)))
-    return {
-        f"AUC_{label1}": float(auc1),
-        f"AUC_{label2}": float(auc2),
-        "AUC_diff": float(auc1 - auc2),
-        "z": float(z),
-        "p_value": p,
-        "significant_0.05": p < 0.05,
-    }
-
-
-# ---------------------------------------------------------------------------
-# Bootstrap permutation test for C-index
-# ---------------------------------------------------------------------------
-
-def bootstrap_cindex_pvalue(t_test, e_test, scores1, scores2, patient_ids, n_boot=2000, seed=42):
+def paired_cluster_bootstrap(t_test, e_test, scores1, scores2, patient_ids, n_boot=2000, seed=42):
     """
-    One-sided bootstrap permutation test: H0: C-index1 <= C-index2
-    Returns: observed_diff, p_value
+    Patient-cluster paired bootstrap for the C-index difference.
     """
     rng = np.random.default_rng(seed)
     obs1 = concordance_index(t_test, scores1, e_test)
@@ -107,16 +42,33 @@ def bootstrap_cindex_pvalue(t_test, e_test, scores1, scores2, patient_ids, n_boo
         c2 = concordance_index(t_b, scores2[idx], e_b)
         diffs.append(c1 - c2)
     diffs = np.array(diffs)
-    # One-sided: p = proportion of bootstrap diffs <= 0 (under H1: model1 > model2)
-    p = float(np.mean(diffs <= 0))
+    ci_lower, ci_upper = np.percentile(diffs, [2.5, 97.5])
     return {
         "cindex_model1": float(obs1),
         "cindex_model2": float(obs2),
         "observed_diff": float(obs_diff),
-        "p_value_one_sided": p,
-        "significant_0.05": p < 0.05,
+        "ci_lower": float(ci_lower),
+        "ci_upper": float(ci_upper),
+        "excludes_zero": bool(ci_lower > 0 or ci_upper < 0),
         "n_bootstrap": n_boot,
     }
+
+
+def paired_cluster_auc_delta(y_true, scores1, scores2, patient_ids, n_boot=2000, seed=42):
+    """Paired patient-cluster bootstrap for a censoring-eligible binary horizon."""
+    rng = np.random.default_rng(seed)
+    patients = np.unique(patient_ids)
+    observed = _binary_auc(y_true, scores1) - _binary_auc(y_true, scores2)
+    diffs = []
+    for _ in range(n_boot):
+        sampled = rng.choice(patients, size=len(patients), replace=True)
+        indices = np.concatenate([np.flatnonzero(patient_ids == patient) for patient in sampled])
+        auc1 = _binary_auc(y_true[indices], scores1[indices])
+        auc2 = _binary_auc(y_true[indices], scores2[indices])
+        if auc1 is not None and auc2 is not None:
+            diffs.append(auc1 - auc2)
+    lower, upper = np.percentile(diffs, [2.5, 97.5])
+    return {"observed_diff": float(observed), "ci_lower": float(lower), "ci_upper": float(upper), "excludes_zero": bool(lower > 0 or upper < 0), "n_bootstrap": n_boot}
 
 
 # ---------------------------------------------------------------------------
@@ -124,8 +76,6 @@ def bootstrap_cindex_pvalue(t_test, e_test, scores1, scores2, patient_ids, n_boo
 # ---------------------------------------------------------------------------
 
 def main():
-    from scipy import stats  # noqa: confirm available
-
     # Load prediction files
     cdan_pred_path = Path("experiments/results/real_test_predictions.csv")
     cox_pred_path = Path("experiments/results/local_cox_test_predictions.csv")
@@ -140,7 +90,7 @@ def main():
     cdan_df = pd.read_csv(cdan_pred_path)
     cox_df = pd.read_csv(cox_pred_path)
 
-    # Align on index (same test split, same order)
+    # Align on a stable row order after the consistency gate has confirmed one run.
     assert len(cdan_df) == len(cox_df), (
         f"Row mismatch: CDAN {len(cdan_df)} vs CoxPH {len(cox_df)}. "
         "Both must be evaluated on the same test split."
@@ -154,10 +104,12 @@ def main():
     e_test = cdan_df["events"].astype(int).to_numpy()
     cdan_risk = cdan_df["risk_score"].to_numpy()
     cox_risk = cox_df["risk_score"].to_numpy()
+    if patient_ids is None:
+        patient_ids = np.arange(len(t_test)).astype(str)
 
-    results = {"delong_auc": {}, "cindex_bootstrap": {}}
+    results = {"paired_cluster_auc": {}, "paired_cluster_cindex": {}}
 
-    # DeLong at each horizon
+    # Censored observations before a horizon are not binary controls.
     for horizon in [30, 60, 120]:
         y_true_col = f"event_by_{horizon}m"
         cdan_prob_col = f"event_prob_{horizon}m"
@@ -176,30 +128,18 @@ def main():
         y_true = cdan_df[y_true_col].astype(int).to_numpy()
         cdan_probs = cdan_df[cdan_prob_col].to_numpy()
 
-        result = delong_test(y_true, cdan_probs, cox_probs, "CDAN-GSN", "CoxPH")
-        results["delong_auc"][f"{horizon}m"] = result
-        print(f"  DeLong {horizon}m: AUC_CDAN={result['AUC_CDAN-GSN']:.4f}, "
-              f"AUC_Cox={result['AUC_CoxPH']:.4f}, "
-              f"p={result['p_value']:.4f} {'*' if result['significant_0.05'] else ''}")
+        eligible = (e_test == 1) | (t_test > horizon)
+        result = paired_cluster_auc_delta(
+            y_true[eligible], cdan_probs[eligible], cox_probs[eligible], patient_ids[eligible], n_boot=2000, seed=42
+        )
+        results["paired_cluster_auc"][f"{horizon}m"] = result
 
     # Bootstrap C-index test
-    print("\n  Bootstrap permutation C-index test (CDAN-GSN vs CoxPH)...")
-    if patient_ids is not None:
-        cindex_result = bootstrap_cindex_pvalue(
-            t_test, e_test, cdan_risk, cox_risk,
-            patient_ids=patient_ids, n_boot=2000, seed=42,
-        )
-    else:
-        cindex_result = bootstrap_cindex_pvalue(
-            t_test, e_test, cdan_risk, cox_risk,
-            patient_ids=np.arange(len(t_test)).astype(str), n_boot=2000, seed=42,
-        )
-    results["cindex_bootstrap"]["CDAN-GSN_vs_CoxPH"] = cindex_result
-    print(f"  C-index CDAN={cindex_result['cindex_model1']:.4f}, "
-          f"Cox={cindex_result['cindex_model2']:.4f}, "
-          f"diff={cindex_result['observed_diff']:+.4f}, "
-          f"p={cindex_result['p_value_one_sided']:.4f} "
-          f"{'*' if cindex_result['significant_0.05'] else '(ns)'}")
+    print("\n  Paired patient-cluster bootstrap C-index comparison...")
+    cindex_result = paired_cluster_bootstrap(
+        t_test, e_test, cdan_risk, cox_risk, patient_ids=patient_ids, n_boot=2000, seed=42
+    )
+    results["paired_cluster_cindex"]["CDAN-GSN_vs_CoxPH"] = cindex_result
 
     out_path = Path("experiments/results/statistical_tests.json")
     with open(out_path, "w") as f:

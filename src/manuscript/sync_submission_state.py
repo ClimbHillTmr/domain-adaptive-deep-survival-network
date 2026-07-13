@@ -24,9 +24,24 @@ def format_cindex(metrics: Dict[str, Any]) -> str:
 
 
 def build_results_md() -> str:
-    manifest = read_json(AUDIT_DIR / "data_manifest.json")
-    split = read_json(AUDIT_DIR / "split_audit.json")
+    manifest_path = AUDIT_DIR / "data_manifest.json"
+    split_path = AUDIT_DIR / "split_audit.json"
     report = read_json(REPORT_PATH) if REPORT_PATH.exists() else {"can_be_used_for_submission": False}
+
+    if not manifest_path.exists() or not split_path.exists():
+        return """# Results
+
+## Run Status
+
+All historical result files, figures, tables, and submission copies were intentionally removed before the unified rerun. No performance, calibration, decision-curve, learning-curve, multi-seed, or ablation values should be reported until one locked run regenerates the audit, prediction, and comparison artifacts from the current code and configuration.
+
+## Planned Reporting
+
+The regenerated Results section will report the analytic cohort flow, patient-level split audit, held-out discrimination, censoring-aware fixed-horizon evaluation, paired patient-cluster comparisons, calibration, decision-curve analysis, multi-seed variability, and prespecified component ablations from the same run identifier.
+"""
+
+    manifest = read_json(manifest_path)
+    split = read_json(split_path)
 
     lines = [
         "# Results",
@@ -137,13 +152,13 @@ The primary outcome was intradialytic hypotension modeled as a time-to-event end
 ## Predictor Construction and Preprocessing
 Raw data processing followed a staged pipeline including center-specific feature parsing, derived hemodynamic feature construction, patient-level historical summary generation, and final feature merging. Historical mean and rate features were constructed only from prior sessions after chronological sorting within patient, such that the first audited session for each sampled patient had zero-valued history features.
 
-Categorical encodings were fit in the source cohort and then applied unchanged to the target cohort, with unseen target-only categories assigned to an explicit unknown level. Missing predictor values were filled with zero, and all predictors were standardized using the source-cohort mean and standard deviation before application to the target cohort.
+Patients were split before model preprocessing. Categorical encodings, median imputation, and scaling parameters were fit using source-training patients only and then applied unchanged to source validation and target cohorts; unseen target-only categories were assigned to an explicit unknown level.
 
 ## Candidate Predictors Used for Modeling
 Model construction used a predefined prediction-time feature allowlist rather than dynamically appending every column with a `history_` prefix. The frozen allowlist was stored in `experiments/audit/feature_allowlist.csv` and included demographic variables, treatment-context variables, pre-dialysis physiologic features, derived hemodynamic measures, and audited historical burden summaries judged to be available at prediction time. Current-session intradialytic summary columns and outcome columns were explicitly excluded by the allowlist.
 
 ## Data Splitting and Validation Strategy
-The Shenyi cohort was used for source-domain model development. The Fuding cohort was split into mutually exclusive patient-level subsets for target-center updating, target validation, and held-out testing. The implemented pipeline used `target_adapt_ratio = 0.20`, with `target_val_ratio = 0.20` within the adaptation pool, corresponding to 68 target patients for updating, 18 for validation, and 344 for final held-out testing under a fixed random seed of 42.
+The Shenyi cohort was split at the patient level, with a 10% source validation holdout used only for source-pretraining early stopping. The Fuding cohort was split into mutually exclusive patient-level subsets for target-center updating, target validation, and held-out testing using `target_adapt_ratio = 0.40` and `target_val_ratio = 0.15` within the adaptation pool. Exact analytic sample sizes are generated from the run-specific split audit.
 
 ## Model Architecture
 The proposed model was implemented as a domain-stratified deep survival network with a KAN-based tokenizer and a gated representation module. A transformer encoder learned contextualized feature embeddings, and a hazard head produced a session-level risk score. Treatment-context features and non-treatment physiologic features were separated to support statistically guided representation alignment without implying causal identification.
@@ -155,7 +170,7 @@ Training consisted of source-cohort pretraining followed by target-center labele
 Inverse probability of censoring weighting (IPCW) was used in training and evaluation workflows. IPCW weights were estimated from Kaplan-Meier fits of the censoring distribution and truncated at the 95th percentile to reduce instability from extreme weights.
 
 ## Model Evaluation
-The primary discrimination metric was Harrell's concordance index in the held-out target test cohort, with bootstrap confidence intervals. Calibration and decision-curve analysis were performed only from real case-level predictions exported for the held-out target test subset. Calibration, Brier scores, and decision-curve summaries should therefore be tied explicitly to the run-specific `real_test_predictions.csv` and `calibration_dca_metrics.json` files rather than quoted from historical drafts.
+The primary discrimination metric was Harrell's concordance index in the held-out target test cohort, with patient-cluster bootstrap confidence intervals. Fixed-horizon calibration, Brier scores, and decision-curve analyses exclude observations censored before the relevant horizon. Model differences are reported with paired patient-cluster bootstrap confidence intervals. All numerical claims are tied to one run-specific prediction export and evidence manifest.
 
 ## Reproducibility
 Random seeds were fixed across Python, NumPy, and PyTorch components, and deterministic settings were enabled for cuDNN where applicable. Submission-facing reruns were executed through a locked-run pipeline that snapshots the input data hashes, configuration file, feature allowlist, audit artifacts, environment snapshot, and generated outputs under a unique run identifier.

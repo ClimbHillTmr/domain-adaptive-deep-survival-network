@@ -136,6 +136,7 @@ def main():
     # Save Results
     results = {
         "metadata": {
+            "run_id": os.environ.get("LOCKED_RUN_ID"),
             "split_strategy": data_dict["split_strategy"],
             "patient_col": data_dict["patient_col"],
             "target_adapt_ratio": config["data"].get("target_adapt_ratio", 0.2),

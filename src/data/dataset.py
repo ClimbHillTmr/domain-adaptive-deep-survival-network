@@ -94,10 +94,6 @@ def build_feature_tables(
     if not final_cols:
         raise ValueError("No usable features after applying feature allowlist.")
 
-    # Ensure no NaNs by filling with 0
-    df_s[final_cols] = df_s[final_cols].fillna(0)
-    df_t[final_cols] = df_t[final_cols].fillna(0)
-    
     df_s = df_s.dropna(subset=['et_min', 'events'])
     df_t = df_t.dropna(subset=['et_min', 'events'])
     
@@ -105,8 +101,14 @@ def build_feature_tables(
     df_s = df_s[df_s['et_min'] > 0].copy()
     df_t = df_t[df_t['et_min'] > 0].copy()
 
-    # Standardize
+    # This helper is used by audits. Training uses the split-aware transform below.
+    # Do not use target rows to estimate preprocessing parameters here.
     for c in final_cols:
+        df_s[c] = pd.to_numeric(df_s[c], errors="coerce")
+        df_t[c] = pd.to_numeric(df_t[c], errors="coerce")
+        median = df_s[c].median()
+        df_s[c] = df_s[c].fillna(median)
+        df_t[c] = df_t[c].fillna(median)
         mean_val = df_s[c].mean()
         std_val = df_s[c].std() + 1e-8
         df_s[c] = (df_s[c] - mean_val) / std_val
@@ -136,6 +138,90 @@ def build_feature_tables(
         )
 
     return x_s, x_t, e_s, t_s, e_t, t_t, final_cols
+
+
+def _load_and_filter_cohort(path: str) -> pd.DataFrame:
+    """Load one cohort and retain rows with a valid positive follow-up time."""
+    frame = pd.read_csv(path).dropna(subset=["et_min", "events"]).copy()
+    frame = frame[frame["et_min"] > 0].reset_index(drop=True)
+    if frame.empty:
+        raise ValueError(f"No valid rows remain after outcome filtering: {path}")
+    return frame
+
+
+def _allowed_features(df_source: pd.DataFrame, df_target: pd.DataFrame, remove_features=None):
+    if not os.path.exists(FEATURE_ALLOWLIST_PATH):
+        raise FileNotFoundError(f"Missing feature allowlist: {FEATURE_ALLOWLIST_PATH}")
+    allowlist = pd.read_csv(FEATURE_ALLOWLIST_PATH)
+    features = allowlist.loc[
+        allowlist["allowed"].astype(str).str.lower() == "yes", "feature"
+    ].tolist()
+    features = [name for name in features if name in df_source and name in df_target]
+    if remove_features:
+        features = [name for name in features if name not in remove_features]
+    if not features:
+        raise ValueError("No usable features after applying feature allowlist.")
+    return features
+
+
+def _apply_source_fitted_categoricals(
+    source_train: pd.DataFrame,
+    *frames: pd.DataFrame,
+) -> Tuple[pd.DataFrame, ...]:
+    """Fit categorical codes on source training patients and apply unchanged."""
+    mappings = {}
+    for column in CATEGORICAL_COLS:
+        if column not in source_train.columns:
+            continue
+        values = _safe_str_series(source_train[column])
+        mappings[column] = {value: index for index, value in enumerate(sorted(values.unique()))}
+
+    transformed = []
+    for frame in (source_train, *frames):
+        out = frame.copy()
+        for column, mapping in mappings.items():
+            if column in out.columns:
+                out[column + "_code"] = _safe_str_series(out[column]).map(mapping).fillna(len(mapping)).astype(int)
+        transformed.append(out)
+    return (*transformed, mappings)
+
+
+def _fit_source_train_transform(
+    source_train: pd.DataFrame,
+    source_val: pd.DataFrame,
+    target: pd.DataFrame,
+    remove_features=None,
+):
+    """Fit imputation and scaling on source training patients only."""
+    source_train, source_val, target, mappings = _apply_source_fitted_categoricals(
+        source_train, source_val, target
+    )
+    features = _allowed_features(source_train, target, remove_features)
+    medians = {}
+    means = {}
+    scales = {}
+    for column in features:
+        for frame in (source_train, source_val, target):
+            frame[column] = pd.to_numeric(frame[column], errors="coerce")
+        median = float(source_train[column].median())
+        if not np.isfinite(median):
+            median = 0.0
+        source_train[column] = source_train[column].fillna(median)
+        source_val[column] = source_val[column].fillna(median)
+        target[column] = target[column].fillna(median)
+        mean = float(source_train[column].mean())
+        scale = float(source_train[column].std())
+        if not np.isfinite(scale) or scale == 0:
+            scale = 1.0
+        for frame in (source_train, source_val, target):
+            frame[column] = (frame[column] - mean) / scale
+        medians[column], means[column], scales[column] = median, mean, scale
+    return source_train, source_val, target, features, mappings, {
+        "imputation": "source_train_median",
+        "medians": medians,
+        "means": means,
+        "scales": scales,
+    }
 
 
 def _stratify_or_none(labels: np.ndarray) -> Optional[np.ndarray]:
@@ -249,6 +335,7 @@ def prepare_dataloaders(
     target_adapt_ratio: float = 0.2,
     target_val_ratio: float = 0.2,
     source_val_ratio: float = 0.10,   # fraction of SOURCE patients held out for pretrain ES
+    target_train_fraction: float = 1.0,
     remove_features: Optional[List[str]] = None,
     patient_col: str = "患者id",
     split_strategy: str = "patient",
@@ -260,62 +347,84 @@ def prepare_dataloaders(
     from torch.utils.data import DataLoader, TensorDataset
     from src.evaluate.metrics import compute_ipcw_weights
     
-    (
-        x_s,
-        x_t,
-        e_s,
-        t_s,
-        e_t,
-        t_t,
-        feature_names,
-        df_s,
-        df_t,
-        category_mappings,
-    ) = build_feature_tables(
-        source_path,
-        target_path,
-        remove_features,
-        return_dataframes=True,
-    )
+    df_s_raw = _load_and_filter_cohort(source_path)
+    df_t_raw = _load_and_filter_cohort(target_path)
+    e_s_raw = df_s_raw["events"].to_numpy(dtype=np.float32)
+    e_t_raw = df_t_raw["events"].to_numpy(dtype=np.float32)
 
     if split_strategy == "patient":
         idx_train, idx_val, idx_test = _patient_level_target_split(
-            df_t,
-            e_t,
+            df_t_raw,
+            e_t_raw,
             target_adapt_ratio,
             target_val_ratio,
             seed,
             patient_col,
         )
     elif split_strategy == "session":
-        target_indices = np.arange(len(x_t))
+        target_indices = np.arange(len(df_t_raw))
         idx_adapt_pool, idx_test = train_test_split(
             target_indices,
             test_size=1 - target_adapt_ratio,
             random_state=seed,
-            stratify=_stratify_or_none(e_t),
+            stratify=_stratify_or_none(e_t_raw),
         )
         idx_train, idx_val = train_test_split(
             idx_adapt_pool,
             test_size=target_val_ratio,
             random_state=seed,
-            stratify=_stratify_or_none(e_t[idx_adapt_pool]),
+            stratify=_stratify_or_none(e_t_raw[idx_adapt_pool]),
         )
     else:
         raise ValueError(f"Unknown split_strategy: {split_strategy}")
 
+    if not 0 < target_train_fraction <= 1:
+        raise ValueError("target_train_fraction must be in (0, 1].")
+    if target_train_fraction < 1:
+        train_patient_ids = df_t_raw.iloc[idx_train][patient_col].astype(str).unique()
+        train_labels = (
+            df_t_raw.iloc[idx_train]
+            .assign(_patient=df_t_raw.iloc[idx_train][patient_col].astype(str).values)
+            .groupby("_patient")["events"].max()
+            .reindex(train_patient_ids)
+            .to_numpy()
+        )
+        keep_patients, _ = train_test_split(
+            train_patient_ids,
+            train_size=target_train_fraction,
+            random_state=seed,
+            stratify=_stratify_or_none(train_labels),
+        )
+        idx_train = idx_train[np.isin(df_t_raw.iloc[idx_train][patient_col].astype(str), keep_patients)]
+
+    # Split source patients before fitting any encoding, imputation, or scaling.
+    source_patients = df_s_raw[patient_col].astype(str).to_numpy()
+    patient_event = pd.DataFrame({"patient": source_patients, "event": e_s_raw}).groupby("patient")["event"].max()
+    train_patients, val_patients = train_test_split(
+        patient_event.index.to_numpy(),
+        test_size=source_val_ratio,
+        random_state=seed,
+        stratify=_stratify_or_none(patient_event.to_numpy()),
+    )
+    source_train_raw = df_s_raw.loc[np.isin(source_patients, train_patients)].copy()
+    source_val_raw = df_s_raw.loc[np.isin(source_patients, val_patients)].copy()
+    df_s, df_s_val, df_t, feature_names, category_mappings, preprocessing = _fit_source_train_transform(
+        source_train_raw, source_val_raw, df_t_raw, remove_features
+    )
+
+    x_s_train = df_s[feature_names].to_numpy(dtype=np.float32)
+    e_s_train = df_s["events"].to_numpy(dtype=np.float32)
+    t_s_train = df_s["et_min"].to_numpy(dtype=np.float32)
+    x_s_val = df_s_val[feature_names].to_numpy(dtype=np.float32)
+    e_s_val = df_s_val["events"].to_numpy(dtype=np.float32)
+    t_s_val = df_s_val["et_min"].to_numpy(dtype=np.float32)
+    x_t = df_t[feature_names].to_numpy(dtype=np.float32)
+    e_t = df_t["events"].to_numpy(dtype=np.float32)
+    t_t = df_t["et_min"].to_numpy(dtype=np.float32)
+
     x_train, e_train, t_train = x_t[idx_train], e_t[idx_train], t_t[idx_train]
     x_val, e_val, t_val = x_t[idx_val], e_t[idx_val], t_t[idx_val]
     x_test, e_test, t_test = x_t[idx_test], e_t[idx_test], t_t[idx_test]
-
-    # --- Source validation split (used for source pretrain early stopping) ---
-    # Held-out source patients whose sessions are NOT used for training the source
-    # model; early stopping on this set avoids leaking any target-domain information
-    # into source model selection.
-    (
-        x_s_train, e_s_train, t_s_train,
-        x_s_val,   e_s_val,   t_s_val,
-    ) = _patient_level_source_split(x_s, e_s, t_s, df_s, source_val_ratio, seed, patient_col)
 
     # Compute IPCW (source IPCW on source train only; target IPCW on target train only)
     w_s_train = compute_ipcw_weights(t_s_train, e_s_train)
@@ -345,7 +454,9 @@ def prepare_dataloaders(
         "x_train": x_train,
         "t_train": t_train, "e_train": e_train,
         # Full source arrays (for metrics that need all source data, e.g. IPCW baseline)
-        "x_source_all": x_s, "e_source_all": e_s, "t_source_all": t_s,
+        "x_source_all": np.concatenate([x_s_train, x_s_val]),
+        "e_source_all": np.concatenate([e_s_train, e_s_val]),
+        "t_source_all": np.concatenate([t_s_train, t_s_val]),
         "df_source": df_s,
         "df_target": df_t,
         "idx_train": idx_train,
@@ -355,8 +466,10 @@ def prepare_dataloaders(
         "patient_ids_val":   df_t.iloc[idx_val][patient_col].astype(str).to_numpy(),
         "patient_ids_test":  df_t.iloc[idx_test][patient_col].astype(str).to_numpy(),
         "category_mappings": category_mappings,
+        "preprocessing": preprocessing,
+        "target_train_fraction": target_train_fraction,
         "split_strategy": split_strategy,
         "patient_col": patient_col,
         "feature_names": feature_names,
-        "input_dim": x_s.shape[1],
+        "input_dim": x_s_train.shape[1],
     }

@@ -38,6 +38,11 @@ def required_artifacts() -> List[Path]:
         RESULT_DIR / "real_test_predictions.csv",
         RESULT_DIR / "calibration_dca_metrics.json",
         RESULT_DIR / "prediction_metadata.json",
+        RESULT_DIR / "local_cox_update_results.json",
+        RESULT_DIR / "statistical_tests.json",
+        RESULT_DIR / "ablation_results_v2.json",
+        RESULT_DIR / "multiseed_results.json",
+        RESULT_DIR / "learning_curve.json",
         FIG_ROOT / "Submission_Main_Figures" / "Fig1_Cohort_Split_Audit.pdf",
         FIG_ROOT / "Submission_Main_Figures" / "Fig2_Cross_Center_Shift.pdf",
         FIG_ROOT / "Submission_Main_Figures" / "Fig3_Performance_Comparison.pdf",
@@ -113,6 +118,7 @@ def main() -> None:
         "feature_allowlist": str(ROOT / "experiments" / "audit" / "feature_allowlist.csv"),
     }
     context = prepare_locked_run_context(config=config, tracked_inputs=tracked_inputs)
+    os.environ["LOCKED_RUN_ID"] = context["run_id"]
     logs_dir = Path(context["logs_dir"])
     record_environment(log_dir=logs_dir, filename="pip_freeze.txt")
 
@@ -123,6 +129,11 @@ def main() -> None:
         ("generate_table1", [sys.executable, "src/generate_table1.py"]),
         ("train_and_evaluate", [sys.executable, "src/main.py"]),
         ("export_real_predictions", [sys.executable, "src/evaluate/export_real_predictions.py"]),
+        ("local_cox_update", [sys.executable, "src/evaluate/run_local_cox_update.py"]),
+        ("statistical_tests", [sys.executable, "scripts/statistical_tests.py"]),
+        ("ablations", [sys.executable, "scripts/run_ablations.py"]),
+        ("multiseed", [sys.executable, "src/evaluate/multiseed_eval.py"]),
+        ("learning_curve", [sys.executable, "src/evaluate/learning_curve.py"]),
         ("postcheck_consistency", [sys.executable, "src/evaluate/result_consistency_report.py"]),
         ("postcheck_sync_manuscript", [sys.executable, "src/manuscript/sync_submission_state.py"]),
         ("build_submission_figures", [sys.executable, "src/visualization/build_submission_figures.py"]),

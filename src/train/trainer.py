@@ -97,20 +97,12 @@ def run_source_pretrain(
                          When None the function falls back to x_val (legacy).
     """
     # Decide which set drives early stopping
-    if x_source_val is not None:
-        es_x, es_e, es_t = x_source_val, e_source_val, t_source_val
-    else:
-        # Legacy fallback — raises a warning so callers are aware
-        import warnings
-        warnings.warn(
-            "run_source_pretrain: x_source_val not provided; falling back to "
-            "target validation set for source early stopping. This introduces "
-            "mild target-domain leakage into source model selection. Pass "
-            "x_source_val / e_source_val / t_source_val to eliminate this.",
-            UserWarning,
-            stacklevel=2,
+    if x_source_val is None or e_source_val is None or t_source_val is None:
+        raise ValueError(
+            "Source pretraining requires a held-out source validation set; "
+            "target validation must not be used for source early stopping."
         )
-        es_x, es_e, es_t = x_val, e_val, t_val
+    es_x, es_e, es_t = x_source_val, e_source_val, t_source_val
 
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
     best_val, best_epoch = -float("inf"), 0

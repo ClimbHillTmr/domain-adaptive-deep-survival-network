@@ -66,6 +66,7 @@ def build_report() -> Dict[str, Any]:
         return report
 
     split = read_json(split_path)
+    evaluation = read_json(eval_path)
     pred_meta = read_json(pred_meta_path)
     pred_df = pd.read_csv(pred_csv_path)
 
@@ -82,6 +83,14 @@ def build_report() -> Dict[str, Any]:
     report["checks"]["patient_overlap_zero"] = expected_overlap_zero
     report["checks"]["prediction_metadata_n_test"] = metadata_n_test
     report["checks"]["prediction_csv_rows"] = prediction_rows
+    evaluation_run_id = evaluation.get("metadata", {}).get("run_id")
+    prediction_run_id = pred_meta.get("run_id")
+    report["checks"]["evaluation_run_id"] = evaluation_run_id
+    report["checks"]["prediction_run_id"] = prediction_run_id
+    if not evaluation_run_id or evaluation_run_id != prediction_run_id:
+        report["inconsistencies"].append(
+            {"type": "run_id_mismatch", "evaluation_run_id": evaluation_run_id, "prediction_run_id": prediction_run_id}
+        )
 
     if metadata_n_test != expected_test_sessions:
         report["inconsistencies"].append(

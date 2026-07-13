@@ -1,12 +1,8 @@
 """
 Phase 4 – Full Orchestrator
 ==============================
-Runs all Phase 4 steps in order:
-  1. Re-run ablation study (4 variants, with bootstrap CI)
-  2. Generate publication figures (Fig1–Fig6)
-  3. Build tables 2 & 3 + ablation figure
-  4. Run statistical tests (DeLong AUC + bootstrap C-index permutation)
-  5. Print final summary
+Legacy Phase 4 entry point. The locked submission pipeline is the only
+supported route for result generation.
 
 Usage:
   cd /Users/cht/GitHub/domain-adaptive-deep-survival-network
@@ -79,13 +75,11 @@ def print_summary():
         with open(stat_path) as f:
             st = json.load(f)
         print("\n[Statistical Tests]")
-        for horizon, res in st.get("delong_auc", {}).items():
-            sig = "*" if res["significant_0.05"] else "ns"
-            print(f"  DeLong AUC {horizon}: CDAN={res['AUC_CDAN-GSN']:.4f} vs Cox={res['AUC_CoxPH']:.4f}  p={res['p_value']:.4f} ({sig})")
-        cbi = st.get("cindex_bootstrap", {}).get("CDAN-GSN_vs_CoxPH")
+        for horizon, res in st.get("paired_cluster_auc", {}).items():
+            print(f"  Paired cluster AUC {horizon}: Δ={res['observed_diff']:+.4f} [{res['ci_lower']:.4f}, {res['ci_upper']:.4f}]")
+        cbi = st.get("paired_cluster_cindex", {}).get("CDAN-GSN_vs_CoxPH")
         if cbi:
-            sig = "*" if cbi["significant_0.05"] else "ns"
-            print(f"  C-index permutation: diff={cbi['observed_diff']:+.4f}  p={cbi['p_value_one_sided']:.4f} ({sig})")
+            print(f"  Paired cluster C-index: Δ={cbi['observed_diff']:+.4f} [{cbi['ci_lower']:.4f}, {cbi['ci_upper']:.4f}]")
 
     # Figure inventory
     print("\n[Generated Files]")
@@ -102,28 +96,12 @@ def main():
     args = parser.parse_args()
 
     print("=" * 60)
-    print("PHASE 4: Ablation + Figures + Statistical Tests")
+    print("PHASE 4: delegating to the locked submission pipeline")
     print("=" * 60)
 
-    # Step 1: Ablation study
-    if not args.skip_ablation:
-        run("PYTHONPATH=. python scripts/run_ablations.py", critical=True)
-    else:
-        print("\n[Step 1] Skipped ablation training (--skip-ablation)")
-
-    # Step 2: Publication figures (Fig1–Fig6)
-    run("PYTHONPATH=. python src/visualization/build_publication_figures.py", critical=False)
-
-    # Step 3: Export real predictions (Fig7 calibration, Fig8 DCA)
-    run("PYTHONPATH=. python src/evaluate/export_real_predictions.py", critical=False)
-
-    # Step 4: Tables + ablation figure
-    run("PYTHONPATH=. python scripts/build_tables_and_figs.py", critical=False)
-
-    # Step 5: Statistical tests
-    run("PYTHONPATH=. python scripts/statistical_tests.py", critical=False)
-
-    # Final summary
+    if args.skip_ablation:
+        raise SystemExit("Cached or partial runs are no longer supported.")
+    run("PYTHONPATH=. python src/pipeline/run_locked_submission.py", critical=True)
     print_summary()
 
 
