@@ -7,10 +7,11 @@ from typing import Dict, List
 
 import yaml
 
-from src.reproducibility import prepare_locked_run_context, record_environment, snapshot_files, write_json
-
-
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from src.reproducibility import prepare_locked_run_context, record_environment, snapshot_files, write_json
 AUDIT_DIR = ROOT / "experiments" / "audit"
 RESULT_DIR = ROOT / "experiments" / "results"
 TABLE_DIR = ROOT / "tables"

@@ -1,5 +1,6 @@
 import subprocess
 import sys
+from pathlib import Path
 
 
 def main():
@@ -7,7 +8,13 @@ def main():
         print("Refusing to run training by default. Use: python run_all.py --train")
         return
 
-    subprocess.run([sys.executable, "src/pipeline/run_locked_submission.py"], check=True)
+    root = Path(__file__).resolve().parent
+    subprocess.run(
+        [sys.executable, "src/pipeline/run_locked_submission.py"],
+        cwd=root,
+        env={**__import__("os").environ, "PYTHONPATH": str(root)},
+        check=True,
+    )
 
 
 if __name__ == "__main__":
