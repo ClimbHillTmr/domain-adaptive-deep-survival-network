@@ -79,11 +79,15 @@ def main():
     print("\n[3/4] Training Model...")
     print("-> Phase 1: Source Pretraining")
     best_pre_val, best_pre_epoch, source_state = run_source_pretrain(
-        model, data_dict["source_loader"], 
+        model, data_dict["source_loader"],
         data_dict["x_val"], data_dict["e_val"], data_dict["t_val"],
         lr=config["training"]["learning_rate"],
         device=device,
-        max_epochs=config["training"]["pretrain_epochs"]
+        max_epochs=config["training"]["pretrain_epochs"],
+        # Pass source validation arrays so early stopping uses NO target-domain data
+        x_source_val=data_dict.get("x_source_val"),
+        e_source_val=data_dict.get("e_source_val"),
+        t_source_val=data_dict.get("t_source_val"),
     )
     
     # Zero-shot evaluation

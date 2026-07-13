@@ -1,0 +1,62 @@
+{
+    "metadata": {
+        "split_strategy": "patient",
+        "patient_col": "\u60a3\u8005id",
+        "target_adapt_ratio": 0.4,
+        "target_val_ratio": 0.15,
+        "n_features": 23,
+        "feature_names": [
+            "\u6027\u522b",
+            "\u900f\u6790\u9f84\u5360\u6bd4",
+            "\u8d85\u8d1f\u8377",
+            "\u5386\u53f2\u5e73\u5747\u8d85\u6ee4\u91cfMAX",
+            "\u5386\u53f2\u5e73\u5747\u900f\u524d\u4f53\u91cd",
+            "\u5386\u53f2\u5e73\u5747\u900f\u524d\u6536\u7f29\u538b",
+            "\u5386\u53f2\u5e73\u5747\u900f\u524d\u8212\u5f20\u538b",
+            "\u5386\u53f2\u5e73\u5747\u900f\u4e2d\u4f4e\u8840\u538b_\u8ba1\u7b97",
+            "\u900f\u524d\u4f53\u91cd-\u5e72\u4f53\u91cd",
+            "\u900f\u524d\u547c\u5438\u9891\u7387",
+            "\u900f\u524d\u4f53\u6e29",
+            "\u900f\u524d\u6536\u7f29\u538b",
+            "\u900f\u524d\u8212\u5f20\u538b",
+            "\u900f\u524d\u52a8\u8109\u538b",
+            "\u8109\u538b\u5dee",
+            "\u5e73\u5747\u52a8\u8109\u538b",
+            "history_HBP_rate",
+            "history_LBP_times_0_rate",
+            "history_LBP_times_1_rate",
+            "history_LBP_times_2_rate",
+            "history_LBP_times_3_rate",
+            "history_LBP_times_4_rate",
+            "\u5386\u53f2\u5e73\u5747\u8d85\u6ee4\u7387_mean"
+        ]
+    },
+    "sweeps": {
+        "Zero-shot": {
+            "metrics": {
+                "C-index": 0.8321435000199393,
+                "C-index_CI_lower": 0.8209684973234708,
+                "C-index_CI_upper": 0.8434380854969413,
+                "bootstrap_unit": "patient",
+                "n_bootstrap": 200,
+                "seed": 42,
+                "AUC_30m": 0.7291554399331042,
+                "AUC_60m": 0.8457944377310036,
+                "AUC_120m": 0.8570501973792489
+            }
+        },
+        "CDAN-GSN (Ours)": {
+            "metrics": {
+                "C-index": 0.8413608087775049,
+                "C-index_CI_lower": 0.8305893510717403,
+                "C-index_CI_upper": 0.8522505854844991,
+                "bootstrap_unit": "patient",
+                "n_bootstrap": 200,
+                "seed": 42,
+                "AUC_30m": 0.7291294725281532,
+                "AUC_60m": 0.8585044931384799,
+                "AUC_120m": 0.8675140537498351
+            }
+        }
+    }
+}

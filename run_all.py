@@ -60,15 +60,19 @@ def main():
              "python src/evaluate/export_real_predictions.py", critical=True)
 
     # 5. 执行消融实验 (Table S2) — non-critical (can rerun separately)
-    run_step("[5/7] Running Ablation Studies",
+    run_step("[5/8] Running Ablation Studies",
              "python src/train/run_ablations.py", critical=False)
 
     # 6. 生成临床与可解释性图表
-    run_step("[6/7] Generating Academic Clinical Figures",
+    run_step("[6/8] Generating Academic Clinical Figures",
              "python src/visualization/generate_figures.py", critical=False)
 
-    # 7. 打包学术交付物
-    run_step("[7/7] Packaging Academic Deliverables",
+    # 7. 学习曲线分析 (Supplementary) — non-critical
+    run_step("[7/8] Running Learning Curve Analysis",
+             "python src/evaluate/learning_curve.py", critical=False)
+
+    # 8. 打包学术交付物
+    run_step("[8/8] Packaging Academic Deliverables",
              "zip -q -r submission_materials.zip figures/ tables/ conf/ src/ experiments/results/",
              critical=False)
 

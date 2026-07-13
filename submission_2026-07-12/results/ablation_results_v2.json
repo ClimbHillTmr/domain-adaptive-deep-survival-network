@@ -1,0 +1,66 @@
+[
+  {
+    "name": "no_clinical",
+    "label": "w/o Pre-dialysis Vitals",
+    "n_features": 14,
+    "metrics": {
+      "C-index": 0.7510478930070185,
+      "C-index_CI_lower": 0.7357460844018018,
+      "C-index_CI_upper": 0.768457953121062,
+      "bootstrap_unit": "patient",
+      "n_bootstrap": 200,
+      "seed": 42,
+      "AUC_30m": 0.7100660620311275,
+      "AUC_60m": 0.763539990777443,
+      "AUC_120m": 0.7732610078927353
+    }
+  },
+  {
+    "name": "no_history",
+    "label": "w/o History Features",
+    "n_features": 11,
+    "metrics": {
+      "C-index": 0.7497027616440338,
+      "C-index_CI_lower": 0.7356022869054393,
+      "C-index_CI_upper": 0.7647159790199368,
+      "bootstrap_unit": "patient",
+      "n_bootstrap": 200,
+      "seed": 42,
+      "AUC_30m": 0.5984543438227355,
+      "AUC_60m": 0.7862485038116849,
+      "AUC_120m": 0.7716701754539428
+    }
+  },
+  {
+    "name": "no_kan",
+    "label": "w/o KAN (Linear tokenizer)",
+    "n_features": 23,
+    "metrics": {
+      "C-index": 0.842898374040466,
+      "C-index_CI_lower": 0.8325006304129147,
+      "C-index_CI_upper": 0.8533494831238039,
+      "bootstrap_unit": "patient",
+      "n_bootstrap": 200,
+      "seed": 42,
+      "AUC_30m": 0.7379812605864822,
+      "AUC_60m": 0.8606167548351574,
+      "AUC_120m": 0.8688345310300802
+    }
+  },
+  {
+    "name": "no_cdan",
+    "label": "w/o Domain Adaptation",
+    "n_features": 23,
+    "metrics": {
+      "C-index": 0.841351609664902,
+      "C-index_CI_lower": 0.8305770929527129,
+      "C-index_CI_upper": 0.852236394310045,
+      "bootstrap_unit": "patient",
+      "n_bootstrap": 200,
+      "seed": 42,
+      "AUC_30m": 0.729181883804201,
+      "AUC_60m": 0.858497429265465,
+      "AUC_120m": 0.8675080399324798
+    }
+  }
+]

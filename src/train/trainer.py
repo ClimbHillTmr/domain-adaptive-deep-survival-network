@@ -62,12 +62,61 @@ def build_optimizer(model, phase, lr, top_encoder_lr=None):
         return optim.AdamW(params_to_update, weight_decay=1e-4)
     raise ValueError(phase)
 
-def run_source_pretrain(model, source_loader, x_val, e_val, t_val, lr, device, max_epochs=40, patience=5):
+def run_source_pretrain(
+    model,
+    source_loader,
+    x_val,
+    e_val,
+    t_val,
+    lr,
+    device,
+    max_epochs=40,
+    patience=5,
+    x_source_val=None,
+    e_source_val=None,
+    t_source_val=None,
+):
+    """
+    Pretrain the model on source-domain data.
+
+    Early stopping uses a held-out SOURCE validation set when ``x_source_val``
+    is provided.  Falling back to the target validation set (legacy behaviour,
+    the original x_val/e_val/t_val arguments) introduces subtle information
+    leakage from the target domain into source model selection; the source-val
+    path eliminates this issue.
+
+    Args:
+        model          : the survival network
+        source_loader  : DataLoader over source training sessions
+        x_val / e_val / t_val : TARGET validation arrays (used for DA phases
+                                and kept here for backward compatibility, but
+                                NOT used for source early stopping when
+                                x_source_val is supplied).
+        x_source_val / e_source_val / t_source_val :
+                         SOURCE held-out validation arrays for early stopping.
+                         When None the function falls back to x_val (legacy).
+    """
+    # Decide which set drives early stopping
+    if x_source_val is not None:
+        es_x, es_e, es_t = x_source_val, e_source_val, t_source_val
+    else:
+        # Legacy fallback — raises a warning so callers are aware
+        import warnings
+        warnings.warn(
+            "run_source_pretrain: x_source_val not provided; falling back to "
+            "target validation set for source early stopping. This introduces "
+            "mild target-domain leakage into source model selection. Pass "
+            "x_source_val / e_source_val / t_source_val to eliminate this.",
+            UserWarning,
+            stacklevel=2,
+        )
+        es_x, es_e, es_t = x_val, e_val, t_val
+
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
-    best_val, best_epoch = -float('inf'), 0
+    best_val, best_epoch = -float("inf"), 0
     best_state = copy.deepcopy(model.state_dict())
     patience_left = patience
-    
+
     for epoch in range(1, max_epochs + 1):
         model.train()
         for x_s, e_s, t_s, w_s in source_loader:
@@ -75,17 +124,18 @@ def run_source_pretrain(model, source_loader, x_val, e_val, t_val, lr, device, m
             e_s = e_s.to(device)
             t_s = t_s.to(device)
             w_s = w_s.to(device)
-            
+
             optimizer.zero_grad()
             _, hazard, _, _ = model(x_s, grl_coeff=None)
-            
+
             loss = weighted_cox_loss(hazard, e_s, t_s, w_s)
             loss.backward()
             optimizer.step()
-            
-        metrics = evaluate_survival_metrics(model, x_val, e_val, t_val, device=device)
+
+        # Early stopping evaluated on the SOURCE validation set
+        metrics = evaluate_survival_metrics(model, es_x, es_e, es_t, device=device)
         val_cindex = metrics["C-index"]
-        
+
         if val_cindex > best_val:
             best_val, best_epoch = val_cindex, epoch
             best_state = copy.deepcopy(model.state_dict())
@@ -94,7 +144,7 @@ def run_source_pretrain(model, source_loader, x_val, e_val, t_val, lr, device, m
             patience_left -= 1
             if patience_left <= 0:
                 break
-                
+
     model.load_state_dict(best_state)
     return best_val, best_epoch, best_state
 

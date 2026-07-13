@@ -1,0 +1,13 @@
+\begin{table}
+\caption{External validation performance on the Fuding (target) test set. C-index 95\% CIs computed by patient-cluster bootstrap (200 replicates).}
+\label{tab:performance}
+\begin{tabular}{lllll}
+\toprule
+Model & C-index (95\% CI) & AUC (30 min) & AUC (60 min) & AUC (120 min) \\
+\midrule
+Zero-shot & 0.832 (0.821–0.843) & 0.729 & 0.846 & 0.857 \\
+CDAN-GSN (Ours) & 0.841 (0.831–0.852) & 0.729 & 0.859 & 0.868 \\
+CoxPH (local update) & 0.838 (0.827–0.847) & 0.737 & 0.861 & 0.865 \\
+\bottomrule
+\end{tabular}
+\end{table}

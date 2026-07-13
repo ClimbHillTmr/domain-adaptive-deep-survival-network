@@ -64,11 +64,15 @@ def run_single_ablation(name, ab_config, base_config, device):
     ).to(device)
     
     _, _, source_state = run_source_pretrain(
-        model, data_dict["source_loader"], 
+        model, data_dict["source_loader"],
         data_dict["x_val"], data_dict["e_val"], data_dict["t_val"],
         lr=config["training"]["learning_rate"],
         device=device,
-        max_epochs=config["training"]["pretrain_epochs"]
+        max_epochs=config["training"]["pretrain_epochs"],
+        # Use source-domain val so no target info leaks into source model selection
+        x_source_val=data_dict.get("x_source_val"),
+        e_source_val=data_dict.get("e_source_val"),
+        t_source_val=data_dict.get("t_source_val"),
     )
     
     # DA

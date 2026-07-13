@@ -1,0 +1,95 @@
+{
+  "metadata": {
+    "model_name": "Local Cox update",
+    "split_strategy": "patient",
+    "patient_col": "患者id",
+    "target_adapt_ratio": 0.4,
+    "target_val_ratio": 0.15,
+    "n_features_allowlist": 23,
+    "n_features_used": 23,
+    "used_features": [
+      "性别",
+      "透析龄占比",
+      "超负荷",
+      "历史平均超滤量MAX",
+      "历史平均透前体重",
+      "历史平均透前收缩压",
+      "历史平均透前舒张压",
+      "历史平均透中低血压_计算",
+      "透前体重-干体重",
+      "透前呼吸频率",
+      "透前体温",
+      "透前收缩压",
+      "透前舒张压",
+      "透前动脉压",
+      "脉压差",
+      "平均动脉压",
+      "history_HBP_rate",
+      "history_LBP_times_0_rate",
+      "history_LBP_times_1_rate",
+      "history_LBP_times_2_rate",
+      "history_LBP_times_3_rate",
+      "history_LBP_times_4_rate",
+      "历史平均超滤率_mean"
+    ],
+    "dropped_low_variance_features": [],
+    "penalizer_grid": [
+      {
+        "penalizer": 0.01,
+        "val_cindex": 0.8216284955920515
+      },
+      {
+        "penalizer": 0.1,
+        "val_cindex": 0.8131273010657025
+      },
+      {
+        "penalizer": 1.0,
+        "val_cindex": 0.7757292183775152
+      },
+      {
+        "penalizer": 10.0,
+        "val_cindex": 0.7549014757168767
+      },
+      {
+        "penalizer": 100.0,
+        "val_cindex": 0.7517145393785373
+      }
+    ],
+    "selected_penalizer": 0.01,
+    "n_test": 44702
+  },
+  "metrics": {
+    "C-index": 0.8375637784295814,
+    "C-index_CI_lower": 0.8274475821217262,
+    "C-index_CI_upper": 0.8473610683621882,
+    "bootstrap_unit": "patient",
+    "n_bootstrap": 200,
+    "seed": 42,
+    "AUC_30m": 0.7373675721905769,
+    "AUC_60m": 0.8610689255510094,
+    "AUC_120m": 0.8648373839010072
+  },
+  "calibration": {
+    "30m": {
+      "observed_rate": 0.001051407095879379,
+      "mean_predicted_rate": 0.0011481709947976705,
+      "brier": 0.0010503036625568224,
+      "calibration_intercept": 0.006491133812016128,
+      "calibration_slope": 0.0007239977602508003
+    },
+    "60m": {
+      "observed_rate": 0.1448033645027068,
+      "mean_predicted_rate": 0.12151339899472711,
+      "brier": 0.09492395167057695,
+      "calibration_intercept": 0.4573009749387477,
+      "calibration_slope": 0.1215611978858548
+    },
+    "120m": {
+      "observed_rate": 0.2466556306205539,
+      "mean_predicted_rate": 0.22077930256581998,
+      "brier": 0.12626196013155602,
+      "calibration_intercept": 0.5205476802277823,
+      "calibration_slope": 0.16235028858690645
+    }
+  }
+}

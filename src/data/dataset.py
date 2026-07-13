@@ -194,13 +194,61 @@ def _patient_level_target_split(
     return idx_train, idx_val, idx_test
 
 
+def _patient_level_source_split(
+    x_s: np.ndarray,
+    e_s: np.ndarray,
+    t_s: np.ndarray,
+    df_source: pd.DataFrame,
+    source_val_ratio: float,
+    seed: int,
+    patient_col: str,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Hold out a patient-level source validation set for source pretrain early stopping.
+
+    Returns (x_train, e_train, t_train, x_val, e_val, t_val) where val sessions
+    belong to patients never seen in the source training fold.
+    """
+    if patient_col not in df_source.columns:
+        # Fallback: random session-level split (no patient info)
+        idx = np.arange(len(x_s))
+        idx_train, idx_val = train_test_split(
+            idx, test_size=source_val_ratio, random_state=seed
+        )
+        return x_s[idx_train], e_s[idx_train], t_s[idx_train], x_s[idx_val], e_s[idx_val], t_s[idx_val]
+
+    patient_frame = pd.DataFrame(
+        {"patient": df_source[patient_col].astype(str).values, "event": e_s.astype(int)}
+    )
+    patient_event = patient_frame.groupby("patient", sort=False)["event"].max()
+    patients = patient_event.index.to_numpy()
+    patient_labels = patient_event.to_numpy()
+
+    train_patients, val_patients = train_test_split(
+        patients,
+        test_size=source_val_ratio,
+        random_state=seed,
+        stratify=_stratify_or_none(patient_labels),
+    )
+
+    src_patients = df_source[patient_col].astype(str).values
+    idx_train = np.flatnonzero(np.isin(src_patients, train_patients))
+    idx_val   = np.flatnonzero(np.isin(src_patients, val_patients))
+
+    return (
+        x_s[idx_train], e_s[idx_train], t_s[idx_train],
+        x_s[idx_val],   e_s[idx_val],   t_s[idx_val],
+    )
+
+
 def prepare_dataloaders(
-    source_path: str, 
-    target_path: str, 
-    batch_size: int, 
+    source_path: str,
+    target_path: str,
+    batch_size: int,
     seed: int = 42,
     target_adapt_ratio: float = 0.2,
     target_val_ratio: float = 0.2,
+    source_val_ratio: float = 0.10,   # fraction of SOURCE patients held out for pretrain ES
     remove_features: Optional[List[str]] = None,
     patient_col: str = "患者id",
     split_strategy: str = "patient",
@@ -260,13 +308,28 @@ def prepare_dataloaders(
     x_val, e_val, t_val = x_t[idx_val], e_t[idx_val], t_t[idx_val]
     x_test, e_test, t_test = x_t[idx_test], e_t[idx_test], t_t[idx_test]
 
-    # Compute IPCW
-    w_s = compute_ipcw_weights(t_s, e_s)
-    w_train = compute_ipcw_weights(t_train, e_train)
+    # --- Source validation split (used for source pretrain early stopping) ---
+    # Held-out source patients whose sessions are NOT used for training the source
+    # model; early stopping on this set avoids leaking any target-domain information
+    # into source model selection.
+    (
+        x_s_train, e_s_train, t_s_train,
+        x_s_val,   e_s_val,   t_s_val,
+    ) = _patient_level_source_split(x_s, e_s, t_s, df_s, source_val_ratio, seed, patient_col)
 
-    # Create loaders
-    ds_s = TensorDataset(torch.tensor(x_s), torch.tensor(e_s), torch.tensor(t_s), torch.tensor(w_s))
-    ds_t = TensorDataset(torch.tensor(x_train), torch.tensor(e_train), torch.tensor(t_train), torch.tensor(w_train))
+    # Compute IPCW (source IPCW on source train only; target IPCW on target train only)
+    w_s_train = compute_ipcw_weights(t_s_train, e_s_train)
+    w_train   = compute_ipcw_weights(t_train, e_train)
+
+    # Create loaders (source loader uses training patients only)
+    ds_s = TensorDataset(
+        torch.tensor(x_s_train), torch.tensor(e_s_train),
+        torch.tensor(t_s_train), torch.tensor(w_s_train),
+    )
+    ds_t = TensorDataset(
+        torch.tensor(x_train), torch.tensor(e_train),
+        torch.tensor(t_train), torch.tensor(w_train),
+    )
 
     source_loader = DataLoader(ds_s, batch_size=batch_size, shuffle=True, drop_last=True)
     target_loader = DataLoader(ds_t, batch_size=batch_size, shuffle=True, drop_last=False)
@@ -274,21 +337,26 @@ def prepare_dataloaders(
     return {
         "source_loader": source_loader,
         "target_loader": target_loader,
+        # Target validation (drives DA-phase early stopping)
         "x_val": x_val, "e_val": e_val, "t_val": t_val,
+        # Source validation (drives SOURCE pretrain early stopping — no target leakage)
+        "x_source_val": x_s_val, "e_source_val": e_s_val, "t_source_val": t_s_val,
         "x_test": x_test, "e_test": e_test, "t_test": t_test,
         "x_train": x_train,
         "t_train": t_train, "e_train": e_train,
+        # Full source arrays (for metrics that need all source data, e.g. IPCW baseline)
+        "x_source_all": x_s, "e_source_all": e_s, "t_source_all": t_s,
         "df_source": df_s,
         "df_target": df_t,
         "idx_train": idx_train,
         "idx_val": idx_val,
         "idx_test": idx_test,
         "patient_ids_train": df_t.iloc[idx_train][patient_col].astype(str).to_numpy(),
-        "patient_ids_val": df_t.iloc[idx_val][patient_col].astype(str).to_numpy(),
-        "patient_ids_test": df_t.iloc[idx_test][patient_col].astype(str).to_numpy(),
+        "patient_ids_val":   df_t.iloc[idx_val][patient_col].astype(str).to_numpy(),
+        "patient_ids_test":  df_t.iloc[idx_test][patient_col].astype(str).to_numpy(),
         "category_mappings": category_mappings,
         "split_strategy": split_strategy,
         "patient_col": patient_col,
         "feature_names": feature_names,
-        "input_dim": x_s.shape[1]
+        "input_dim": x_s.shape[1],
     }

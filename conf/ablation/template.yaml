@@ -1,4 +1,18 @@
 # Ablation Study Configurations
+#
+# Ablation interpretation guide
+# ──────────────────────────────
+# Condition               What changes               What it tests
+# ──────────────────────  ─────────────────────────  ──────────────────────────────────────
+# no_clinical             remove vital-sign features  necessity of pre-dialysis vitals
+# no_history              remove history features     necessity of within-patient history
+# no_kan                  linear tokenizer            marginal value of B-spline nonlinearity
+# no_adversarial          adv_weight = 0 (GRL off)    marginal value of adversarial alignment
+#                         full fine-tuning still runs — this isolates the adversarial
+#                         loss component, NOT the fine-tuning step.
+#                         The zero-shot baseline (no fine-tuning at all) serves as the
+#                         "no domain adaptation" reference and is evaluated separately
+#                         in src/main.py.
 
 defaults:
   - ../config
@@ -7,7 +21,7 @@ defaults:
 experiment_name: "ablation_study"
 
 ablations:
-  # 1. 移除临床变量 (处方等)
+  # 1. 移除预透析临床状态变量（生命体征块）
   no_clinical:
     remove_features:
       - "超滤率_体重归一化"
@@ -20,7 +34,7 @@ ablations:
       - "透析液电导率"
       - "实际透析时长"
 
-  # 2. 移除历史波动特征
+  # 2. 移除患者内历史波动特征块
   no_history:
     remove_features:
       - "历史平均透中低血压_计算"
@@ -29,20 +43,17 @@ ablations:
       - "历史平均透前体重"
       - "历史平均透前收缩压"
       - "历史平均透前舒张压"
-      
-  # 3. 架构消融：退化 KAN 为 Linear
+
+  # 3. 架构消融：B样条KAN退化为线性tokenizer
   no_kan:
     model:
       name: "cdan_gsn_linear"
-      
-  # 4. [DISABLED] 架构消融：移除 IPCW 删失权重
-  # no_ipcw 已禁用：trainer.py 未检查 use_ipcw 标志，设置该字段不会实际修改 loss。
-  # 若需严格消融，须在 trainer.py 中加入 use_ipcw 分支后重新启用。
-  # no_ipcw:
-  #   training:
-  #     use_ipcw: false
 
-  # 5. 架构消融：移除 CDAN 鉴别器（adv_weight=0 即禁用对抗损失）
-  no_cdan:
+  # 4. 架构消融：关闭GRL对抗对齐损失（adv_weight=0）
+  # 注意：目标域微调仍正常运行（staged fine-tuning不变）。
+  # 本条件测试的是"对抗对齐分量的边际贡献"，而非"无域适应"。
+  # 无微调的零样本结果在 src/main.py 中单独报告作为 no-adaptation 基线。
+  no_adversarial:
     training:
       adv_weight: 0.0
+

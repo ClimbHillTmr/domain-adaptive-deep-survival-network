@@ -166,25 +166,80 @@ def compute_bootstrap_cindex(
     return float(lower), float(upper)
 
 
-def _binary_auc(y_true, scores):
-    y_true = np.asarray(y_true, dtype=int)
-    scores = np.asarray(scores, dtype=float)
-    n_pos = int(np.sum(y_true == 1))
-    n_neg = int(np.sum(y_true == 0))
-    if n_pos == 0 or n_neg == 0:
+def ipcw_auc_at_horizon(
+    t_eval: np.ndarray,
+    e_eval: np.ndarray,
+    risk_scores: np.ndarray,
+    horizon: float,
+    t_train: np.ndarray,
+    e_train: np.ndarray,
+    weight_cap_pct: float = 99.0,
+) -> float | None:
+    """
+    Uno et al. (2011) IPCW-weighted time-specific AUC at a given prediction horizon.
+
+    Correctly handles right-censoring by down-weighting cases whose censoring
+    distribution is well-estimated by the training set Kaplan-Meier for the
+    censoring variable.
+
+    Definition
+    ----------
+    Let:
+      • cases    = {i : T_i ≤ τ, Δ_i = 1}   (experienced event before horizon)
+      • controls = {j : T_j > τ}              (event-free after horizon)
+      • w_i = 1 / Ĝ(T_i)²                    (IPCW weight for case i)
+        where Ĝ is the KM estimate of the censoring survival function
+
+    AUC_IPCW(τ) = Σ_i w_i [|{j ∈ controls : η_j < η_i}| + 0.5 |{j : η_j = η_i}|]
+                 ─────────────────────────────────────────────────────────────────
+                           (Σ_i w_i) × |controls|
+
+    Args:
+        t_eval, e_eval : observed times and event indicators for the test set
+        risk_scores    : predicted log-hazard (higher = higher risk)
+        horizon        : prediction time point τ (in same units as t_eval)
+        t_train, e_train : training set times/events used to fit the censoring KM
+        weight_cap_pct : percentile at which IPCW weights are truncated (default 99)
+
+    Returns:
+        AUC value in [0, 1], or None if cases or controls are empty.
+    """
+    t_eval      = np.asarray(t_eval,      dtype=float)
+    e_eval      = np.asarray(e_eval,      dtype=int)
+    risk_scores = np.asarray(risk_scores, dtype=float)
+    t_train     = np.asarray(t_train,     dtype=float)
+    e_train     = np.asarray(e_train,     dtype=int)
+
+    # Estimate Ĝ(T_i) for each test observation using the training censoring KM
+    g = _kaplan_meier_survival_at(t_train, e_train, t_eval)
+    g = np.clip(g, 1e-5, 1.0)
+    raw_weights = 1.0 / (g ** 2)
+    cap = np.percentile(raw_weights, weight_cap_pct)
+    ipcw_w = np.clip(raw_weights, 0.0, cap)
+
+    case_mask = (t_eval <= horizon) & (e_eval == 1)
+    ctrl_mask = (t_eval > horizon)
+
+    n_cases = int(np.sum(case_mask))
+    n_ctrl  = int(np.sum(ctrl_mask))
+
+    if n_cases == 0 or n_ctrl == 0:
         return None
-    order = np.argsort(scores)
-    sorted_scores = scores[order]
-    ranks = np.empty(len(scores), dtype=float)
-    i = 0
-    while i < len(scores):
-        j = i
-        while j < len(scores) and sorted_scores[j] == sorted_scores[i]:
-            j += 1
-        ranks[order[i:j]] = (i + 1 + j) / 2.0
-        i = j
-    rank_sum_pos = np.sum(ranks[y_true == 1])
-    return float((rank_sum_pos - n_pos * (n_pos + 1) / 2.0) / (n_pos * n_neg))
+
+    case_risks = risk_scores[case_mask]
+    case_w     = ipcw_w[case_mask]
+    ctrl_risks = np.sort(risk_scores[ctrl_mask])   # sorted for binary search
+
+    # For each case i, efficiently count controls with strictly lower / equal risk
+    n_lower = np.searchsorted(ctrl_risks, case_risks, side="left")
+    n_equal = np.searchsorted(ctrl_risks, case_risks, side="right") - n_lower
+
+    concordant = case_w * (n_lower + 0.5 * n_equal)
+
+    numerator   = float(np.sum(concordant))
+    denominator = float(np.sum(case_w)) * n_ctrl
+
+    return numerator / denominator if denominator > 0 else None
 
 
 def evaluate_survival_metrics(
@@ -238,8 +293,14 @@ def evaluate_survival_metrics(
     
     if t_train is not None and e_train is not None:
         for horizon in (30.0, 60.0, 120.0):
-            y_horizon = ((np.asarray(e_eval).astype(int) == 1) & (np.asarray(t_eval) <= horizon)).astype(int)
-            auc = _binary_auc(y_horizon, risk_scores)
+            auc = ipcw_auc_at_horizon(
+                t_eval=t_eval,
+                e_eval=e_eval,
+                risk_scores=risk_scores,
+                horizon=horizon,
+                t_train=t_train,
+                e_train=e_train,
+            )
             if auc is not None:
                 metrics[f"AUC_{int(horizon)}m"] = auc
             
