@@ -38,9 +38,9 @@ logs/
 *.log
 
 # 输出目录
-# output/
-# results/
-# reports/
+output/
+results/
+reports/
 
 # 缓存目录
 .cache/
