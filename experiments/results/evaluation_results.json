@@ -1,6 +1,6 @@
 {
     "metadata": {
-        "run_id": "locked_run_20260713_144958_19ef84679c02",
+        "run_id": "locked_run_20260713_235150_19ef84679c02",
         "split_strategy": "patient",
         "patient_col": "\u60a3\u8005id",
         "target_adapt_ratio": 0.4,
