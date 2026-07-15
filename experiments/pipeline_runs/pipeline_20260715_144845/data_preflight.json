@@ -7,7 +7,7 @@
   "passed": true,
   "cohorts": {
     "source": {
-      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/data/processed/深医_final_data.csv",
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/experiments/pipeline_runs/pipeline_20260715_144845/processed/shenyi.csv",
       "exists": true,
       "errors": [],
       "warnings": [],
@@ -38,7 +38,7 @@
       }
     },
     "target": {
-      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/data/processed/福鼎_final_data.csv",
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/experiments/pipeline_runs/pipeline_20260715_144845/processed/fuding.csv",
       "exists": true,
       "errors": [],
       "warnings": [],

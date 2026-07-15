@@ -1,0 +1,17 @@
+{
+  "cohort": "fuding",
+  "input_path": "/home/cht/Works/domain-adaptive-deep-survival-network/data/raw/updated_dataset_fuding.csv",
+  "input_rows": 76519,
+  "output_rows": 74947,
+  "rejected": {
+    "invalid_sequence": 176,
+    "misaligned_sequence": 1225,
+    "invalid_time": 171
+  },
+  "n_patients": 430,
+  "n_idh_events": 28881,
+  "n_ih_events": 8962,
+  "idh_rule": "baseline_sbp - intradialytic_sbp >= 30 or intradialytic_sbp <= 90",
+  "ih_rule": "intradialytic_map - baseline_map > 10",
+  "non_event_time_min": 0.0
+}
