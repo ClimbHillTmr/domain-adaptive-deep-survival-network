@@ -76,6 +76,14 @@ def build_feature_tables(
     df_s = pd.read_csv(source_path)
     df_t = pd.read_csv(target_path)
 
+    for label, frame in [("source", df_s), ("target", df_t)]:
+        zero_time_non_events = (frame["events"].eq(0) & frame["et_min"].le(0)).sum()
+        if zero_time_non_events:
+            raise ValueError(
+                f"{label} data contains {zero_time_non_events} non-events with et_min <= 0. "
+                "This is the new binary-IDH data contract, not a valid Cox follow-up time."
+            )
+
     # Encode categoricals using source-fitted mappings to avoid cross-center code drift.
     df_s, df_t, category_mappings = encode_categoricals_from_source(df_s, df_t)
 
@@ -143,6 +151,12 @@ def build_feature_tables(
 def _load_and_filter_cohort(path: str) -> pd.DataFrame:
     """Load one cohort and retain rows with a valid positive follow-up time."""
     frame = pd.read_csv(path).dropna(subset=["et_min", "events"]).copy()
+    zero_time_non_events = (frame["events"].eq(0) & frame["et_min"].le(0)).sum()
+    if zero_time_non_events:
+        raise ValueError(
+            f"{path} uses zero event times for {zero_time_non_events} non-events. "
+            "The legacy Cox pipeline is disabled for the binary-IDH data contract."
+        )
     frame = frame[frame["et_min"] > 0].reset_index(drop=True)
     if frame.empty:
         raise ValueError(f"No valid rows remain after outcome filtering: {path}")

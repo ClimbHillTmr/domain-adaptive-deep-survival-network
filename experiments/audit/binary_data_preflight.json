@@ -1,0 +1,60 @@
+{
+  "contract": "binary_idh_v1",
+  "event_rule": "baseline SBP - intradialytic SBP >= 30 or intradialytic SBP <= 90",
+  "passed": false,
+  "cohorts": {
+    "source": {
+      "path": "/Users/cht/GitHub/domain-adaptive-deep-survival-network/data/processed/深医_final_data.csv",
+      "exists": true,
+      "errors": [
+        "missing_binary_contract_columns",
+        "missing_allowed_features",
+        "non_event_time_contract_violation"
+      ],
+      "warnings": [],
+      "missing_required_columns": [
+        "session_id"
+      ],
+      "missing_allowed_features": [
+        "history_IDH_rate"
+      ],
+      "sessions": 216604,
+      "patients": 1637,
+      "events": 23880,
+      "event_rate": 0.11024727151853152,
+      "missing_outcomes": 0,
+      "nonbinary_events": 0,
+      "negative_times": 0,
+      "non_events_with_nonzero_time": 192588,
+      "duplicate_session_ids": null,
+      "events_low_bp_mismatch": 0
+    },
+    "target": {
+      "path": "/Users/cht/GitHub/domain-adaptive-deep-survival-network/data/processed/福鼎_final_data.csv",
+      "exists": true,
+      "errors": [
+        "missing_binary_contract_columns",
+        "missing_allowed_features",
+        "invalid_outcome_values",
+        "non_event_time_contract_violation"
+      ],
+      "warnings": [],
+      "missing_required_columns": [
+        "session_id"
+      ],
+      "missing_allowed_features": [
+        "history_IDH_rate"
+      ],
+      "sessions": 75224,
+      "patients": 430,
+      "events": 26915,
+      "event_rate": 0.35779804317770925,
+      "missing_outcomes": 0,
+      "nonbinary_events": 0,
+      "negative_times": 17,
+      "non_events_with_nonzero_time": 48292,
+      "duplicate_session_ids": null,
+      "events_low_bp_mismatch": 0
+    }
+  }
+}

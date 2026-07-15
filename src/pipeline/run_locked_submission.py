@@ -111,6 +111,10 @@ MANUSCRIPT_DIR = ROOT / "manuscript"
 
 
 def main() -> None:
+    raise RuntimeError(
+        "The locked Cox/CDAN submission pipeline is historical and incompatible with binary_idh_v1. "
+        "Use src/main_binary.py after the rebuilt cohorts pass the binary preflight."
+    )
     config = load_config()
     tracked_inputs = {
         "config": str(ROOT / "conf" / "config.yaml"),

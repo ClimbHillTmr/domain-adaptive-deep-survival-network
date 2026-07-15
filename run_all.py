@@ -4,13 +4,18 @@ from pathlib import Path
 
 
 def main():
-    if "--train" not in sys.argv:
-        print("Refusing to run training by default. Use: python run_all.py --train")
-        return
-
     root = Path(__file__).resolve().parent
+    if "--train" not in sys.argv:
+        subprocess.run(
+            [sys.executable, "src/evaluate/audit_binary_data.py"],
+            cwd=root,
+            env={**__import__("os").environ, "PYTHONPATH": str(root)},
+            check=True,
+        )
+        print("Static binary-data audit completed. No data were regenerated and no model was trained.")
+        return
     subprocess.run(
-        [sys.executable, "src/pipeline/run_locked_submission.py"],
+        [sys.executable, "src/main_binary.py", "--train"],
         cwd=root,
         env={**__import__("os").environ, "PYTHONPATH": str(root)},
         check=True,

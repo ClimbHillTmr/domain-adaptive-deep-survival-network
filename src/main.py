@@ -34,6 +34,10 @@ def get_indices(feature_names):
     return treat_indices, physio_indices
 
 def main():
+    raise RuntimeError(
+        "This is the disabled legacy Cox/CDAN entrypoint. The active endpoint is binary IDH. "
+        "Run `python run_all.py` for static preflight or `python run_all.py --train` only after rebuilt data pass it."
+    )
     print("="*50)
     print("Starting DA-DSN Training Pipeline")
     print("="*50)

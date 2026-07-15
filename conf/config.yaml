@@ -4,6 +4,8 @@ defaults:
 project:
   name: "domain-adaptive-deep-survival-network"
   version: "1.0.0"
+  status: "legacy_disabled"
+  replacement_config: "conf/binary_config.yaml"
 
 paths:
   data_dir: "data/processed"

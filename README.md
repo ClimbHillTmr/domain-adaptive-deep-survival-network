@@ -4,16 +4,13 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Code style: black/ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 
-This repository contains the official PyTorch implementation of our paper on multi-center hemodialysis complication (Intradialytic Hypotension, IDH) prediction.
+This repository studies cross-center intradialytic hypotension (IDH) prediction with target-center labeled updating and patient-level held-out testing.
 
-We propose **CDAN-GSN**, a transport-aware survival framework for cross-center intradialytic hypotension timing prediction. The current manuscript-ready workflow should be interpreted as target-center labeled updating with patient-level held-out testing, not as strictly unsupervised domain adaptation.
+The active research contract is session-level binary IDH risk at dialysis start. First detected IDH time is descriptive only until the two centers' observation grids are harmonized; the legacy Cox/CDAN workflow must not be used with newly built zero-time non-events. See `docs/研究重置与数据契约.md`.
 
-## 🌟 Key Innovations
+## Legacy Components
 
-1. **Domain-Stratified Cox & IPCW**: Models target-center updating under baseline hazard and censoring differences using Inverse Probability of Censoring Weighting.
-2. **KAN Tokenizer & CLS Pooling**: Employs Kolmogorov-Arnold Networks (KAN) to capture non-linear physiological risks (e.g., U-shaped blood pressure curves) and isolates acute deterioration signals using Attention Pooling.
-3. **Gated Sparsity Mask**: Prevents negative transfer by adaptively masking out hospital-specific idiosyncratic features.
-4. **Treatment-Conditioned Domain Adversarial Network (CDAN)**: Aligns latent representations conditional on treatment-context features and model-derived risk terms.
+The Cox, KAN, gated-mask, and CDAN implementations are retained for historical comparison only. They are not current scientific claims and must not be evaluated until the binary-IDH baselines and rebuilt data contract pass the documented gates.
 
 ## 📂 Project Structure
 
@@ -36,7 +33,7 @@ We propose **CDAN-GSN**, a transport-aware survival framework for cross-center i
 └── pyproject.toml        # Ruff, Mypy, and Pytest configurations
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Environment Setup
 ```bash
@@ -50,18 +47,40 @@ pip install -r requirements.txt
 ```
 
 ### 2. Prepare Data
-Place your source and target center datasets in `data/raw/`. The pipeline expects specific columns (e.g., pre-dialysis vitals, ultrafiltration rate).
-*Note: Due to patient privacy, the raw clinical data is not included in this repository.*
+Build source and target cohorts explicitly from the raw exports before any model work:
+```bash
+python src/data_pipeline/HBD_data.py RAW_SHENYI.csv OUTPUT_SHENYI.csv
+python src/data_pipeline/HBD_data_fuding.py RAW_FUDING.csv OUTPUT_FUDING.csv
+```
+Each build writes a companion audit JSON. Do not run the legacy Cox pipeline against the new binary-IDH data contract.
 
-### 3. Run the Full Pipeline
-The entire process (Data formatting -> source pretraining -> target-center updating -> evaluation -> plotting) can be executed with a single command after the processed data files are available:
+### 3. Audit Before Training
+The default command performs a static binary-contract audit only:
 ```bash
 python run_all.py
 ```
 
-## 📊 Academic Deliverables
+It does not rebuild data or fit a model. After rebuilt cohorts pass the audit and the patient split is reviewed, training still requires an explicit gate:
 
-Running the pipeline automatically generates the following publication-ready artifacts:
+```bash
+python run_all.py --train
+```
+
+The active comparison set is source-only logistic regression, local Fuding logistic regression, source MLP zero-shot, and labeled Fuding updating of the same MLP. Configuration is frozen in `conf/binary_config.yaml`; split and initialization seeds are separate.
+
+### One-command server run
+
+Build both cohorts from raw exports, run strict preflight, train the IDH and IH endpoints, and save all artifacts under one timestamped directory:
+
+```bash
+python run_pipeline.py /path/to/updated_dataset_shenyi.csv /path/to/updated_dataset_fuding.csv
+```
+
+The command never overwrites `data/processed`. Progress and failure logs are saved under `experiments/pipeline_runs/pipeline_<UTC time>/`.
+
+## Historical Deliverables
+
+The survival tables and figures below belong to the disabled legacy workflow and are not publication-ready under `binary_idh_v1`:
 
 - **Tables (`tables/`)**:
   - `table1_baseline.tex`: Demographics and baseline characteristics (with IQR and missingness).
@@ -84,4 +103,4 @@ If you find this code or our methodology useful in your research, please conside
 
 ## Manuscript Readiness Notes
 
-Before using generated outputs in a submission, follow `docs/投稿前整改计划.md`. In particular, regenerate final CSV files with prior-only historical features, keep the default patient-level target split, and replace placeholder or simulated statistics with results from real held-out predictions.
+Before using generated outputs in a submission, follow `docs/研究重置与数据契约.md` and `docs/投稿前整改计划.md`.
