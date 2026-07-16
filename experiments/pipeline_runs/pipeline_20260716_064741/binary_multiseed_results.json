@@ -1,0 +1,2042 @@
+{
+  "split_seed": 20260715,
+  "initialization_seeds": [
+    42,
+    7,
+    13,
+    99,
+    2024
+  ],
+  "fixed_target_test_patients": 258,
+  "summary": {
+    "idh": {
+      "source_logistic": {
+        "roc_auc": {
+          "mean": 0.8020149336813732,
+          "std": 0.0,
+          "values": [
+            0.8020149336813732,
+            0.8020149336813732,
+            0.8020149336813732,
+            0.8020149336813732,
+            0.8020149336813732
+          ]
+        },
+        "pr_auc": {
+          "mean": 0.7282139184812713,
+          "std": 0.0,
+          "values": [
+            0.7282139184812713,
+            0.7282139184812713,
+            0.7282139184812713,
+            0.7282139184812713,
+            0.7282139184812713
+          ]
+        },
+        "brier": {
+          "mean": 0.1771550070855336,
+          "std": 0.0,
+          "values": [
+            0.1771550070855336,
+            0.1771550070855336,
+            0.1771550070855336,
+            0.1771550070855336,
+            0.1771550070855336
+          ]
+        }
+      },
+      "local_logistic": {
+        "roc_auc": {
+          "mean": 0.8353489833192761,
+          "std": 0.0,
+          "values": [
+            0.835348983319276,
+            0.835348983319276,
+            0.835348983319276,
+            0.835348983319276,
+            0.835348983319276
+          ]
+        },
+        "pr_auc": {
+          "mean": 0.7837375517735956,
+          "std": 0.0,
+          "values": [
+            0.7837375517735956,
+            0.7837375517735956,
+            0.7837375517735956,
+            0.7837375517735956,
+            0.7837375517735956
+          ]
+        },
+        "brier": {
+          "mean": 0.1564820384819356,
+          "std": 0.0,
+          "values": [
+            0.1564820384819356,
+            0.1564820384819356,
+            0.1564820384819356,
+            0.1564820384819356,
+            0.1564820384819356
+          ]
+        }
+      },
+      "source_mlp": {
+        "roc_auc": {
+          "mean": 0.8097404864545197,
+          "std": 0.010054902803817089,
+          "values": [
+            0.8043257920396787,
+            0.8148678378852765,
+            0.824531203674571,
+            0.7989634351512027,
+            0.8060141635218698
+          ]
+        },
+        "pr_auc": {
+          "mean": 0.7458367203925874,
+          "std": 0.016557207421090275,
+          "values": [
+            0.7403712586617657,
+            0.7599831435123042,
+            0.7665524349300573,
+            0.729503022412604,
+            0.7327737424462064
+          ]
+        },
+        "brier": {
+          "mean": 0.1977519841915948,
+          "std": 0.020135342918780247,
+          "values": [
+            0.18030775618069667,
+            0.1824754640033709,
+            0.20217335316285998,
+            0.23012362542916914,
+            0.1936797221818772
+          ]
+        }
+      },
+      "updated_mlp": {
+        "roc_auc": {
+          "mean": 0.8394574576826512,
+          "std": 0.0006282827722752102,
+          "values": [
+            0.8396027822326204,
+            0.8402187839721524,
+            0.8396795690421521,
+            0.8385110854072797,
+            0.8392750677590517
+          ]
+        },
+        "pr_auc": {
+          "mean": 0.7867615570187111,
+          "std": 0.001033443109975606,
+          "values": [
+            0.7873642160333978,
+            0.7875550680189141,
+            0.7870772543387264,
+            0.7849798125264202,
+            0.7868314341760967
+          ]
+        },
+        "brier": {
+          "mean": 0.15517232414072568,
+          "std": 0.0004044444377662048,
+          "values": [
+            0.15507657553522067,
+            0.1547366625254625,
+            0.1550901234595993,
+            0.15583990393461508,
+            0.1551183552487308
+          ]
+        }
+      },
+      "paired_auc_deltas": {
+        "updated_mlp_vs_source_mlp": {
+          "mean": 0.02971697122813153,
+          "std": 0.009636155541323412,
+          "values": [
+            0.035276990192941726,
+            0.025350946086875936,
+            0.01514836536758113,
+            0.03954765025607698,
+            0.033260904237181865
+          ]
+        },
+        "updated_mlp_vs_local_logistic": {
+          "mean": 0.004108474363375292,
+          "std": 0.0006282827722752102,
+          "values": [
+            0.004253798913344431,
+            0.004869800652876455,
+            0.004330585722876146,
+            0.0031621020880037154,
+            0.003926084439775712
+          ]
+        }
+      }
+    },
+    "ih": {
+      "source_logistic": {
+        "roc_auc": {
+          "mean": 0.8636702069651274,
+          "std": 0.0,
+          "values": [
+            0.8636702069651274,
+            0.8636702069651274,
+            0.8636702069651274,
+            0.8636702069651274,
+            0.8636702069651274
+          ]
+        },
+        "pr_auc": {
+          "mean": 0.5242927831808224,
+          "std": 0.0,
+          "values": [
+            0.5242927831808224,
+            0.5242927831808224,
+            0.5242927831808224,
+            0.5242927831808224,
+            0.5242927831808224
+          ]
+        },
+        "brier": {
+          "mean": 0.08233077128865304,
+          "std": 0.0,
+          "values": [
+            0.08233077128865304,
+            0.08233077128865304,
+            0.08233077128865304,
+            0.08233077128865304,
+            0.08233077128865304
+          ]
+        }
+      },
+      "local_logistic": {
+        "roc_auc": {
+          "mean": 0.8681107871465636,
+          "std": 0.0,
+          "values": [
+            0.8681107871465636,
+            0.8681107871465636,
+            0.8681107871465636,
+            0.8681107871465636,
+            0.8681107871465636
+          ]
+        },
+        "pr_auc": {
+          "mean": 0.5299878373734423,
+          "std": 0.0,
+          "values": [
+            0.5299878373734423,
+            0.5299878373734423,
+            0.5299878373734423,
+            0.5299878373734423,
+            0.5299878373734423
+          ]
+        },
+        "brier": {
+          "mean": 0.08141783736728209,
+          "std": 0.0,
+          "values": [
+            0.08141783736728209,
+            0.08141783736728209,
+            0.08141783736728209,
+            0.08141783736728209,
+            0.08141783736728209
+          ]
+        }
+      },
+      "source_mlp": {
+        "roc_auc": {
+          "mean": 0.829967955443282,
+          "std": 0.047870403346461456,
+          "values": [
+            0.8611656711116726,
+            0.7473251849591922,
+            0.8594928302328445,
+            0.829720643605977,
+            0.8521354473067231
+          ]
+        },
+        "pr_auc": {
+          "mean": 0.4515328365366586,
+          "std": 0.09888993159548955,
+          "values": [
+            0.5204596367290182,
+            0.2827384842007502,
+            0.5097767943631583,
+            0.44392090511010884,
+            0.5007683622802576
+          ]
+        },
+        "brier": {
+          "mean": 0.09081422121089185,
+          "std": 0.008489204431486574,
+          "values": [
+            0.0828921777207644,
+            0.10300033247842955,
+            0.08765941316381011,
+            0.09602319456964098,
+            0.08449598812181422
+          ]
+        }
+      },
+      "updated_mlp": {
+        "roc_auc": {
+          "mean": 0.8683415878476703,
+          "std": 0.0008102005838207172,
+          "values": [
+            0.8673441949167795,
+            0.8690395731342875,
+            0.867691148310731,
+            0.8691836268153218,
+            0.8684493960612318
+          ]
+        },
+        "pr_auc": {
+          "mean": 0.5337559009570857,
+          "std": 0.0019011929567318423,
+          "values": [
+            0.532222432317793,
+            0.5357340943147448,
+            0.5348413092323873,
+            0.5347003079162721,
+            0.5312813610042312
+          ]
+        },
+        "brier": {
+          "mean": 0.08110326948707262,
+          "std": 0.00028316867188364945,
+          "values": [
+            0.08140119203493949,
+            0.08081850156997455,
+            0.0809652746484608,
+            0.08091663913267404,
+            0.08141474004931422
+          ]
+        }
+      },
+      "paired_auc_deltas": {
+        "updated_mlp_vs_source_mlp": {
+          "mean": 0.038373632404388444,
+          "std": 0.04842667785623014,
+          "values": [
+            0.006178523805106861,
+            0.12171438817509528,
+            0.008198318077886513,
+            0.039462983209344826,
+            0.016313948754508756
+          ]
+        },
+        "updated_mlp_vs_local_logistic": {
+          "mean": 0.0002308007011066815,
+          "std": 0.0008102005838207172,
+          "values": [
+            -0.0007665922297841465,
+            0.0009287859877238347,
+            -0.0004196388358326253,
+            0.001072839668758152,
+            0.00033860891466819254
+          ]
+        }
+      }
+    }
+  },
+  "runs": [
+    {
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/experiments/pipeline_runs/pipeline_20260716_064741/results/binary_20260716_065915_659dcdf5dd04/evaluation.json",
+      "run_id": "binary_20260716_065915_659dcdf5dd04",
+      "contract": "dual_binary_hemodynamic_v1",
+      "split_seed": 20260715,
+      "initialization_seed": 42,
+      "feature_names": [
+        "性别",
+        "透析龄占比",
+        "超负荷",
+        "历史平均超滤量MAX",
+        "历史平均透前体重",
+        "历史平均透前收缩压",
+        "历史平均透前舒张压",
+        "历史平均透中低血压_计算",
+        "透前体重-干体重",
+        "透前呼吸频率",
+        "透前体温",
+        "透前收缩压",
+        "透前舒张压",
+        "透前动脉压",
+        "脉压差",
+        "平均动脉压",
+        "history_IDH_rate",
+        "history_HBP_rate",
+        "history_LBP_times_0_rate",
+        "history_LBP_times_1_rate",
+        "history_LBP_times_2_rate",
+        "history_LBP_times_3_rate",
+        "history_LBP_times_4_rate",
+        "历史平均超滤率_mean"
+      ],
+      "metrics": {
+        "idh": {
+          "source_logistic": {
+            "roc_auc": 0.8020149336813732,
+            "pr_auc": 0.7282139184812713,
+            "brier": 0.1771550070855336,
+            "sensitivity": 0.9683389328625932,
+            "specificity": 0.2198384654215043,
+            "threshold": 0.11115230587279518,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 17561,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.7861519177500884,
+                "upper": 0.8167103946953019,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.6947533433445968,
+                "upper": 0.7618452051077972,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.16951265260683795,
+                "upper": 0.18523077681215616,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "local_logistic": {
+            "roc_auc": 0.835348983319276,
+            "pr_auc": 0.7837375517735956,
+            "brier": 0.1564820384819356,
+            "sensitivity": 0.777575308923182,
+            "specificity": 0.7404269128145958,
+            "threshold": 0.3584972825700423,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 17561,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8223025385648767,
+                "upper": 0.8484270949445084,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.7564106582117389,
+                "upper": 0.8111018104699879,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.1501136942934849,
+                "upper": 0.16327019114571098,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "source_mlp": {
+            "roc_auc": 0.8043257920396787,
+            "pr_auc": 0.7403712586617657,
+            "brier": 0.18030775618069667,
+            "sensitivity": 0.9989750014236092,
+            "specificity": 0.004975841926876758,
+            "threshold": 0.1162291505510215,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 17561,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.7893659300398967,
+                "upper": 0.8187903480589317,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.7097867260935097,
+                "upper": 0.7721698433377772,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.17335570659489602,
+                "upper": 0.1881706406201064,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "updated_mlp": {
+            "roc_auc": 0.8396027822326204,
+            "pr_auc": 0.7873642160333978,
+            "brier": 0.15507657553522067,
+            "sensitivity": 0.7821308581515859,
+            "specificity": 0.7364967188288744,
+            "threshold": 0.34798405599139487,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 17561,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8267940728133225,
+                "upper": 0.8515972890979169,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.7617595473104914,
+                "upper": 0.8136106848118768,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.14857153938493736,
+                "upper": 0.16174616171382247,
+                "valid_replicates": 1000
+              }
+            }
+          }
+        },
+        "ih": {
+          "source_logistic": {
+            "roc_auc": 0.8636702069651274,
+            "pr_auc": 0.5242927831808224,
+            "brier": 0.08233077128865304,
+            "sensitivity": 0.5547647977781636,
+            "specificity": 0.9118227348611322,
+            "threshold": 0.3067076618032156,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 5761,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8506287047106208,
+                "upper": 0.8758830491155786,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.4767096238552877,
+                "upper": 0.573271665282685,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.0744469055587923,
+                "upper": 0.08959725694450733,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "local_logistic": {
+            "roc_auc": 0.8681107871465636,
+            "pr_auc": 0.5299878373734423,
+            "brier": 0.08141783736728209,
+            "sensitivity": 0.7944801249783023,
+            "specificity": 0.7766985379673192,
+            "threshold": 0.11731693135785881,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 5761,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8556208866959911,
+                "upper": 0.8812546850540769,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.4826994375804694,
+                "upper": 0.5790093761556928,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.0726573553633599,
+                "upper": 0.08953731267768748,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "source_mlp": {
+            "roc_auc": 0.8611656711116726,
+            "pr_auc": 0.5204596367290182,
+            "brier": 0.0828921777207644,
+            "sensitivity": 0.4528727651449401,
+            "specificity": 0.9423534173116811,
+            "threshold": 0.32848409334108625,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 5761,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.847996554155023,
+                "upper": 0.8739896446402446,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.47281882866735336,
+                "upper": 0.5673757878109329,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.07481522949787123,
+                "upper": 0.09040367599272778,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "updated_mlp": {
+            "roc_auc": 0.8673441949167795,
+            "pr_auc": 0.532222432317793,
+            "brier": 0.08140119203493949,
+            "sensitivity": 0.8333622634959208,
+            "specificity": 0.738048262255274,
+            "threshold": 0.10595816687667779,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 5761,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8546203105947925,
+                "upper": 0.8804353915542678,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.4844934048940796,
+                "upper": 0.5787611348027994,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.07271273134470997,
+                "upper": 0.08948747912885671,
+                "valid_replicates": 1000
+              }
+            }
+          }
+        }
+      },
+      "paired_comparisons": {
+        "idh": {
+          "updated_mlp_vs_source_mlp": {
+            "metric": "roc_auc",
+            "delta_a_minus_b": 0.035276990192941726,
+            "lower": 0.028926242608718067,
+            "upper": 0.04172849260843498,
+            "valid_replicates": 1000
+          },
+          "updated_mlp_vs_local_logistic": {
+            "metric": "roc_auc",
+            "delta_a_minus_b": 0.004253798913344431,
+            "lower": 0.001657084438839218,
+            "upper": 0.007277944320150825,
+            "valid_replicates": 1000
+          }
+        },
+        "ih": {
+          "updated_mlp_vs_source_mlp": {
+            "metric": "roc_auc",
+            "delta_a_minus_b": 0.006178523805106861,
+            "lower": 0.003369951976133767,
+            "upper": 0.00922720731750828,
+            "valid_replicates": 1000
+          },
+          "updated_mlp_vs_local_logistic": {
+            "metric": "roc_auc",
+            "delta_a_minus_b": -0.0007665922297841465,
+            "lower": -0.0027014769808957006,
+            "upper": 0.0009624734344909924,
+            "valid_replicates": 1000
+          }
+        }
+      },
+      "training_history": {
+        "idh": {
+          "source_pretrain": {
+            "best_validation_auc": 0.8788596764541383,
+            "best_epoch": 11
+          },
+          "target_update": {
+            "best_validation_auc": 0.8458153350625964,
+            "best_epoch": 20
+          },
+          "logistic": {
+            "source_selected_c": 10.0,
+            "local_selected_c": 10.0
+          }
+        },
+        "ih": {
+          "source_pretrain": {
+            "best_validation_auc": 0.7925967652552197,
+            "best_epoch": 11
+          },
+          "target_update": {
+            "best_validation_auc": 0.8732894205185677,
+            "best_epoch": 6
+          },
+          "logistic": {
+            "source_selected_c": 0.01,
+            "local_selected_c": 10.0
+          }
+        }
+      },
+      "probability_calibration": {
+        "method": "Platt scaling",
+        "source_models": "source validation patients",
+        "target_models": "target validation patients"
+      },
+      "provenance": {
+        "config_sha256": "659dcdf5dd04ec4a7ce0ec676447b7ef8b08bca41864b5a2150f757c72ee03d2",
+        "source_sha256": "0b69a7104fd4bf35402fc2690c28299863acf2ebed7befca05a909c39d9c18ea",
+        "target_sha256": "5db5118f63d8170c105c94054be3d4d8701d86611f1977de03414446c4b51628",
+        "feature_allowlist_sha256": "b4576ce861621a3950e4c88294bd9641de90dc293098dab0751451caa244e6b9",
+        "device": "cuda"
+      }
+    },
+    {
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/experiments/pipeline_runs/pipeline_20260716_064741/results/binary_20260716_070543_7de74f45c811/evaluation.json",
+      "run_id": "binary_20260716_070543_7de74f45c811",
+      "contract": "dual_binary_hemodynamic_v1",
+      "split_seed": 20260715,
+      "initialization_seed": 7,
+      "feature_names": [
+        "性别",
+        "透析龄占比",
+        "超负荷",
+        "历史平均超滤量MAX",
+        "历史平均透前体重",
+        "历史平均透前收缩压",
+        "历史平均透前舒张压",
+        "历史平均透中低血压_计算",
+        "透前体重-干体重",
+        "透前呼吸频率",
+        "透前体温",
+        "透前收缩压",
+        "透前舒张压",
+        "透前动脉压",
+        "脉压差",
+        "平均动脉压",
+        "history_IDH_rate",
+        "history_HBP_rate",
+        "history_LBP_times_0_rate",
+        "history_LBP_times_1_rate",
+        "history_LBP_times_2_rate",
+        "history_LBP_times_3_rate",
+        "history_LBP_times_4_rate",
+        "历史平均超滤率_mean"
+      ],
+      "metrics": {
+        "idh": {
+          "source_logistic": {
+            "roc_auc": 0.8020149336813732,
+            "pr_auc": 0.7282139184812713,
+            "brier": 0.1771550070855336,
+            "sensitivity": 0.9683389328625932,
+            "specificity": 0.2198384654215043,
+            "threshold": 0.11115230587279518,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 17561,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.7861519177500884,
+                "upper": 0.8167103946953019,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.6947533433445968,
+                "upper": 0.7618452051077972,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.16951265260683795,
+                "upper": 0.18523077681215616,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "local_logistic": {
+            "roc_auc": 0.835348983319276,
+            "pr_auc": 0.7837375517735956,
+            "brier": 0.1564820384819356,
+            "sensitivity": 0.777575308923182,
+            "specificity": 0.7404269128145958,
+            "threshold": 0.3584972825700423,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 17561,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8223025385648767,
+                "upper": 0.8484270949445084,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.7564106582117389,
+                "upper": 0.8111018104699879,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.1501136942934849,
+                "upper": 0.16327019114571098,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "source_mlp": {
+            "roc_auc": 0.8148678378852765,
+            "pr_auc": 0.7599831435123042,
+            "brier": 0.1824754640033709,
+            "sensitivity": 0.998747223962189,
+            "specificity": 0.00829306987812793,
+            "threshold": 0.13001708721714492,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 17561,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8004506272862727,
+                "upper": 0.8290643533483866,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.7313352092861054,
+                "upper": 0.7891505243872198,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.1751250005880532,
+                "upper": 0.18990006053382355,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "updated_mlp": {
+            "roc_auc": 0.8402187839721524,
+            "pr_auc": 0.7875550680189141,
+            "brier": 0.1547366625254625,
+            "sensitivity": 0.782301691247651,
+            "specificity": 0.7381192759789428,
+            "threshold": 0.3533880383350506,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 17561,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8275727532755485,
+                "upper": 0.852340200477767,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.7616765680002413,
+                "upper": 0.8141132967374375,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.1483292782856219,
+                "upper": 0.1616015914305692,
+                "valid_replicates": 1000
+              }
+            }
+          }
+        },
+        "ih": {
+          "source_logistic": {
+            "roc_auc": 0.8636702069651274,
+            "pr_auc": 0.5242927831808224,
+            "brier": 0.08233077128865304,
+            "sensitivity": 0.5547647977781636,
+            "specificity": 0.9118227348611322,
+            "threshold": 0.3067076618032156,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 5761,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8506287047106208,
+                "upper": 0.8758830491155786,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.4767096238552877,
+                "upper": 0.573271665282685,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.0744469055587923,
+                "upper": 0.08959725694450733,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "local_logistic": {
+            "roc_auc": 0.8681107871465636,
+            "pr_auc": 0.5299878373734423,
+            "brier": 0.08141783736728209,
+            "sensitivity": 0.7944801249783023,
+            "specificity": 0.7766985379673192,
+            "threshold": 0.11731693135785881,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 5761,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8556208866959911,
+                "upper": 0.8812546850540769,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.4826994375804694,
+                "upper": 0.5790093761556928,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.0726573553633599,
+                "upper": 0.08953731267768748,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "source_mlp": {
+            "roc_auc": 0.7473251849591922,
+            "pr_auc": 0.2827384842007502,
+            "brier": 0.10300033247842955,
+            "sensitivity": 0.04981773997569866,
+            "specificity": 0.9901603682905853,
+            "threshold": 0.29773388611779766,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 5761,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.7237875833309837,
+                "upper": 0.769967549759381,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.24254188458422757,
+                "upper": 0.33106078106936376,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.09116826597983002,
+                "upper": 0.1144079328704161,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "updated_mlp": {
+            "roc_auc": 0.8690395731342875,
+            "pr_auc": 0.5357340943147448,
+            "brier": 0.08081850156997455,
+            "sensitivity": 0.8458600937337268,
+            "specificity": 0.7226943896392978,
+            "threshold": 0.1006959471361356,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 5761,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8561761498164135,
+                "upper": 0.8820531527196546,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.4884834921575082,
+                "upper": 0.5830706955211682,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.07211242679747543,
+                "upper": 0.08877030253386478,
+                "valid_replicates": 1000
+              }
+            }
+          }
+        }
+      },
+      "paired_comparisons": {
+        "idh": {
+          "updated_mlp_vs_source_mlp": {
+            "metric": "roc_auc",
+            "delta_a_minus_b": 0.025350946086875936,
+            "lower": 0.020452596429463274,
+            "upper": 0.03043600329930234,
+            "valid_replicates": 1000
+          },
+          "updated_mlp_vs_local_logistic": {
+            "metric": "roc_auc",
+            "delta_a_minus_b": 0.004869800652876455,
+            "lower": 0.0022994730970683887,
+            "upper": 0.00811929520907984,
+            "valid_replicates": 1000
+          }
+        },
+        "ih": {
+          "updated_mlp_vs_source_mlp": {
+            "metric": "roc_auc",
+            "delta_a_minus_b": 0.12171438817509528,
+            "lower": 0.09715922538832442,
+            "upper": 0.1466859816468631,
+            "valid_replicates": 1000
+          },
+          "updated_mlp_vs_local_logistic": {
+            "metric": "roc_auc",
+            "delta_a_minus_b": 0.0009287859877238347,
+            "lower": -0.0006399058832774917,
+            "upper": 0.002423082322289974,
+            "valid_replicates": 1000
+          }
+        }
+      },
+      "training_history": {
+        "idh": {
+          "source_pretrain": {
+            "best_validation_auc": 0.8794515740907435,
+            "best_epoch": 13
+          },
+          "target_update": {
+            "best_validation_auc": 0.8468742407677357,
+            "best_epoch": 20
+          },
+          "logistic": {
+            "source_selected_c": 10.0,
+            "local_selected_c": 10.0
+          }
+        },
+        "ih": {
+          "source_pretrain": {
+            "best_validation_auc": 0.7929008667178108,
+            "best_epoch": 5
+          },
+          "target_update": {
+            "best_validation_auc": 0.872953498921239,
+            "best_epoch": 20
+          },
+          "logistic": {
+            "source_selected_c": 0.01,
+            "local_selected_c": 10.0
+          }
+        }
+      },
+      "probability_calibration": {
+        "method": "Platt scaling",
+        "source_models": "source validation patients",
+        "target_models": "target validation patients"
+      },
+      "provenance": {
+        "config_sha256": "7de74f45c8117934709b9fc60a43367292f2a83cda9511032c193d9ded207305",
+        "source_sha256": "0b69a7104fd4bf35402fc2690c28299863acf2ebed7befca05a909c39d9c18ea",
+        "target_sha256": "5db5118f63d8170c105c94054be3d4d8701d86611f1977de03414446c4b51628",
+        "feature_allowlist_sha256": "b4576ce861621a3950e4c88294bd9641de90dc293098dab0751451caa244e6b9",
+        "device": "cuda"
+      }
+    },
+    {
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/experiments/pipeline_runs/pipeline_20260716_064741/results/binary_20260716_071215_1bcbc1bb60a6/evaluation.json",
+      "run_id": "binary_20260716_071215_1bcbc1bb60a6",
+      "contract": "dual_binary_hemodynamic_v1",
+      "split_seed": 20260715,
+      "initialization_seed": 13,
+      "feature_names": [
+        "性别",
+        "透析龄占比",
+        "超负荷",
+        "历史平均超滤量MAX",
+        "历史平均透前体重",
+        "历史平均透前收缩压",
+        "历史平均透前舒张压",
+        "历史平均透中低血压_计算",
+        "透前体重-干体重",
+        "透前呼吸频率",
+        "透前体温",
+        "透前收缩压",
+        "透前舒张压",
+        "透前动脉压",
+        "脉压差",
+        "平均动脉压",
+        "history_IDH_rate",
+        "history_HBP_rate",
+        "history_LBP_times_0_rate",
+        "history_LBP_times_1_rate",
+        "history_LBP_times_2_rate",
+        "history_LBP_times_3_rate",
+        "history_LBP_times_4_rate",
+        "历史平均超滤率_mean"
+      ],
+      "metrics": {
+        "idh": {
+          "source_logistic": {
+            "roc_auc": 0.8020149336813732,
+            "pr_auc": 0.7282139184812713,
+            "brier": 0.1771550070855336,
+            "sensitivity": 0.9683389328625932,
+            "specificity": 0.2198384654215043,
+            "threshold": 0.11115230587279518,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 17561,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.7861519177500884,
+                "upper": 0.8167103946953019,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.6947533433445968,
+                "upper": 0.7618452051077972,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.16951265260683795,
+                "upper": 0.18523077681215616,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "local_logistic": {
+            "roc_auc": 0.835348983319276,
+            "pr_auc": 0.7837375517735956,
+            "brier": 0.1564820384819356,
+            "sensitivity": 0.777575308923182,
+            "specificity": 0.7404269128145958,
+            "threshold": 0.3584972825700423,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 17561,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8223025385648767,
+                "upper": 0.8484270949445084,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.7564106582117389,
+                "upper": 0.8111018104699879,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.1501136942934849,
+                "upper": 0.16327019114571098,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "source_mlp": {
+            "roc_auc": 0.824531203674571,
+            "pr_auc": 0.7665524349300573,
+            "brier": 0.20217335316285998,
+            "sensitivity": 0.9737486475713228,
+            "specificity": 0.22813153529963223,
+            "threshold": 0.13493184837740754,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 17561,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8111958936590938,
+                "upper": 0.8369912225591636,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.7387218580486112,
+                "upper": 0.79524994854724,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.19283310005789756,
+                "upper": 0.21163283438107608,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "updated_mlp": {
+            "roc_auc": 0.8396795690421521,
+            "pr_auc": 0.7870772543387264,
+            "brier": 0.1550901234595993,
+            "sensitivity": 0.7118615113034565,
+            "specificity": 0.8082858585130165,
+            "threshold": 0.42914247279318196,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 17561,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8272813944441574,
+                "upper": 0.8518078671419614,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.761198581268869,
+                "upper": 0.8134380565244174,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.1486131599215772,
+                "upper": 0.16163078955247168,
+                "valid_replicates": 1000
+              }
+            }
+          }
+        },
+        "ih": {
+          "source_logistic": {
+            "roc_auc": 0.8636702069651274,
+            "pr_auc": 0.5242927831808224,
+            "brier": 0.08233077128865304,
+            "sensitivity": 0.5547647977781636,
+            "specificity": 0.9118227348611322,
+            "threshold": 0.3067076618032156,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 5761,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8506287047106208,
+                "upper": 0.8758830491155786,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.4767096238552877,
+                "upper": 0.573271665282685,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.0744469055587923,
+                "upper": 0.08959725694450733,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "local_logistic": {
+            "roc_auc": 0.8681107871465636,
+            "pr_auc": 0.5299878373734423,
+            "brier": 0.08141783736728209,
+            "sensitivity": 0.7944801249783023,
+            "specificity": 0.7766985379673192,
+            "threshold": 0.11731693135785881,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 5761,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8556208866959911,
+                "upper": 0.8812546850540769,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.4826994375804694,
+                "upper": 0.5790093761556928,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.0726573553633599,
+                "upper": 0.08953731267768748,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "source_mlp": {
+            "roc_auc": 0.8594928302328445,
+            "pr_auc": 0.5097767943631583,
+            "brier": 0.08765941316381011,
+            "sensitivity": 0.24179829890643986,
+            "specificity": 0.9818384175646279,
+            "threshold": 0.3071171225031448,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 5761,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8467536071749687,
+                "upper": 0.8723671612523228,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.4620417969711067,
+                "upper": 0.5588427895492,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.07793189159571025,
+                "upper": 0.09700388247424081,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "updated_mlp": {
+            "roc_auc": 0.867691148310731,
+            "pr_auc": 0.5348413092323873,
+            "brier": 0.0809652746484608,
+            "sensitivity": 0.774865474743968,
+            "specificity": 0.7910659179440481,
+            "threshold": 0.13379538885110104,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 5761,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8552655652840432,
+                "upper": 0.8807199933958839,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.4891494587934232,
+                "upper": 0.5817527015525131,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.07232018318873958,
+                "upper": 0.0889638889961686,
+                "valid_replicates": 1000
+              }
+            }
+          }
+        }
+      },
+      "paired_comparisons": {
+        "idh": {
+          "updated_mlp_vs_source_mlp": {
+            "metric": "roc_auc",
+            "delta_a_minus_b": 0.01514836536758113,
+            "lower": 0.012026203485767651,
+            "upper": 0.018384079699887295,
+            "valid_replicates": 1000
+          },
+          "updated_mlp_vs_local_logistic": {
+            "metric": "roc_auc",
+            "delta_a_minus_b": 0.004330585722876146,
+            "lower": 0.0017651921994877833,
+            "upper": 0.007444592632422664,
+            "valid_replicates": 1000
+          }
+        },
+        "ih": {
+          "updated_mlp_vs_source_mlp": {
+            "metric": "roc_auc",
+            "delta_a_minus_b": 0.008198318077886513,
+            "lower": 0.0040785499940789866,
+            "upper": 0.012761669061702018,
+            "valid_replicates": 1000
+          },
+          "updated_mlp_vs_local_logistic": {
+            "metric": "roc_auc",
+            "delta_a_minus_b": -0.0004196388358326253,
+            "lower": -0.002236794387402963,
+            "upper": 0.0013132648301406415,
+            "valid_replicates": 1000
+          }
+        }
+      },
+      "training_history": {
+        "idh": {
+          "source_pretrain": {
+            "best_validation_auc": 0.8796324830604478,
+            "best_epoch": 12
+          },
+          "target_update": {
+            "best_validation_auc": 0.8482160721431429,
+            "best_epoch": 18
+          },
+          "logistic": {
+            "source_selected_c": 10.0,
+            "local_selected_c": 10.0
+          }
+        },
+        "ih": {
+          "source_pretrain": {
+            "best_validation_auc": 0.7943911593031434,
+            "best_epoch": 13
+          },
+          "target_update": {
+            "best_validation_auc": 0.8705167570081346,
+            "best_epoch": 4
+          },
+          "logistic": {
+            "source_selected_c": 0.01,
+            "local_selected_c": 10.0
+          }
+        }
+      },
+      "probability_calibration": {
+        "method": "Platt scaling",
+        "source_models": "source validation patients",
+        "target_models": "target validation patients"
+      },
+      "provenance": {
+        "config_sha256": "1bcbc1bb60a68fa94471de05c2e341ba7ee38449d8b04d62ee23ed88d9cf9531",
+        "source_sha256": "0b69a7104fd4bf35402fc2690c28299863acf2ebed7befca05a909c39d9c18ea",
+        "target_sha256": "5db5118f63d8170c105c94054be3d4d8701d86611f1977de03414446c4b51628",
+        "feature_allowlist_sha256": "b4576ce861621a3950e4c88294bd9641de90dc293098dab0751451caa244e6b9",
+        "device": "cuda"
+      }
+    },
+    {
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/experiments/pipeline_runs/pipeline_20260716_064741/results/binary_20260716_071839_cd15665b4d50/evaluation.json",
+      "run_id": "binary_20260716_071839_cd15665b4d50",
+      "contract": "dual_binary_hemodynamic_v1",
+      "split_seed": 20260715,
+      "initialization_seed": 99,
+      "feature_names": [
+        "性别",
+        "透析龄占比",
+        "超负荷",
+        "历史平均超滤量MAX",
+        "历史平均透前体重",
+        "历史平均透前收缩压",
+        "历史平均透前舒张压",
+        "历史平均透中低血压_计算",
+        "透前体重-干体重",
+        "透前呼吸频率",
+        "透前体温",
+        "透前收缩压",
+        "透前舒张压",
+        "透前动脉压",
+        "脉压差",
+        "平均动脉压",
+        "history_IDH_rate",
+        "history_HBP_rate",
+        "history_LBP_times_0_rate",
+        "history_LBP_times_1_rate",
+        "history_LBP_times_2_rate",
+        "history_LBP_times_3_rate",
+        "history_LBP_times_4_rate",
+        "历史平均超滤率_mean"
+      ],
+      "metrics": {
+        "idh": {
+          "source_logistic": {
+            "roc_auc": 0.8020149336813732,
+            "pr_auc": 0.7282139184812713,
+            "brier": 0.1771550070855336,
+            "sensitivity": 0.9683389328625932,
+            "specificity": 0.2198384654215043,
+            "threshold": 0.11115230587279518,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 17561,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.7861519177500884,
+                "upper": 0.8167103946953019,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.6947533433445968,
+                "upper": 0.7618452051077972,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.16951265260683795,
+                "upper": 0.18523077681215616,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "local_logistic": {
+            "roc_auc": 0.835348983319276,
+            "pr_auc": 0.7837375517735956,
+            "brier": 0.1564820384819356,
+            "sensitivity": 0.777575308923182,
+            "specificity": 0.7404269128145958,
+            "threshold": 0.3584972825700423,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 17561,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8223025385648767,
+                "upper": 0.8484270949445084,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.7564106582117389,
+                "upper": 0.8111018104699879,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.1501136942934849,
+                "upper": 0.16327019114571098,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "source_mlp": {
+            "roc_auc": 0.7989634351512027,
+            "pr_auc": 0.729503022412604,
+            "brier": 0.23012362542916914,
+            "sensitivity": 0.9880416832754398,
+            "specificity": 0.11080262493690056,
+            "threshold": 0.1332475366313173,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 17561,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.7838459661825012,
+                "upper": 0.8139943420503761,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.6979949028606514,
+                "upper": 0.7613395254863917,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.21853117580218764,
+                "upper": 0.24184083120115757,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "updated_mlp": {
+            "roc_auc": 0.8385110854072797,
+            "pr_auc": 0.7849798125264202,
+            "brier": 0.15583990393461508,
+            "sensitivity": 0.7700017083309606,
+            "specificity": 0.7483594144371529,
+            "threshold": 0.37811184789928726,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 17561,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8255314537072569,
+                "upper": 0.8510254476882986,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.7588703461767958,
+                "upper": 0.8114847647317137,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.14931421535236644,
+                "upper": 0.16265783649040727,
+                "valid_replicates": 1000
+              }
+            }
+          }
+        },
+        "ih": {
+          "source_logistic": {
+            "roc_auc": 0.8636702069651274,
+            "pr_auc": 0.5242927831808224,
+            "brier": 0.08233077128865304,
+            "sensitivity": 0.5547647977781636,
+            "specificity": 0.9118227348611322,
+            "threshold": 0.3067076618032156,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 5761,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8506287047106208,
+                "upper": 0.8758830491155786,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.4767096238552877,
+                "upper": 0.573271665282685,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.0744469055587923,
+                "upper": 0.08959725694450733,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "local_logistic": {
+            "roc_auc": 0.8681107871465636,
+            "pr_auc": 0.5299878373734423,
+            "brier": 0.08141783736728209,
+            "sensitivity": 0.7944801249783023,
+            "specificity": 0.7766985379673192,
+            "threshold": 0.11731693135785881,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 5761,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8556208866959911,
+                "upper": 0.8812546850540769,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.4826994375804694,
+                "upper": 0.5790093761556928,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.0726573553633599,
+                "upper": 0.08953731267768748,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "source_mlp": {
+            "roc_auc": 0.829720643605977,
+            "pr_auc": 0.44392090511010884,
+            "brier": 0.09602319456964098,
+            "sensitivity": 0.5525082450963374,
+            "specificity": 0.8783578691758992,
+            "threshold": 0.31115802846547813,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 5761,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8131230532125102,
+                "upper": 0.8446771565464514,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.39029868213708924,
+                "upper": 0.4975534745851495,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.08909055070528425,
+                "upper": 0.10292580456464906,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "updated_mlp": {
+            "roc_auc": 0.8691836268153218,
+            "pr_auc": 0.5347003079162721,
+            "brier": 0.08091663913267404,
+            "sensitivity": 0.8406526644679743,
+            "specificity": 0.7279556837152831,
+            "threshold": 0.10017105499230634,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 5761,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8571047348216534,
+                "upper": 0.8821899710257692,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.4875567388508269,
+                "upper": 0.5823859378975093,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.07237039093620523,
+                "upper": 0.08890317119317047,
+                "valid_replicates": 1000
+              }
+            }
+          }
+        }
+      },
+      "paired_comparisons": {
+        "idh": {
+          "updated_mlp_vs_source_mlp": {
+            "metric": "roc_auc",
+            "delta_a_minus_b": 0.03954765025607698,
+            "lower": 0.03304584838056698,
+            "upper": 0.04603326473491916,
+            "valid_replicates": 1000
+          },
+          "updated_mlp_vs_local_logistic": {
+            "metric": "roc_auc",
+            "delta_a_minus_b": 0.0031621020880037154,
+            "lower": 0.00040678101021496277,
+            "upper": 0.006431248080207485,
+            "valid_replicates": 1000
+          }
+        },
+        "ih": {
+          "updated_mlp_vs_source_mlp": {
+            "metric": "roc_auc",
+            "delta_a_minus_b": 0.039462983209344826,
+            "lower": 0.028167183770967788,
+            "upper": 0.051327962870101974,
+            "valid_replicates": 1000
+          },
+          "updated_mlp_vs_local_logistic": {
+            "metric": "roc_auc",
+            "delta_a_minus_b": 0.001072839668758152,
+            "lower": -0.0008769577125095046,
+            "upper": 0.002886351549639543,
+            "valid_replicates": 1000
+          }
+        }
+      },
+      "training_history": {
+        "idh": {
+          "source_pretrain": {
+            "best_validation_auc": 0.8798763567663187,
+            "best_epoch": 12
+          },
+          "target_update": {
+            "best_validation_auc": 0.8458527384167953,
+            "best_epoch": 20
+          },
+          "logistic": {
+            "source_selected_c": 10.0,
+            "local_selected_c": 10.0
+          }
+        },
+        "ih": {
+          "source_pretrain": {
+            "best_validation_auc": 0.7914093878072844,
+            "best_epoch": 3
+          },
+          "target_update": {
+            "best_validation_auc": 0.8737149212085171,
+            "best_epoch": 20
+          },
+          "logistic": {
+            "source_selected_c": 0.01,
+            "local_selected_c": 10.0
+          }
+        }
+      },
+      "probability_calibration": {
+        "method": "Platt scaling",
+        "source_models": "source validation patients",
+        "target_models": "target validation patients"
+      },
+      "provenance": {
+        "config_sha256": "cd15665b4d5032df663433e1806e0a80db0fcdad278c9b44652b5005b5320daa",
+        "source_sha256": "0b69a7104fd4bf35402fc2690c28299863acf2ebed7befca05a909c39d9c18ea",
+        "target_sha256": "5db5118f63d8170c105c94054be3d4d8701d86611f1977de03414446c4b51628",
+        "feature_allowlist_sha256": "b4576ce861621a3950e4c88294bd9641de90dc293098dab0751451caa244e6b9",
+        "device": "cuda"
+      }
+    },
+    {
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/experiments/pipeline_runs/pipeline_20260716_064741/results/binary_20260716_072513_d0ce01479d4b/evaluation.json",
+      "run_id": "binary_20260716_072513_d0ce01479d4b",
+      "contract": "dual_binary_hemodynamic_v1",
+      "split_seed": 20260715,
+      "initialization_seed": 2024,
+      "feature_names": [
+        "性别",
+        "透析龄占比",
+        "超负荷",
+        "历史平均超滤量MAX",
+        "历史平均透前体重",
+        "历史平均透前收缩压",
+        "历史平均透前舒张压",
+        "历史平均透中低血压_计算",
+        "透前体重-干体重",
+        "透前呼吸频率",
+        "透前体温",
+        "透前收缩压",
+        "透前舒张压",
+        "透前动脉压",
+        "脉压差",
+        "平均动脉压",
+        "history_IDH_rate",
+        "history_HBP_rate",
+        "history_LBP_times_0_rate",
+        "history_LBP_times_1_rate",
+        "history_LBP_times_2_rate",
+        "history_LBP_times_3_rate",
+        "history_LBP_times_4_rate",
+        "历史平均超滤率_mean"
+      ],
+      "metrics": {
+        "idh": {
+          "source_logistic": {
+            "roc_auc": 0.8020149336813732,
+            "pr_auc": 0.7282139184812713,
+            "brier": 0.1771550070855336,
+            "sensitivity": 0.9683389328625932,
+            "specificity": 0.2198384654215043,
+            "threshold": 0.11115230587279518,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 17561,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.7861519177500884,
+                "upper": 0.8167103946953019,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.6947533433445968,
+                "upper": 0.7618452051077972,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.16951265260683795,
+                "upper": 0.18523077681215616,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "local_logistic": {
+            "roc_auc": 0.835348983319276,
+            "pr_auc": 0.7837375517735956,
+            "brier": 0.1564820384819356,
+            "sensitivity": 0.777575308923182,
+            "specificity": 0.7404269128145958,
+            "threshold": 0.3584972825700423,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 17561,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8223025385648767,
+                "upper": 0.8484270949445084,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.7564106582117389,
+                "upper": 0.8111018104699879,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.1501136942934849,
+                "upper": 0.16327019114571098,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "source_mlp": {
+            "roc_auc": 0.8060141635218698,
+            "pr_auc": 0.7327737424462064,
+            "brier": 0.1936797221818772,
+            "sensitivity": 0.9123056773532259,
+            "specificity": 0.4391721352852095,
+            "threshold": 0.13632989834878068,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 17561,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.7940141771489979,
+                "upper": 0.8174911725170696,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.7068193071931741,
+                "upper": 0.7575682727223547,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.18384326114712218,
+                "upper": 0.20382800439179422,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "updated_mlp": {
+            "roc_auc": 0.8392750677590517,
+            "pr_auc": 0.7868314341760967,
+            "brier": 0.1551183552487308,
+            "sensitivity": 0.7807641933830648,
+            "specificity": 0.739128867094541,
+            "threshold": 0.35345718052700587,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 17561,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8267037433662024,
+                "upper": 0.8515629548853435,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.7614904126468527,
+                "upper": 0.8128778895393146,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.1486737429624493,
+                "upper": 0.16190132470929525,
+                "valid_replicates": 1000
+              }
+            }
+          }
+        },
+        "ih": {
+          "source_logistic": {
+            "roc_auc": 0.8636702069651274,
+            "pr_auc": 0.5242927831808224,
+            "brier": 0.08233077128865304,
+            "sensitivity": 0.5547647977781636,
+            "specificity": 0.9118227348611322,
+            "threshold": 0.3067076618032156,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 5761,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8506287047106208,
+                "upper": 0.8758830491155786,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.4767096238552877,
+                "upper": 0.573271665282685,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.0744469055587923,
+                "upper": 0.08959725694450733,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "local_logistic": {
+            "roc_auc": 0.8681107871465636,
+            "pr_auc": 0.5299878373734423,
+            "brier": 0.08141783736728209,
+            "sensitivity": 0.7944801249783023,
+            "specificity": 0.7766985379673192,
+            "threshold": 0.11731693135785881,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 5761,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8556208866959911,
+                "upper": 0.8812546850540769,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.4826994375804694,
+                "upper": 0.5790093761556928,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.0726573553633599,
+                "upper": 0.08953731267768748,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "source_mlp": {
+            "roc_auc": 0.8521354473067231,
+            "pr_auc": 0.5007683622802576,
+            "brier": 0.08449598812181422,
+            "sensitivity": 0.45391425099809063,
+            "specificity": 0.9354479688369505,
+            "threshold": 0.31218006430592354,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 5761,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8385390400006312,
+                "upper": 0.8650093022035763,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.45090205972567865,
+                "upper": 0.5487875015898738,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.07618355156569534,
+                "upper": 0.09203684622918168,
+                "valid_replicates": 1000
+              }
+            }
+          },
+          "updated_mlp": {
+            "roc_auc": 0.8684493960612318,
+            "pr_auc": 0.5312813610042312,
+            "brier": 0.08141474004931422,
+            "sensitivity": 0.7674014927963895,
+            "specificity": 0.805306824505489,
+            "threshold": 0.1387667177867281,
+            "n_sessions": 45295,
+            "n_patients": 258,
+            "n_events": 5761,
+            "patient_cluster_bootstrap": {
+              "roc_auc": {
+                "lower": 0.8553574815955372,
+                "upper": 0.881460434139993,
+                "valid_replicates": 1000
+              },
+              "pr_auc": {
+                "lower": 0.483475572048839,
+                "upper": 0.5769112192461543,
+                "valid_replicates": 1000
+              },
+              "brier": {
+                "lower": 0.07270636076203173,
+                "upper": 0.08947099758556482,
+                "valid_replicates": 1000
+              }
+            }
+          }
+        }
+      },
+      "paired_comparisons": {
+        "idh": {
+          "updated_mlp_vs_source_mlp": {
+            "metric": "roc_auc",
+            "delta_a_minus_b": 0.033260904237181865,
+            "lower": 0.027175770561826008,
+            "upper": 0.039689800425997665,
+            "valid_replicates": 1000
+          },
+          "updated_mlp_vs_local_logistic": {
+            "metric": "roc_auc",
+            "delta_a_minus_b": 0.003926084439775712,
+            "lower": 0.001419075642264922,
+            "upper": 0.006974801003594438,
+            "valid_replicates": 1000
+          }
+        },
+        "ih": {
+          "updated_mlp_vs_source_mlp": {
+            "metric": "roc_auc",
+            "delta_a_minus_b": 0.016313948754508756,
+            "lower": 0.010998371988107897,
+            "upper": 0.021783142473521838,
+            "valid_replicates": 1000
+          },
+          "updated_mlp_vs_local_logistic": {
+            "metric": "roc_auc",
+            "delta_a_minus_b": 0.00033860891466819254,
+            "lower": -0.00214917419860807,
+            "upper": 0.0027724612053864534,
+            "valid_replicates": 1000
+          }
+        }
+      },
+      "training_history": {
+        "idh": {
+          "source_pretrain": {
+            "best_validation_auc": 0.8800281854908224,
+            "best_epoch": 19
+          },
+          "target_update": {
+            "best_validation_auc": 0.8494962717229748,
+            "best_epoch": 18
+          },
+          "logistic": {
+            "source_selected_c": 10.0,
+            "local_selected_c": 10.0
+          }
+        },
+        "ih": {
+          "source_pretrain": {
+            "best_validation_auc": 0.7921545015978907,
+            "best_epoch": 6
+          },
+          "target_update": {
+            "best_validation_auc": 0.8738268950742935,
+            "best_epoch": 2
+          },
+          "logistic": {
+            "source_selected_c": 0.01,
+            "local_selected_c": 10.0
+          }
+        }
+      },
+      "probability_calibration": {
+        "method": "Platt scaling",
+        "source_models": "source validation patients",
+        "target_models": "target validation patients"
+      },
+      "provenance": {
+        "config_sha256": "d0ce01479d4bec82059216f203ffef3363a0c442facce9405ed07e82cc69db3f",
+        "source_sha256": "0b69a7104fd4bf35402fc2690c28299863acf2ebed7befca05a909c39d9c18ea",
+        "target_sha256": "5db5118f63d8170c105c94054be3d4d8701d86611f1977de03414446c4b51628",
+        "feature_allowlist_sha256": "b4576ce861621a3950e4c88294bd9641de90dc293098dab0751451caa244e6b9",
+        "device": "cuda"
+      }
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "contract": "dual_binary_hemodynamic_v1",
+  "endpoint_rules": {
+    "idh": "baseline SBP - intradialytic SBP >= 30 or intradialytic SBP <= 90",
+    "ih": "intradialytic MAP - baseline MAP > 10"
+  },
+  "passed": true,
+  "cohorts": {
+    "source": {
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/experiments/pipeline_runs/pipeline_20260716_064741/processed/shenyi.csv",
+      "exists": true,
+      "errors": [],
+      "warnings": [],
+      "missing_required_columns": [],
+      "missing_allowed_features": [],
+      "sessions": 211452,
+      "patients": 1628,
+      "duplicate_session_ids": 0,
+      "endpoints": {
+        "idh": {
+          "events": 30694,
+          "event_rate": 0.14515823922214025,
+          "missing_outcomes": 0,
+          "nonbinary_events": 0,
+          "negative_times": 0,
+          "non_events_with_nonzero_time": 0,
+          "clinical_flag_mismatch": 0
+        },
+        "ih": {
+          "events": 59978,
+          "event_rate": 0.2836482984317954,
+          "missing_outcomes": 0,
+          "nonbinary_events": 0,
+          "negative_times": 0,
+          "non_events_with_nonzero_time": 0,
+          "clinical_flag_mismatch": 0
+        }
+      }
+    },
+    "target": {
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/experiments/pipeline_runs/pipeline_20260716_064741/processed/fuding.csv",
+      "exists": true,
+      "errors": [],
+      "warnings": [],
+      "missing_required_columns": [],
+      "missing_allowed_features": [],
+      "sessions": 74947,
+      "patients": 430,
+      "duplicate_session_ids": 0,
+      "endpoints": {
+        "idh": {
+          "events": 28881,
+          "event_rate": 0.38535231563638306,
+          "missing_outcomes": 0,
+          "nonbinary_events": 0,
+          "negative_times": 0,
+          "non_events_with_nonzero_time": 0,
+          "clinical_flag_mismatch": 0
+        },
+        "ih": {
+          "events": 8962,
+          "event_rate": 0.11957783500340241,
+          "missing_outcomes": 0,
+          "nonbinary_events": 0,
+          "negative_times": 0,
+          "non_events_with_nonzero_time": 0,
+          "clinical_flag_mismatch": 0
+        }
+      }
+    }
+  }
+}

@@ -78,3 +78,7 @@ data_preprocessing/data/
 experiments/results/real_test_predictions.csv
 experiments/runs/**/real_test_predictions.csv
 delivery_domain-adaptive-deep-survival-network_*/**/real_test_predictions.csv
+experiments/pipeline_runs/pipeline_20260716_064741/processed/shenyi.csv
+experiments/pipeline_runs/pipeline_20260716_064741/processed/fuding.csv
+experiments/pipeline_runs/pipeline_20260715_144845/processed/shenyi.csv
+experiments/pipeline_runs/pipeline_20260715_144845/processed/fuding.csv
