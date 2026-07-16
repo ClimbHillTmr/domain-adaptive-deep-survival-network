@@ -22,7 +22,7 @@ feature,category,available_at_prediction_time,source_column,allowed,reason
 脉压差,pre_dialysis,start,脉压差,yes,derived from pre-dialysis BP
 平均动脉压,pre_dialysis,start,平均动脉压,yes,derived from pre-dialysis BP
 history_IDH_rate,history,start,history_IDH_rate,yes,prior-session IDH burden
-history_HBP_rate,history,start,history_HBP_rate,no,secondary hypertension rule is not frozen for the primary IDH study
+history_HBP_rate,history,start,history_HBP_rate,yes,prior-session IH burden
 history_LBP_times_0_rate,history,start,history_LBP_times_0_rate,yes,prior-session no-IDH burden legacy name
 history_LBP_times_1_rate,history,start,history_LBP_times_1_rate,yes,prior-session timing-bin burden
 history_LBP_times_2_rate,history,start,history_LBP_times_2_rate,yes,prior-session timing-bin burden

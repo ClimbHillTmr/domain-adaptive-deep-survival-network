@@ -2,9 +2,13 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+import torch
 
 from src.data.binary_dataset import prepare_binary_data
 from src.evaluate.binary_metrics import evaluate_binary, paired_patient_bootstrap_delta
+from src.main_time_models import _fit_cox, _person_period
+from src.models.discrete_cdan import DiscreteHazardCDAN
+from src.train.binary_models import calibrate_probability, fit_probability_calibrator
 
 
 def _cohort(patient_prefix: str, n_patients: int, center_shift: float = 0.0) -> pd.DataFrame:
@@ -83,6 +87,39 @@ def test_binary_metrics_use_patient_cluster_bootstrap():
     assert metrics["roc_auc"] == 1.0
     assert metrics["n_patients"] == 3
     assert delta["delta_a_minus_b"] == 1.0
+
+
+def test_probability_calibration_uses_validation_prevalence():
+    y_val = np.array([0, 0, 0, 1])
+    raw = np.array([0.4, 0.5, 0.6, 0.9])
+    calibrated = calibrate_probability(fit_probability_calibrator(y_val, raw), raw)
+    assert np.all((calibrated > 0) & (calibrated < 1))
+    assert abs(calibrated.mean() - y_val.mean()) < 0.01
+
+
+def test_person_period_and_cdan_shapes():
+    frame = pd.DataFrame(
+        {
+            "feature_a": [0.0, 1.0],
+            "idh_event": [1, 0],
+            "idh_time_min": [60.0, 0.0],
+            "duration_minutes": [180.0, 120.0],
+        }
+    )
+    features, labels = _person_period(frame, ["feature_a"], "idh", 60, 4)
+    assert features.shape == (3, 5)
+    assert labels.tolist() == [1.0, 0.0, 0.0]
+    hazard, domain = DiscreteHazardCDAN(5, (4,), 0.0)(torch.from_numpy(features), 0.5)
+    assert hazard.shape == (3,)
+    assert domain.shape == (3, 2)
+    beta = _fit_cox(
+        np.array([[0.0], [1.0], [2.0]], dtype=np.float32),
+        np.array([1.0, 1.0, 0.0], dtype=np.float32),
+        np.array([60.0, 60.0, 120.0], dtype=np.float32),
+        penalizer=0.01,
+        epochs=2,
+    )
+    assert np.isfinite(beta).all()
 
 
 def test_binary_data_rejects_non_event_with_positive_time(tmp_path):

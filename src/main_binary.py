@@ -20,7 +20,14 @@ from src.evaluate.binary_metrics import (
     paired_patient_bootstrap_delta,
     select_youden_threshold,
 )
-from src.train.binary_models import fit_logistic_with_validation, fit_source_and_update_mlp, predict_mlp
+from src.reproducibility import config_fingerprint, record_environment, seed_everything, sha256_file
+from src.train.binary_models import (
+    calibrate_probability,
+    fit_logistic_with_validation,
+    fit_probability_calibrator,
+    fit_source_and_update_mlp,
+    predict_mlp,
+)
 
 
 def _arrays(bundle, name: str, outcome_col: str) -> tuple[np.ndarray, np.ndarray]:
@@ -39,21 +46,29 @@ def _probability_frame(bundle, probabilities: dict[str, np.ndarray], patient_col
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, default=ROOT / "conf" / "binary_config.yaml")
+    parser.add_argument("--initialization-seed", type=int)
     parser.add_argument("--train", action="store_true", help="Required safety gate for model fitting.")
     args = parser.parse_args()
     if not args.train:
         raise SystemExit("Training was not started. Re-run with --train after reviewing the binary data preflight.")
 
     config = yaml.safe_load(args.config.read_text(encoding="utf-8"))
+    if args.initialization_seed is not None:
+        config["training"]["initialization_seed"] = args.initialization_seed
+    seed = int(config["training"]["initialization_seed"])
+    seed_everything(seed)
     audit = run_audit(args.config)
     if not audit["passed"]:
         raise SystemExit("Binary data preflight failed. Rebuild and review the cohorts before training.")
 
     data_config = config["data"]
+    source_path = ROOT / data_config["source_file"]
+    target_path = ROOT / data_config["target_file"]
+    allowlist_path = ROOT / data_config["feature_allowlist"]
     bundle = prepare_binary_data(
-        ROOT / data_config["source_file"],
-        ROOT / data_config["target_file"],
-        allowlist_path=ROOT / data_config["feature_allowlist"],
+        source_path,
+        target_path,
+        allowlist_path=allowlist_path,
         patient_col=data_config["patient_col"],
         split_seed=data_config["split_seed"],
         source_validation_fraction=data_config["source_validation_fraction"],
@@ -62,14 +77,13 @@ def main() -> None:
     )
     training = config["training"]
     model_config = config["model"]
-    seed = int(training["initialization_seed"])
     c_values = tuple(float(value) for value in model_config["logistic_c_values"])
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     evaluation = config["evaluation"]
     patient_ids = bundle.target_test[data_config["patient_col"]].astype(str).to_numpy()
     all_probabilities: dict[str, np.ndarray] = {}
     metrics, comparisons, training_history = {}, {}, {}
-    logistic_models, mlp_states = {}, {}
+    logistic_models, calibrators, mlp_states = {}, {}, {}
     for endpoint, columns in ENDPOINTS.items():
         outcome_col = columns["event"]
         x_source_train, y_source_train = _arrays(bundle, "source_train", outcome_col)
@@ -104,25 +118,39 @@ def main() -> None:
             seed=seed,
             device=device,
         )
-        probabilities = {
+        raw_val_probabilities = {
+            "source_logistic": source_logistic.predict_proba(x_source_val)[:, 1],
+            "local_logistic": local_logistic.predict_proba(x_target_val)[:, 1],
+            "source_mlp": predict_mlp(source_mlp, x_source_val, device),
+            "updated_mlp": predict_mlp(updated_mlp, x_target_val, device),
+        }
+        raw_probabilities = {
             "source_logistic": source_logistic.predict_proba(x_test)[:, 1],
             "local_logistic": local_logistic.predict_proba(x_test)[:, 1],
             "source_mlp": predict_mlp(source_mlp, x_test, device),
             "updated_mlp": predict_mlp(updated_mlp, x_test, device),
         }
+        validation_outcomes = {
+            "source_logistic": y_source_val,
+            "local_logistic": y_target_val,
+            "source_mlp": y_source_val,
+            "updated_mlp": y_target_val,
+        }
+        endpoint_calibrators = {
+            name: fit_probability_calibrator(validation_outcomes[name], probability)
+            for name, probability in raw_val_probabilities.items()
+        }
+        calibrated_val = {
+            name: calibrate_probability(endpoint_calibrators[name], probability)
+            for name, probability in raw_val_probabilities.items()
+        }
+        probabilities = {
+            name: calibrate_probability(endpoint_calibrators[name], probability)
+            for name, probability in raw_probabilities.items()
+        }
         thresholds = {
-            "source_logistic": select_youden_threshold(
-                y_source_val, source_logistic.predict_proba(x_source_val)[:, 1]
-            ),
-            "local_logistic": select_youden_threshold(
-                y_target_val, local_logistic.predict_proba(x_target_val)[:, 1]
-            ),
-            "source_mlp": select_youden_threshold(
-                y_source_val, predict_mlp(source_mlp, x_source_val, device)
-            ),
-            "updated_mlp": select_youden_threshold(
-                y_target_val, predict_mlp(updated_mlp, x_target_val, device)
-            ),
+            name: select_youden_threshold(validation_outcomes[name], probability)
+            for name, probability in calibrated_val.items()
         }
         metrics[endpoint] = {
             name: evaluate_binary(
@@ -154,18 +182,24 @@ def main() -> None:
             ),
         }
         all_probabilities.update({f"{endpoint}_{name}": values for name, values in probabilities.items()})
+        all_probabilities.update(
+            {f"raw_{endpoint}_{name}": values for name, values in raw_probabilities.items()}
+        )
         endpoint_history["logistic"] = {
             "source_selected_c": source_logistic.selected_c_,
             "local_selected_c": local_logistic.selected_c_,
         }
         training_history[endpoint] = endpoint_history
         logistic_models[endpoint] = {"source_logistic": source_logistic, "local_logistic": local_logistic}
+        calibrators[endpoint] = endpoint_calibrators
         mlp_states[endpoint] = {
-            "source_mlp": source_mlp.state_dict(),
-            "updated_mlp": updated_mlp.state_dict(),
+            "source_mlp": {name: value.detach().cpu() for name, value in source_mlp.state_dict().items()},
+            "updated_mlp": {name: value.detach().cpu() for name, value in updated_mlp.state_dict().items()},
         }
 
-    run_id = datetime.now(timezone.utc).strftime("binary_%Y%m%d_%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    config_sha256 = config_fingerprint(config)
+    run_id = f"binary_{timestamp}_{config_sha256[:12]}"
     output = ROOT / config["paths"]["output_dir"] / run_id
     output.mkdir(parents=True, exist_ok=False)
     write_binary_metadata(bundle, output)
@@ -184,12 +218,25 @@ def main() -> None:
         "metrics": metrics,
         "paired_comparisons": comparisons,
         "training_history": training_history,
+        "probability_calibration": {
+            "method": "Platt scaling",
+            "source_models": "source validation patients",
+            "target_models": "target validation patients",
+        },
+        "provenance": {
+            "config_sha256": config_sha256,
+            "source_sha256": sha256_file(str(source_path)),
+            "target_sha256": sha256_file(str(target_path)),
+            "feature_allowlist_sha256": sha256_file(str(allowlist_path)),
+            "device": str(device),
+        },
     }
     (output / "evaluation.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     (output / "config.yaml").write_text(yaml.safe_dump(config, allow_unicode=True, sort_keys=False), encoding="utf-8")
     with (output / "logistic_models.pkl").open("wb") as handle:
-        pickle.dump(logistic_models, handle)
+        pickle.dump({"models": logistic_models, "calibrators": calibrators}, handle)
     torch.save(mlp_states, output / "mlp_models.pt")
+    record_environment(log_dir=output, filename="environment.txt")
     print(json.dumps({"run_id": run_id, "output_dir": str(output)}, ensure_ascii=False, indent=2))
 
 

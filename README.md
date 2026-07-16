@@ -70,7 +70,7 @@ The active comparison set is source-only logistic regression, local Fuding logis
 
 ### One-command server run
 
-Build both cohorts from raw exports, run strict preflight, train the IDH and IH endpoints, and save all artifacts under one timestamped directory:
+Build both cohorts, run strict preflight, fit calibrated multiseed binary baselines, audit time measurement, fit discrete-time models, and run Cox/CDAN sensitivity analyses:
 
 ```bash
 python run_pipeline.py /path/to/updated_dataset_shenyi.csv /path/to/updated_dataset_fuding.csv

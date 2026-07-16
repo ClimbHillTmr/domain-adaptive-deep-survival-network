@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 import numpy as np
-from sklearn.metrics import average_precision_score, brier_score_loss, roc_auc_score
+from sklearn.metrics import average_precision_score, brier_score_loss, roc_auc_score, roc_curve
 
 
 def _metric_functions() -> dict[str, Callable[[np.ndarray, np.ndarray], float]]:
@@ -17,20 +17,11 @@ def _metric_functions() -> dict[str, Callable[[np.ndarray, np.ndarray], float]]:
 
 
 def select_youden_threshold(y_true: np.ndarray, probability: np.ndarray) -> float:
-    candidates = np.unique(np.r_[0.0, probability, 1.0])
-    best_threshold, best_score = 0.5, -np.inf
-    for threshold in candidates:
-        predicted = probability >= threshold
-        positive = y_true == 1
-        negative = ~positive
-        if not positive.any() or not negative.any():
-            return 0.5
-        sensitivity = float(predicted[positive].mean())
-        specificity = float((~predicted[negative]).mean())
-        score = sensitivity + specificity - 1
-        if score > best_score:
-            best_threshold, best_score = float(threshold), score
-    return best_threshold
+    if len(np.unique(y_true)) < 2:
+        return 0.5
+    false_positive_rate, true_positive_rate, thresholds = roc_curve(y_true, probability)
+    threshold = float(thresholds[np.argmax(true_positive_rate - false_positive_rate)])
+    return threshold if np.isfinite(threshold) else 0.5
 
 
 def evaluate_binary(

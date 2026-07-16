@@ -154,6 +154,7 @@ def _build_rows(raw: pd.DataFrame, cohort: str) -> tuple[pd.DataFrame, dict[str,
             continue
         maps = [(sbp + 2 * dbp) / 3 for sbp, dbp in zip(systolic, diastolic, strict=True)]
         start, end = nodes[0], nodes[-1]
+        relative_minutes = [(node - start).total_seconds() / 60.0 for node in nodes]
         duration = (end - start).total_seconds() / 60.0
         if duration <= 0:
             rejected["invalid_time"] += 1
@@ -169,6 +170,7 @@ def _build_rows(raw: pd.DataFrame, cohort: str) -> tuple[pd.DataFrame, dict[str,
                 "透析开始时间": start,
                 "透析结束时间": end,
                 "duration_minutes": duration,
+                "minutes_from_start_list": relative_minutes,
                 "透中高血压_计算": int(high_index is not None),
                 "透中低血压_计算": int(idh_index is not None),
                 "涨幅时间点": start if high_index is None else nodes[high_index],

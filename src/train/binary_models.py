@@ -71,6 +71,21 @@ def predict_mlp(model: BinaryMLP, x: np.ndarray, device: torch.device) -> np.nda
     return torch.sigmoid(logits).cpu().numpy()
 
 
+def fit_probability_calibrator(y_val: np.ndarray, probability: np.ndarray) -> LogisticRegression:
+    """Fit Platt calibration on the validation cohort without class reweighting."""
+    clipped = np.clip(probability, 1e-6, 1 - 1e-6)
+    logit = np.log(clipped / (1 - clipped)).reshape(-1, 1)
+    calibrator = LogisticRegression(C=1e6, max_iter=1000, solver="lbfgs")
+    calibrator.fit(logit, y_val)
+    return calibrator
+
+
+def calibrate_probability(calibrator: LogisticRegression, probability: np.ndarray) -> np.ndarray:
+    clipped = np.clip(probability, 1e-6, 1 - 1e-6)
+    logit = np.log(clipped / (1 - clipped)).reshape(-1, 1)
+    return calibrator.predict_proba(logit)[:, 1]
+
+
 def _fit_mlp_phase(
     model: BinaryMLP,
     x_train: np.ndarray,
