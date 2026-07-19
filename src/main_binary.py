@@ -27,7 +27,19 @@ from src.train.binary_models import (
     fit_probability_calibrator,
     fit_source_and_update_mlp,
     predict_mlp,
+    CDANBinaryMLP,
 )
+
+
+def _select_alignment_indices(endpoint: str, model_config: dict) -> list[int] | None:
+    if not bool(model_config.get("use_stratified_alignment", False)):
+        return None
+    if bool(model_config.get("use_outcome_specific_alignment", False)):
+        if endpoint == "idh":
+            return model_config.get("physio_indices")
+        elif endpoint == "ih":
+            return model_config.get("treat_indices")
+    return model_config.get("physio_indices")
 
 
 def _arrays(bundle, name: str, outcome_col: str) -> tuple[np.ndarray, np.ndarray]:
@@ -117,18 +129,31 @@ def main() -> None:
             patience=int(training["patience"]),
             seed=seed,
             device=device,
+            use_cdan=bool(model_config.get("use_cdan", False)),
+            use_coral=bool(model_config.get("use_coral", False)),
+            use_mmd=bool(model_config.get("use_mmd", False)),
+            d_model=int(model_config.get("d_model", 64)),
+            nhead=int(model_config.get("nhead", 4)),
+            num_layers=int(model_config.get("num_layers", 2)),
+            domain_hidden=int(model_config.get("domain_hidden", 64)),
+            adversarial_weight=float(model_config.get("adversarial_weight", 0.01)),
+            mask_l1_weight=float(model_config.get("mask_l1_weight", 0.01)),
+            coral_weight=float(model_config.get("coral_weight", 0.1)),
+            mmd_weight=float(model_config.get("mmd_weight", 1.0)),
+            physio_indices=_select_alignment_indices(endpoint, model_config),
         )
+        use_cdan = bool(model_config.get("use_cdan", False))
         raw_val_probabilities = {
             "source_logistic": source_logistic.predict_proba(x_source_val)[:, 1],
             "local_logistic": local_logistic.predict_proba(x_target_val)[:, 1],
-            "source_mlp": predict_mlp(source_mlp, x_source_val, device),
-            "updated_mlp": predict_mlp(updated_mlp, x_target_val, device),
+            "source_mlp": predict_mlp(source_mlp, x_source_val, device, is_cdan=use_cdan),
+            "updated_mlp": predict_mlp(updated_mlp, x_target_val, device, is_cdan=use_cdan),
         }
         raw_probabilities = {
             "source_logistic": source_logistic.predict_proba(x_test)[:, 1],
             "local_logistic": local_logistic.predict_proba(x_test)[:, 1],
-            "source_mlp": predict_mlp(source_mlp, x_test, device),
-            "updated_mlp": predict_mlp(updated_mlp, x_test, device),
+            "source_mlp": predict_mlp(source_mlp, x_test, device, is_cdan=use_cdan),
+            "updated_mlp": predict_mlp(updated_mlp, x_test, device, is_cdan=use_cdan),
         }
         validation_outcomes = {
             "source_logistic": y_source_val,

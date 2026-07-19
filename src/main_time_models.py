@@ -47,7 +47,7 @@ def measurement_audit(bundle, milestones: tuple[int, ...]) -> dict[str, object]:
     concentrations: dict[str, dict[str, float]] = {}
     for cohort, frame in cohorts.items():
         node_lists = frame.get("minutes_from_start_list", pd.Series([[]] * len(frame))).map(_relative_nodes)
-        intervals = [b - a for nodes in node_lists for a, b in zip(nodes, nodes[1:], strict=True) if b >= a]
+        intervals = [b - a for nodes in node_lists if len(nodes) >= 2 for a, b in zip(nodes, nodes[1:]) if b >= a]
         cohort_report = {
             "sessions": int(len(frame)),
             "measurements_per_session_median": float(node_lists.map(len).median()),

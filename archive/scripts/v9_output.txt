@@ -1,3 +1,0 @@
-Source-Only Target C-Index: 0.5556
-Standard MMD Target C-Index: 0.5554
-LSA-DSN Target C-Index: 0.5543

@@ -1,0 +1,214 @@
+{
+  "idh": {
+    "overall_delta": {
+      "mean": 0.11808010848304229,
+      "lower": 0.11226069143184493,
+      "upper": 0.12369469227388934,
+      "std": 0.002953351129118871
+    },
+    "subgroups": {
+      "severity_subgroup": {
+        "cutoff": {
+          "variable": "history_IDH_rate",
+          "median": 1.3177443234118664
+        },
+        "low_risk": {
+          "n_samples": 14933,
+          "event_rate": 0.22554074867742582,
+          "delta": {
+            "mean": 0.16398573769250555,
+            "lower": 0.152706561271267,
+            "upper": 0.17498138669050683,
+            "std": 0.00586467213764112
+          }
+        },
+        "high_risk": {
+          "n_samples": 14933,
+          "event_rate": 0.54958816045001,
+          "delta": {
+            "mean": 0.08957620306164743,
+            "lower": 0.08262666268863234,
+            "upper": 0.09604003412391973,
+            "std": 0.003469580195488103
+          }
+        },
+        "interaction": {
+          "mean_difference": -0.07440953463085812,
+          "effect_size": -15.443053611456154,
+          "z_score": -345.3171765538959,
+          "p_value": 0.0
+        }
+      },
+      "treatment_intensity_subgroup": {
+        "cutoff": {
+          "variable": "历史平均超滤率_mean",
+          "median": 0.001251388784787436
+        },
+        "low_intensity": {
+          "n_samples": 14933,
+          "event_rate": 0.40494207459987946,
+          "delta": {
+            "mean": 0.11323593308714346,
+            "lower": 0.10630876145523639,
+            "upper": 0.1206835116574685,
+            "std": 0.0036849029918268198
+          }
+        },
+        "high_intensity": {
+          "n_samples": 14933,
+          "event_rate": 0.3701868345275564,
+          "delta": {
+            "mean": 0.11587256785427809,
+            "lower": 0.10852575737896729,
+            "upper": 0.12337210261920172,
+            "std": 0.003912227031793416
+          }
+        },
+        "interaction": {
+          "mean_difference": 0.0026366347671346324,
+          "effect_size": 0.6938028436606193,
+          "z_score": 15.51390321407804,
+          "p_value": 0.0
+        }
+      },
+      "hemodynamic_instability_subgroup": {
+        "cutoff": {
+          "variable": "脉压差",
+          "median": 0.8925732912133939
+        },
+        "low_instability": {
+          "n_samples": 15376,
+          "event_rate": 0.26404786680541104,
+          "delta": {
+            "mean": 0.13271932759338304,
+            "lower": 0.12371662439482323,
+            "upper": 0.14144302447331236,
+            "std": 0.0046638040693413796
+          }
+        },
+        "high_instability": {
+          "n_samples": 14490,
+          "event_rate": 0.5186335403726708,
+          "delta": {
+            "mean": 0.09642425364702402,
+            "lower": 0.0896178073944323,
+            "upper": 0.10264964295837317,
+            "std": 0.003309220550577236
+          }
+        },
+        "interaction": {
+          "mean_difference": -0.036295073946359016,
+          "effect_size": -8.975847518662848,
+          "z_score": -200.7060520740294,
+          "p_value": 0.0
+        }
+      }
+    }
+  },
+  "ih": {
+    "overall_delta": {
+      "mean": 0.008418500246817999,
+      "lower": 0.006651809676498213,
+      "upper": 0.010233343818335313,
+      "std": 0.0009082172557271653
+    },
+    "subgroups": {
+      "severity_subgroup": {
+        "cutoff": {
+          "variable": "history_IDH_rate",
+          "median": 1.3177443234118664
+        },
+        "low_risk": {
+          "n_samples": 14933,
+          "event_rate": 0.18174512823946964,
+          "delta": {
+            "mean": 0.005982398552750696,
+            "lower": 0.0035096821982778525,
+            "upper": 0.008484873045132292,
+            "std": 0.0012556387072106955
+          }
+        },
+        "high_risk": {
+          "n_samples": 14933,
+          "event_rate": 0.06515770441304493,
+          "delta": {
+            "mean": 0.012659480731218878,
+            "lower": 0.008830425522734853,
+            "upper": 0.01645386990161896,
+            "std": 0.0019355292011385243
+          }
+        },
+        "interaction": {
+          "mean_difference": 0.006677082178468182,
+          "effect_size": 4.092865659861155,
+          "z_score": 91.51925838224076,
+          "p_value": 0.0
+        }
+      },
+      "treatment_intensity_subgroup": {
+        "cutoff": {
+          "variable": "历史平均超滤率_mean",
+          "median": 0.001251388784787436
+        },
+        "low_intensity": {
+          "n_samples": 14933,
+          "event_rate": 0.12777070916761535,
+          "delta": {
+            "mean": 0.011541402176750171,
+            "lower": 0.009065144998108718,
+            "upper": 0.014066256565515366,
+            "std": 0.0012880621213735952
+          }
+        },
+        "high_intensity": {
+          "n_samples": 14933,
+          "event_rate": 0.11913212348489921,
+          "delta": {
+            "mean": 0.0033961331266094586,
+            "lower": 0.0009634281683912754,
+            "upper": 0.005736852621615632,
+            "std": 0.0012309226441315707
+          }
+        },
+        "interaction": {
+          "mean_difference": -0.008145269050140713,
+          "effect_size": -6.46544149493718,
+          "z_score": -144.57166687227397,
+          "p_value": 0.0
+        }
+      },
+      "hemodynamic_instability_subgroup": {
+        "cutoff": {
+          "variable": "脉压差",
+          "median": 0.8925732912133939
+        },
+        "low_instability": {
+          "n_samples": 15376,
+          "event_rate": 0.14028355879292403,
+          "delta": {
+            "mean": 0.006588811339938604,
+            "lower": 0.0043927832264717085,
+            "upper": 0.008890378792221508,
+            "std": 0.0011643486049799272
+          }
+        },
+        "high_instability": {
+          "n_samples": 14490,
+          "event_rate": 0.10559006211180125,
+          "delta": {
+            "mean": 0.007872598876714577,
+            "lower": 0.005431216588454063,
+            "upper": 0.010367217708828563,
+            "std": 0.0012720808718701758
+          }
+        },
+        "interaction": {
+          "mean_difference": 0.0012837875367759733,
+          "effect_size": 1.0527982661776434,
+          "z_score": 23.541284897671282,
+          "p_value": 0.0
+        }
+      }
+    }
+  }
+}

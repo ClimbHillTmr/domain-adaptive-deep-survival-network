@@ -1,0 +1,736 @@
+{
+  "idh": {
+    "before_alignment": {
+      "source": {
+        "total_importance": 0.9052799737188275,
+        "physiology_importance": 0.8367468083522752,
+        "treatment_importance": 0.06853316536655221,
+        "physiology_ratio": 0.9242961654337467,
+        "treatment_ratio": 0.07570383456625325,
+        "top_10_features": [
+          {
+            "feature": "脉压差",
+            "importance": 0.15402865016530826,
+            "group": "physiology"
+          },
+          {
+            "feature": "history_LBP_times_4_rate",
+            "importance": 0.1196456180842617,
+            "group": "physiology"
+          },
+          {
+            "feature": "历史平均透前收缩压",
+            "importance": 0.10082637399929623,
+            "group": "physiology"
+          },
+          {
+            "feature": "history_LBP_times_3_rate",
+            "importance": 0.08663081563236734,
+            "group": "physiology"
+          },
+          {
+            "feature": "透前收缩压",
+            "importance": 0.083936819224343,
+            "group": "physiology"
+          },
+          {
+            "feature": "history_LBP_times_2_rate",
+            "importance": 0.0785899677453904,
+            "group": "physiology"
+          },
+          {
+            "feature": "平均动脉压",
+            "importance": 0.03951984315178837,
+            "group": "physiology"
+          },
+          {
+            "feature": "history_LBP_times_1_rate",
+            "importance": 0.03835621651492674,
+            "group": "physiology"
+          },
+          {
+            "feature": "超负荷",
+            "importance": 0.032800377833689526,
+            "group": "treatment"
+          },
+          {
+            "feature": "history_LBP_times_0_rate",
+            "importance": 0.02678830720043347,
+            "group": "physiology"
+          }
+        ],
+        "n_samples": 400,
+        "feature_importance": [
+          0.0,
+          0.0,
+          0.032800377833689526,
+          0.005605078447141996,
+          0.004175319408761965,
+          0.10082637399929623,
+          0.011770578703106797,
+          0.024425023447481386,
+          0.023047346697386756,
+          0.0,
+          0.002089353362142124,
+          0.083936819224343,
+          0.022395003168761148,
+          0.01801534054658437,
+          0.15402865016530826,
+          0.03951984315178837,
+          0.01060376296436493,
+          0.01494981503295711,
+          0.02678830720043347,
+          0.03835621651492674,
+          0.0785899677453904,
+          0.08663081563236734,
+          0.1196456180842617,
+          0.007080362388333932
+        ]
+      },
+      "target": {
+        "total_importance": 0.4184260824321203,
+        "physiology_importance": 0.3076896763823429,
+        "treatment_importance": 0.1107364060497775,
+        "physiology_ratio": 0.735350135426269,
+        "treatment_ratio": 0.26464986457373113,
+        "top_10_features": [
+          {
+            "feature": "history_LBP_times_1_rate",
+            "importance": 0.06157637660889506,
+            "group": "physiology"
+          },
+          {
+            "feature": "历史平均透前收缩压",
+            "importance": 0.05754823725403571,
+            "group": "physiology"
+          },
+          {
+            "feature": "透前体重-干体重",
+            "importance": 0.04832721441329999,
+            "group": "treatment"
+          },
+          {
+            "feature": "超负荷",
+            "importance": 0.04421922294296753,
+            "group": "treatment"
+          },
+          {
+            "feature": "history_LBP_times_2_rate",
+            "importance": 0.041576957715129606,
+            "group": "physiology"
+          },
+          {
+            "feature": "脉压差",
+            "importance": 0.035904856516050666,
+            "group": "physiology"
+          },
+          {
+            "feature": "透前收缩压",
+            "importance": 0.02470510619119797,
+            "group": "physiology"
+          },
+          {
+            "feature": "history_LBP_times_3_rate",
+            "importance": 0.021877659196594238,
+            "group": "physiology"
+          },
+          {
+            "feature": "平均动脉压",
+            "importance": 0.013955336134769878,
+            "group": "physiology"
+          },
+          {
+            "feature": "history_LBP_times_0_rate",
+            "importance": 0.013293558800588553,
+            "group": "physiology"
+          }
+        ],
+        "n_samples": 400,
+        "feature_importance": [
+          0.0,
+          0.0,
+          0.04421922294296753,
+          0.007248073587484443,
+          0.0038896459576198655,
+          0.05754823725403571,
+          0.0020584590259706908,
+          0.0011982895458417337,
+          0.04832721441329999,
+          0.0,
+          0.0,
+          0.02470510619119797,
+          0.008849095349769942,
+          0.010161836095296656,
+          0.035904856516050666,
+          0.013955336134769878,
+          0.0023201369642298865,
+          0.001184414675019654,
+          0.013293558800588553,
+          0.06157637660889506,
+          0.041576957715129606,
+          0.021877659196594238,
+          0.007589710351332755,
+          0.010941895106025525
+        ]
+      },
+      "cross_domain_correlation": {
+        "spearman_r": 0.7684263009302538,
+        "spearman_p": 1.1572276867152835e-05,
+        "pearson_r": 0.5201447963055348,
+        "pearson_p": 0.00917484404979934
+      }
+    },
+    "after_alignment": {
+      "source": {
+        "total_importance": 0.9380879987648016,
+        "physiology_importance": 0.8701997675064952,
+        "treatment_importance": 0.06788823125830641,
+        "physiology_ratio": 0.9276312762260085,
+        "treatment_ratio": 0.0723687237739915,
+        "top_10_features": [
+          {
+            "feature": "脉压差",
+            "importance": 0.15878968866032717,
+            "group": "physiology"
+          },
+          {
+            "feature": "history_LBP_times_4_rate",
+            "importance": 0.12951046802209795,
+            "group": "physiology"
+          },
+          {
+            "feature": "历史平均透前收缩压",
+            "importance": 0.0997545288265565,
+            "group": "physiology"
+          },
+          {
+            "feature": "history_LBP_times_3_rate",
+            "importance": 0.0868469165054064,
+            "group": "physiology"
+          },
+          {
+            "feature": "透前收缩压",
+            "importance": 0.08576167264122814,
+            "group": "physiology"
+          },
+          {
+            "feature": "history_LBP_times_2_rate",
+            "importance": 0.08458619143213818,
+            "group": "physiology"
+          },
+          {
+            "feature": "平均动脉压",
+            "importance": 0.04464993439952851,
+            "group": "physiology"
+          },
+          {
+            "feature": "history_LBP_times_1_rate",
+            "importance": 0.0373690631793611,
+            "group": "physiology"
+          },
+          {
+            "feature": "超负荷",
+            "importance": 0.034951241554877686,
+            "group": "treatment"
+          },
+          {
+            "feature": "历史平均透中低血压_计算",
+            "importance": 0.02646379952684896,
+            "group": "physiology"
+          }
+        ],
+        "n_samples": 400,
+        "feature_importance": [
+          0.0,
+          0.0,
+          0.034951241554877686,
+          0.00483101909443872,
+          0.006371012683113918,
+          0.0997545288265565,
+          0.01699053601850965,
+          0.02646379952684896,
+          0.02113344678055606,
+          0.0,
+          0.0019689352976466033,
+          0.08576167264122814,
+          0.024809630218930064,
+          0.019932533866404277,
+          0.15878968866032717,
+          0.04464993439952851,
+          0.00889169937690919,
+          0.013550516774157322,
+          0.023952640077331125,
+          0.0373690631793611,
+          0.08458619143213818,
+          0.0868469165054064,
+          0.12951046802209795,
+          0.006972523828433946
+        ]
+      },
+      "target": {
+        "total_importance": 1.1902641807713112,
+        "physiology_importance": 1.110600340569919,
+        "treatment_importance": 0.0796638402013923,
+        "physiology_ratio": 0.9330704548718178,
+        "treatment_ratio": 0.06692954512818221,
+        "top_10_features": [
+          {
+            "feature": "history_LBP_times_1_rate",
+            "importance": 0.22707025408694292,
+            "group": "physiology"
+          },
+          {
+            "feature": "历史平均透前收缩压",
+            "importance": 0.19585167057166253,
+            "group": "physiology"
+          },
+          {
+            "feature": "脉压差",
+            "importance": 0.15173252164059617,
+            "group": "physiology"
+          },
+          {
+            "feature": "history_LBP_times_2_rate",
+            "importance": 0.12275981504309412,
+            "group": "physiology"
+          },
+          {
+            "feature": "透前收缩压",
+            "importance": 0.10439341582380918,
+            "group": "physiology"
+          },
+          {
+            "feature": "平均动脉压",
+            "importance": 0.07817813915525491,
+            "group": "physiology"
+          },
+          {
+            "feature": "history_LBP_times_3_rate",
+            "importance": 0.07116894115981502,
+            "group": "physiology"
+          },
+          {
+            "feature": "history_LBP_times_0_rate",
+            "importance": 0.04362990105454264,
+            "group": "physiology"
+          },
+          {
+            "feature": "透前动脉压",
+            "importance": 0.037458763481264715,
+            "group": "physiology"
+          },
+          {
+            "feature": "透前体重-干体重",
+            "importance": 0.03530142326837192,
+            "group": "treatment"
+          }
+        ],
+        "n_samples": 400,
+        "feature_importance": [
+          0.0,
+          0.0,
+          0.03525977043169209,
+          0.003237710972420851,
+          0.005466760538161175,
+          0.19585167057166253,
+          0.005602255402572428,
+          0.006988845294664337,
+          0.03530142326837192,
+          0.0,
+          4.2854593705535296e-05,
+          0.10439341582380918,
+          0.023200138080150895,
+          0.037458763481264715,
+          0.15173252164059617,
+          0.07817813915525491,
+          0.006494236438591415,
+          0.011416348939181592,
+          0.04362990105454264,
+          0.22707025408694292,
+          0.12275981504309412,
+          0.07116894115981502,
+          0.01914547926590936,
+          0.005864935528907454
+        ]
+      },
+      "cross_domain_correlation": {
+        "spearman_r": 0.8763066202090594,
+        "spearman_p": 1.995132293329941e-08,
+        "pearson_r": 0.629979215070189,
+        "pearson_p": 0.0009696912535679138
+      }
+    },
+    "delta": {
+      "physiology_ratio_target": 0.1977203194455488,
+      "treatment_ratio_target": -0.1977203194455489,
+      "spearman_correlation": 0.10788031927880559
+    }
+  },
+  "ih": {
+    "before_alignment": {
+      "source": {
+        "total_importance": 1.0500343618689716,
+        "physiology_importance": 1.0255130903361946,
+        "treatment_importance": 0.024521271532777136,
+        "physiology_ratio": 0.9766471722990749,
+        "treatment_ratio": 0.023352827700925297,
+        "top_10_features": [
+          {
+            "feature": "历史平均透前舒张压",
+            "importance": 0.22740668917277101,
+            "group": "physiology"
+          },
+          {
+            "feature": "history_HBP_rate",
+            "importance": 0.1899208252752197,
+            "group": "physiology"
+          },
+          {
+            "feature": "透前舒张压",
+            "importance": 0.12688003538370124,
+            "group": "physiology"
+          },
+          {
+            "feature": "透前动脉压",
+            "importance": 0.08424923323458255,
+            "group": "physiology"
+          },
+          {
+            "feature": "history_LBP_times_0_rate",
+            "importance": 0.08251122444886926,
+            "group": "physiology"
+          },
+          {
+            "feature": "平均动脉压",
+            "importance": 0.07925149315699728,
+            "group": "physiology"
+          },
+          {
+            "feature": "脉压差",
+            "importance": 0.06704509795378351,
+            "group": "physiology"
+          },
+          {
+            "feature": "透前收缩压",
+            "importance": 0.05089762913884512,
+            "group": "physiology"
+          },
+          {
+            "feature": "历史平均透前收缩压",
+            "importance": 0.046139441698365806,
+            "group": "physiology"
+          },
+          {
+            "feature": "history_LBP_times_3_rate",
+            "importance": 0.022390283186565486,
+            "group": "physiology"
+          }
+        ],
+        "n_samples": 400,
+        "feature_importance": [
+          0.0,
+          0.0,
+          0.007595524321855554,
+          0.0014986425576253646,
+          0.0035996368183577676,
+          0.046139441698365806,
+          0.22740668917277101,
+          0.012995902039967948,
+          0.013572383751804943,
+          0.0,
+          0.0017667436474903908,
+          0.05089762913884512,
+          0.12688003538370124,
+          0.08424923323458255,
+          0.06704509795378351,
+          0.07925149315699728,
+          0.010389724792953223,
+          0.1899208252752197,
+          0.08251122444886926,
+          0.0037225770251841516,
+          0.010899169506208523,
+          0.022390283186565486,
+          0.005447383856331506,
+          0.0018547209014912738
+        ]
+      },
+      "target": {
+        "total_importance": 1.2417595675929638,
+        "physiology_importance": 1.2157157053008276,
+        "treatment_importance": 0.026043862292136316,
+        "physiology_ratio": 0.9790266465652285,
+        "treatment_ratio": 0.020973353434771545,
+        "top_10_features": [
+          {
+            "feature": "历史平均透前舒张压",
+            "importance": 0.22188620039002518,
+            "group": "physiology"
+          },
+          {
+            "feature": "history_HBP_rate",
+            "importance": 0.18960563392985708,
+            "group": "physiology"
+          },
+          {
+            "feature": "透前舒张压",
+            "importance": 0.13908177531295085,
+            "group": "physiology"
+          },
+          {
+            "feature": "history_LBP_times_0_rate",
+            "importance": 0.13531089271242575,
+            "group": "physiology"
+          },
+          {
+            "feature": "历史平均透前收缩压",
+            "importance": 0.11670151123722686,
+            "group": "physiology"
+          },
+          {
+            "feature": "平均动脉压",
+            "importance": 0.10723842143806825,
+            "group": "physiology"
+          },
+          {
+            "feature": "透前动脉压",
+            "importance": 0.08256468938533507,
+            "group": "physiology"
+          },
+          {
+            "feature": "历史平均透中低血压_计算",
+            "importance": 0.05699497415127039,
+            "group": "physiology"
+          },
+          {
+            "feature": "history_LBP_times_2_rate",
+            "importance": 0.05594021065504066,
+            "group": "physiology"
+          },
+          {
+            "feature": "history_LBP_times_1_rate",
+            "importance": 0.040589243593162,
+            "group": "physiology"
+          }
+        ],
+        "n_samples": 400,
+        "feature_importance": [
+          0.0,
+          0.0,
+          0.006229682450836287,
+          0.00230798934570628,
+          0.0032125863890892065,
+          0.11670151123722686,
+          0.22188620039002518,
+          0.05699497415127039,
+          0.01568185034306351,
+          0.0,
+          5.610753649689363e-05,
+          0.03278813406005412,
+          0.13908177531295085,
+          0.08256468938533507,
+          0.015089719029811662,
+          0.10723842143806825,
+          0.006687056761473495,
+          0.18960563392985708,
+          0.13531089271242575,
+          0.040589243593162,
+          0.05594021065504066,
+          0.008648267552443394,
+          0.0033202811660966824,
+          0.00182434015253024
+        ]
+      },
+      "cross_domain_correlation": {
+        "spearman_r": 0.922473867595819,
+        "spearman_p": 1.4592071950355887e-10,
+        "pearson_r": 0.9182689204821427,
+        "pearson_p": 2.557302477646058e-10
+      }
+    },
+    "after_alignment": {
+      "source": {
+        "total_importance": 1.0472271326815004,
+        "physiology_importance": 1.0254784728093456,
+        "treatment_importance": 0.021748659872154612,
+        "physiology_ratio": 0.9792321463095921,
+        "treatment_ratio": 0.02076785369040774,
+        "top_10_features": [
+          {
+            "feature": "历史平均透前舒张压",
+            "importance": 0.22862809143403126,
+            "group": "physiology"
+          },
+          {
+            "feature": "history_HBP_rate",
+            "importance": 0.18073406750805696,
+            "group": "physiology"
+          },
+          {
+            "feature": "透前舒张压",
+            "importance": 0.12380821045554719,
+            "group": "physiology"
+          },
+          {
+            "feature": "透前动脉压",
+            "importance": 0.08029982713627806,
+            "group": "physiology"
+          },
+          {
+            "feature": "history_LBP_times_0_rate",
+            "importance": 0.08017051541889339,
+            "group": "physiology"
+          },
+          {
+            "feature": "平均动脉压",
+            "importance": 0.0739895757125268,
+            "group": "physiology"
+          },
+          {
+            "feature": "脉压差",
+            "importance": 0.06694411846003587,
+            "group": "physiology"
+          },
+          {
+            "feature": "透前收缩压",
+            "importance": 0.05952816020436386,
+            "group": "physiology"
+          },
+          {
+            "feature": "历史平均透前收缩压",
+            "importance": 0.047683025319708375,
+            "group": "physiology"
+          },
+          {
+            "feature": "history_LBP_times_3_rate",
+            "importance": 0.022494261418540846,
+            "group": "physiology"
+          }
+        ],
+        "n_samples": 400,
+        "feature_importance": [
+          0.0,
+          0.0,
+          0.005505146814794288,
+          0.0020093803388848298,
+          0.003270002918809921,
+          0.047683025319708375,
+          0.22862809143403126,
+          0.013310899714755681,
+          0.012014129012569333,
+          0.0,
+          0.001601074999901245,
+          0.05952816020436386,
+          0.12380821045554719,
+          0.08029982713627806,
+          0.06694411846003587,
+          0.0739895757125268,
+          0.018113215088698908,
+          0.18073406750805696,
+          0.08017051541889339,
+          0.00530572823334991,
+          0.011015248791696604,
+          0.022494261418540846,
+          0.00858244999415072,
+          0.0022200037059061607
+        ]
+      },
+      "target": {
+        "total_importance": 1.2554686068908343,
+        "physiology_importance": 1.2313970991950705,
+        "treatment_importance": 0.024071507695763973,
+        "physiology_ratio": 0.9808266749454,
+        "treatment_ratio": 0.019173325054600145,
+        "top_10_features": [
+          {
+            "feature": "history_HBP_rate",
+            "importance": 0.20576214531037795,
+            "group": "physiology"
+          },
+          {
+            "feature": "历史平均透前舒张压",
+            "importance": 0.1770398685233857,
+            "group": "physiology"
+          },
+          {
+            "feature": "透前舒张压",
+            "importance": 0.1501427827198996,
+            "group": "physiology"
+          },
+          {
+            "feature": "历史平均透前收缩压",
+            "importance": 0.12349025795679262,
+            "group": "physiology"
+          },
+          {
+            "feature": "平均动脉压",
+            "importance": 0.10067086594681647,
+            "group": "physiology"
+          },
+          {
+            "feature": "透前动脉压",
+            "importance": 0.087701716413059,
+            "group": "physiology"
+          },
+          {
+            "feature": "history_LBP_times_1_rate",
+            "importance": 0.07882136333440917,
+            "group": "physiology"
+          },
+          {
+            "feature": "history_LBP_times_0_rate",
+            "importance": 0.07880218741438395,
+            "group": "physiology"
+          },
+          {
+            "feature": "透前收缩压",
+            "importance": 0.057227161328936405,
+            "group": "physiology"
+          },
+          {
+            "feature": "历史平均透中低血压_计算",
+            "importance": 0.05180922063793183,
+            "group": "physiology"
+          }
+        ],
+        "n_samples": 400,
+        "feature_importance": [
+          0.0,
+          0.0,
+          0.005343298583084776,
+          0.0027502974575887994,
+          0.003864142819448565,
+          0.12349025795679262,
+          0.1770398685233857,
+          0.05180922063793183,
+          0.012602247193369871,
+          0.0,
+          1.1640638081752155e-05,
+          0.057227161328936405,
+          0.1501427827198996,
+          0.087701716413059,
+          0.026261345116878467,
+          0.10067086594681647,
+          0.04648646655844896,
+          0.20576214531037795,
+          0.07880218741438395,
+          0.07882136333440917,
+          0.024477868672010298,
+          0.015463244460456991,
+          0.0033648213437525464,
+          0.0033756644617205286
+        ]
+      },
+      "cross_domain_correlation": {
+        "spearman_r": 0.9085365853658538,
+        "spearman_p": 8.41640801584904e-10,
+        "pearson_r": 0.8927139457731157,
+        "pearson_p": 4.513249992194677e-09
+      }
+    },
+    "delta": {
+      "physiology_ratio_target": 0.001800028380171459,
+      "treatment_ratio_target": -0.0018000283801714,
+      "spearman_correlation": -0.013937282229965153
+    }
+  }
+}
