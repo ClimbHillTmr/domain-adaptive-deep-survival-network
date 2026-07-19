@@ -1,5 +1,5 @@
 project:
-  name: dual-endpoint-target-center-update-finetune-only
+  name: dual-endpoint-target-center-update
   endpoint_rules:
     idh: baseline SBP - intradialytic SBP >= 30 or intradialytic SBP <= 90
     ih: intradialytic MAP - baseline MAP > 10
@@ -29,11 +29,11 @@ model:
   domain_hidden: 64
   adversarial_weight: 0.1
   mask_l1_weight: 0.01
-  use_coral: false
+  use_coral: true
   coral_weight: 0.01
   use_mmd: false
   mmd_weight: 1.0
-  use_stratified_alignment: false
+  use_stratified_alignment: true
   physio_indices:
   - 0
   - 1
@@ -60,9 +60,9 @@ model:
   - 3
   - 8
   - 23
-  use_outcome_specific_alignment: false
+  use_outcome_specific_alignment: true
 training:
-  initialization_seed: 2024
+  initialization_seed: 99
   initialization_seeds:
   - 42
   - 7
