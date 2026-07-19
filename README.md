@@ -1,300 +1,140 @@
-# Mechanism-Aware Transportable Representation Learning for Clinical AI
+# Outcome-Specific Target-Center Updating for Hemodynamic Event Prediction
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Code style: black/ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
+This repository contains a two-center, session-level framework for predicting intradialytic hypotension (IDH) and intradialytic hypertension (IH) at the start of a hemodialysis session.
 
-This repository implements a mechanism-aware domain adaptation framework for cross-center clinical AI deployment, specifically for intradialytic hypotension (IDH) and hypertension (IH) prediction in dialysis patients.
+The active study uses labeled target-center data for model updating, validation, calibration, and held-out testing. It is therefore a **target-center updating study**, not zero-shot external validation. Earlier survival/CDAN-GSN components remain in the repository as legacy code and are not part of the current scientific claim.
 
-**Core Contribution**: Clinical domain adaptation should not seek universal domain invariance; instead, it should identify outcome-specific transportable representations while preserving clinically meaningful variations.
+## Current Evidence Status
 
-## 📋 Abstract
+The existing artifacts support three conclusions:
 
-Clinical AI models trained at one institution often fail when deployed at another due to domain shift. Traditional domain adaptation treats all domain differences as noise to be eliminated. This work demonstrates that clinical domain shift contains heterogeneous components:
+1. Endpoint burden differs substantially between the source and target centers.
+2. The complete target-center updating procedure improves held-out target performance over the corresponding source MLP, particularly for IDH.
+3. Updated-model discrimination is stable across five initialization seeds.
 
-1. **Transportable variation** (physiology): Blood pressure, heart rate, and historical event patterns are consistent across centers
-2. **Context-specific variation** (treatment): Ultrafiltration strategies and dry weight management are center-specific and should be preserved
+The existing artifacts do **not** yet establish that outcome-specific CORAL is superior to fine-tuning or global CORAL. Those methods currently differ in encoder architecture and are not all available under matched seeds. Mechanism-specific superiority remains a confirmatory hypothesis.
 
-We propose a mechanism-aware transportable representation learning framework that:
-- Decomposes features into physiology and treatment groups based on clinical knowledge
-- Uses CORAL (second-order statistics alignment) on physiology features
-- Preserves treatment-related variations instead of aligning them
-- Selects alignment targets based on outcome-specific mechanisms
+See [the evidence audit](docs/evidence_audit.md), [working manuscript](docs/manuscript_draft.md), and [visualization plan](docs/visualization_plan.md) for the claim-to-artifact mapping and submission blockers.
 
-## 🔬 Evidence Chain
+## Study Contract
 
-| Evidence | Finding |
-|----------|---------|
-| 1 | Blind alignment (Fine-tuning, Global CORAL) is insufficient — IDH Δ=0.0428 |
-| 2 | Outcome-specific transportability — IDH benefits from physiology alignment (Δ=0.1182) |
-| 3 | Latent drift reduction — MMD decreased from 0.276 to 0.186 |
-| 4 | Feature contribution shift — IDH physiology contribution increased from 60% to 95% |
-| 5 | Subgroup heterogeneity — Transportability is context-dependent |
+| Item | Frozen binary-study definition |
+|---|---|
+| Source cohort | 211,452 sessions; 1,628 patients |
+| Target cohort | 74,947 sessions; 430 patients |
+| Target held-out test | 29,866 sessions; 172 patients |
+| IDH | Baseline SBP - intradialytic SBP >=30 mmHg, or intradialytic SBP <=90 mmHg |
+| IH | Intradialytic MAP - baseline MAP >10 mmHg |
+| Prediction time | Start of dialysis session |
+| Predictors | 24 demographics, pre-dialysis variables, and prior-session summaries |
+| Split | Patient level; fixed seed 20260715 |
+| Calibration | Platt scaling on validation patients |
+| Uncertainty | 1,000 patient-cluster bootstrap replicates |
 
-## 📂 Project Structure
+Outcome rates in the binary preflight artifact were 14.5% versus 38.5% for IDH and 28.4% versus 12.0% for IH at the source and target centers, respectively.
+
+## Model Design
+
+The mechanism-aware MLP contains two encoders:
+
+- **Physiology/history branch (20 variables):** pre-dialysis vital signs, blood-pressure summaries, and prior event burden.
+- **Treatment-context branch (4 variables):** volume overload, historical maximum ultrafiltration volume, pre-dialysis weight minus dry weight, and historical mean ultrafiltration rate.
+
+For IDH, CORAL is applied to the physiology/history representation. For IH, CORAL is applied to the treatment-context representation. The other branch remains available to the prediction head without CORAL. The update phase uses pooled source and labeled target sessions with focal prediction loss and a CORAL weight of 0.01.
+
+This grouping is a prespecified clinical design choice, not a validated biological decomposition.
+
+## Main Held-Out Results
+
+The main mechanism-aware artifact uses initialization seed 2024.
+
+| Endpoint | Model | ROC AUC (95% patient-cluster CI) | PR AUC | Brier |
+|---|---|---:|---:|---:|
+| IDH | Source MLP | 0.7189 (0.6966-0.7404) | 0.6752 | 0.2606 |
+| IDH | Updated MLP | 0.8370 (0.8226-0.8520) | 0.7814 | 0.1567 |
+| IDH | Target-local logistic | 0.8353 (0.8207-0.8504) | 0.7800 | 0.1576 |
+| IH | Source MLP | 0.8600 (0.8439-0.8751) | 0.5078 | 0.0826 |
+| IH | Updated MLP | 0.8684 (0.8525-0.8827) | 0.5222 | 0.0792 |
+| IH | Target-local logistic | 0.8678 (0.8524-0.8822) | 0.5172 | 0.0797 |
+
+The paired updated-versus-source AUC differences were +0.1182 (95% CI 0.1041 to 0.1323) for IDH and +0.0084 (0.0049 to 0.0122) for IH. Updated MLP performance was not clearly different from target-local logistic regression for either endpoint.
+
+Across five seeds, updated AUC was 0.8374 +/- 0.0004 for IDH and 0.8684 +/- 0.0002 for IH. Source-model AUC was much more variable, so source-to-updated delta must not be interpreted as the isolated effect of CORAL.
+
+## Representation Analyses
+
+Exploratory analyses suggest a larger update effect for IDH than IH:
+
+- IDH RBF MMD decreased from 0.2764 to 0.1861 in seed 42, but linear MMD, Wasserstein distance, and covariance distance increased. Domain-classifier AUC remained near 1.0.
+- IDH target physiology/history SHAP share increased from 60.0% to 94.6% in seed 2024, and cross-center feature-rank Spearman correlation increased from 0.653 to 0.816.
+- IH attribution was already physiology dominated (96.8% before and 97.8% after), which does not support a claim that treatment features dominate IH prediction.
+
+These are descriptive model diagnostics, not causal mechanism estimates.
+
+## Repository Layout
 
 ```text
-├── conf/                     # Configuration files
-│   ├── binary_config.yaml    # Frozen experiment configuration
-│   └── binary_config_finetune_only.yaml  # Baseline configuration
-├── data/                     # Data directory (raw & processed CSVs)
-│   ├── raw/                  # Raw data (gitignored)
-│   └── processed/            # Processed data (gitignored)
-├── docs/                     # Documentation
-│   └── manuscript_draft.md   # Complete manuscript draft
-├── experiments/              # Experiment results
-│   ├── audit/                # Feature allowlist and audit files
-│   └── final_results/        # Final results (gitignored: large files)
-│       ├── main_mechanism_aware/     # Primary results
-│       ├── baseline_finetune/        # Fine-tuning baseline
-│       ├── baseline_global_coral/    # Global CORAL baseline
-│       ├── baseline_random_alignment/# Random alignment control
-│       └── multiseed_seed*/         # Multi-seed stability
-├── figures/                  # Publication-grade figures
-├── src/                      # Source code
-│   ├── data/                 # Dataset loading and preprocessing
-│   │   └── binary_dataset.py # Binary classification data pipeline
-│   ├── data_pipeline/        # Data preprocessing scripts
-│   │   ├── HBD_data.py       # Shenyi center data processing
-│   │   └── HBD_data_fuding.py # Fuding center data processing
-│   ├── evaluate/             # Evaluation scripts
-│   │   ├── binary_metrics.py # Binary classification metrics
-│   │   ├── shap_analysis.py  # SHAP feature importance analysis
-│   │   ├── subgroup_analysis.py # Subgroup transportability analysis
-│   │   └── latent_representation_analysis.py # MMD/domain classifier
-│   ├── models/               # Model architectures (legacy)
-│   └── train/                # Training scripts
-│       └── binary_models.py  # BinaryMLP with stratified alignment
-├── tables/                   # Auto-generated tables
-├── scripts/                  # Utility scripts
-├── tests/                    # Unit tests
-├── run_all.py                # One-click execution pipeline
-├── run_pipeline.py           # Full pipeline execution
-└── pyproject.toml            # Ruff, Mypy, and Pytest configurations
+conf/                         Frozen binary configurations
+data/processed/               Processed cohorts; current files do not match frozen-run hashes
+docs/                         Manuscript, evidence audit, and visualization plan
+experiments/audit/            Feature allowlist and binary preflight
+experiments/final_results/    Frozen aggregate binary-study artifacts
+figures/manuscript_draft/     Aggregate-only draft figures generated by the script
+scripts/                      Evaluation and figure utilities
+src/data/                     Patient-level split and source-fitted preprocessing
+src/train/                    Binary models and updating procedure
+src/evaluate/                 Metrics and exploratory analyses
+tests/                        Pipeline checks
 ```
 
-## 🔄 Data Processing Pipeline
+The existing files under `tables/`, `figures/Main_Figures/`, and `figures/Submission_*` belong to the previous time-to-event study and must not be cited by the active manuscript.
 
-### 1. Raw Data → Processed Data
+## Static Audit and Training Gate
+
+Run the static audit without fitting models:
 
 ```bash
-python src/data_pipeline/HBD_data.py RAW_SHENYI.csv data/processed/深医_final_data.csv
-python src/data_pipeline/HBD_data_fuding.py RAW_FUDING.csv data/processed/福鼎_final_data.csv
-```
-
-### 2. Feature Selection and Validation
-
-The [feature_allowlist.csv](file:///home/cht/Works/domain-adaptive-deep-survival-network/experiments/audit/feature_allowlist.csv) defines which features are allowed for prediction:
-
-| Feature Category | Examples | Count |
-|------------------|----------|-------|
-| Demographics | 性别, 透析龄占比 | 2 |
-| Pre-dialysis | 透前收缩压, 透前舒张压, 脉压差 | 9 |
-| History | 历史平均透前收缩压, history_IDH_rate | 13 |
-| Treatment | 超负荷, 透前体重-干体重, 历史平均超滤量MAX | 4 |
-
-### 3. Patient-Level Split
-
-The data pipeline performs patient-level stratified splitting to ensure:
-- No patient appears in both training and testing
-- Event rate is balanced across splits
-- Source and target domains are strictly separated
-
-## 🧠 Model Design
-
-### BinaryMLP Architecture
-
-```
-Input Features (24)
-    │
-    ├── Physiology Encoder (indices: 0,1,4-7,9-22)
-    │       ├── Linear(20→64)
-    │       ├── ReLU
-    │       ├── Dropout(0.2)
-    │       └── Linear(64→32)
-    │
-    ├── Treatment Encoder (indices: 2,3,8,23)
-    │       ├── Linear(4→64)
-    │       ├── ReLU
-    │       ├── Dropout(0.2)
-    │       └── Linear(64→32)
-    │
-    └── Concatenate → Linear(64→1) → Sigmoid
-```
-
-### Mechanism-Aware Alignment
-
-The framework implements outcome-specific alignment:
-
-```
-IDH (Intradialytic Hypotension):
-    → Align physiology features using CORAL
-    → Rationale: IDH is primarily driven by physiological instability
-
-IH (Intradialytic Hypertension):
-    → Align treatment features using CORAL  
-    → Rationale: IH is influenced by treatment strategy variations
-```
-
-### Loss Function
-
-```
-Total Loss = Survival Loss + λ × CORAL Loss
-
-where:
-- Survival Loss = BCEWithLogitsLoss (for binary classification)
-- CORAL Loss = ||cov(X_source) - cov(X_target)||²_F
-- λ = 0.01 (alignment weight)
-- X = physiology features for IDH, treatment features for IH
-```
-
-## 🚀 Quick Start
-
-### Environment Setup
-
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/domain-adaptive-deep-survival-network.git
-cd domain-adaptive-deep-survival-network
-
-# Install dependencies
-pip install -r requirements.txt
-```
-
-### Prepare Data
-
-Build source and target cohorts:
-
-```bash
-python src/data_pipeline/HBD_data.py RAW_SHENYI.csv data/processed/深医_final_data.csv
-python src/data_pipeline/HBD_data_fuding.py RAW_FUDING.csv data/processed/福鼎_final_data.csv
-```
-
-### Run Audit and Training
-
-```bash
-# Static audit only
 python run_all.py
+```
 
-# Full training pipeline
+Training requires an explicit safety flag:
+
+```bash
 python run_all.py --train
 ```
 
-### Run Full Pipeline
+Do not start training until the exact frozen-data provenance issue and prior-only history audit are resolved.
+
+## Draft Manuscript Figures
+
+Validate the aggregate inputs without writing files:
 
 ```bash
-python run_pipeline.py /path/to/shenyi.csv /path/to/fuding.csv
+python scripts/build_manuscript_figures.py --check-only
 ```
 
-### Run Evaluation Scripts
+Build draft PNG/PDF figures, an accessible source-data CSV, and alt text:
 
 ```bash
-# SHAP analysis
-python -m src.evaluate.shap_analysis --config conf/binary_config.yaml --results-dir experiments/final_results/main_mechanism_aware
-
-# Subgroup analysis
-python -m src.evaluate.subgroup_analysis --config conf/binary_config.yaml --results-dir experiments/final_results/main_mechanism_aware
+python scripts/build_manuscript_figures.py
 ```
 
-## 📊 Results Summary
+The script reads frozen aggregate JSON artifacts only. It does not train models, rebuild cohorts, or generate prediction-dependent calibration and decision curves.
 
-### Core Comparison
-
-| Method | IDH Δ AUC | IH Δ AUC |
-|--------|-----------|----------|
-| Fine-tuning | 0.0428 | 0.0150 |
-| Global CORAL | 0.0437 | 0.0152 |
-| Random Alignment | 0.0068 | 0.0049 |
-| **Mechanism-aware** | **0.1182** | **0.0084** |
-
-### Multi-seed Stability
-
-| Seed | IDH Δ | IH Δ |
-|------|-------|------|
-| 42 | 0.1024 | 0.0303 |
-| 7 | 0.0500 | 0.0075 |
-| 13 | 0.0430 | 0.0429 |
-| 99 | 0.1514 | 0.0437 |
-| 2024 | 0.1182 | 0.0084 |
-| **Mean ± SD** | **0.0930 ± 0.0459** | **0.0266 ± 0.0171** |
-
-### SHAP Feature Contribution Shift
-
-| Outcome | Phase | Physiology | Treatment | Cross-domain Spearman |
-|---------|-------|------------|-----------|----------------------|
-| IDH | Before | 60% | 40% | 0.65 |
-| IDH | After | 95% | 5% | 0.82 |
-| IH | Before | 97% | 3% | 0.94 |
-| IH | After | 98% | 2% | 0.93 |
-
-### Subgroup Analysis
-
-| Outcome | Subgroup | Δ AUC | 95% CI |
-|---------|----------|-------|--------|
-| IDH | Low-risk | 0.164 | [0.153, 0.175] |
-| IDH | High-risk | 0.090 | [0.083, 0.096] |
-| IH | Low intensity | 0.012 | [0.009, 0.014] |
-| IH | High intensity | 0.003 | [0.001, 0.006] |
-
-## 📝 Manuscript Readiness
-
-The complete manuscript draft is available at [docs/manuscript_draft.md](file:///home/cht/Works/domain-adaptive-deep-survival-network/docs/manuscript_draft.md), including:
-
-- 6 Figure designs (frozen)
-- Results section outline
-- Reviewer risk mitigation strategies
-- Target journals: npj Digital Medicine, The Lancet Digital Health, JAMA Network Open
-
-## 🔬 Key Findings
-
-1. **Domain shift is heterogeneous**: Not all domain differences are noise; some contain clinically meaningful information
-
-2. **Outcome-specific transportability**: IDH benefits from physiology alignment, while IH benefits from preserving treatment variations
-
-3. **Representation alignment works**: CORAL alignment on physiology features significantly reduces cross-domain latent discrepancy (MMD: 0.276 → 0.186)
-
-4. **Feature contribution becomes clinically interpretable**: After alignment, IDH model relies on physiology features (95%) rather than hospital-specific treatment patterns
-
-5. **Transportability is context-dependent**: Benefits vary across patient subgroups, highlighting the importance of personalized adaptation strategies
-
-## 📄 Citation
-
-If you find this code or methodology useful, please cite:
-
-```
-@article{mechanism-aware-transportability,
-  title={Mechanism-Aware Transportable Representation Learning for Clinical AI under Heterogeneous Domain Shift},
-  author={Your Name},
-  journal={npj Digital Medicine},
-  year={2026},
-  note={In preparation}
-}
-```
-
-## 📁 Final Results Location
-
-All final experiment results are archived in `experiments/final_results/`:
-
-| Directory | Description |
-|-----------|-------------|
-| `main_mechanism_aware` | Primary mechanism-aware alignment results |
-| `baseline_finetune` | Fine-tuning baseline |
-| `baseline_global_coral` | Global CORAL baseline |
-| `baseline_random_alignment` | Random alignment control |
-| `multiseed_seed42/7/13/99` | Multi-seed stability validation |
-
-Note: Large files (test_predictions.csv, mlp_models.pt) are gitignored to avoid repository bloat.
-
-## 🚧 Legacy Components
-
-The Cox, KAN, gated-mask, and CDAN implementations in `src/models/` are retained for historical comparison only. They are not current scientific claims.
-
-## ✅ Testing
+## Tests
 
 ```bash
 python -m pytest tests/ -v
 ```
 
-## 📜 License
+## Submission Blockers
+
+- Restore or regenerate processed cohorts that match the SHA-256 hashes recorded by the frozen runs.
+- Verify every allowed history predictor is prior-only on the exact frozen cohorts.
+- Run architecture-matched, seed-matched ablations and compare absolute held-out performance.
+- Restore prediction-level artifacts for calibration, ROC/PR curves, decision curves, and valid patient-cluster subgroup analysis.
+- Resolve source data-quality flags and complete ethics, author, funding, conflict, data-governance, and reference metadata.
+
+## License
 
 MIT License

@@ -1,15 +1,23 @@
-# Submission Figure Strategy
+# Figure Strategy
 
-## Main Figures
-- `Fig1_Cohort_Split_Audit`: 研究样本量与福鼎 patient-level split 审计合并图。
-- `Fig2_Cross_Center_Shift`: 基线偏移与事件时间结构偏移合并图。
-- `Fig3_Performance_Comparison`: held-out test 上的主性能比较图，仅引用当前 locked run。
-- `Fig4_Calibration_DCA`: 60/120 分钟校准与 DCA 合并图，仅引用当前 held-out predictions。
+The active manuscript now uses the dual-binary IDH/IH contract. The existing
+time-to-event figures in this directory are legacy artifacts and are excluded
+from the new paper.
 
-## Supplementary Figures
-- `FigS1_Target_Subgroup_Burden`: held-out test 亚组事件负担图；只作补充，不宣称亚组优势。
+Draft figures generated from current aggregate JSON evidence are written to
+`figures/manuscript_draft/`. They are for manuscript development, not final
+submission.
 
-## Net-room Rules
-- 禁止恢复 SHAP、mock、pseudo fairness 图，除非完全基于当前 held-out predictions 重建。
-- 不再沿用旧的 8 主图结构；投稿版以 4 个主图 + 1 个补图为上限。
-- 所有 PDF 导出均强制 `pdf.fonttype = 3` 以满足印刷兼容性要求。
+The authoritative panel plan, artifact map, style rules, alt-text requirements,
+and submission gates are documented in `docs/visualization_plan.md`.
+
+Main sequence:
+
+1. Cross-center outcome shift and target patient split.
+2. Outcome-specific two-branch updating framework.
+3. Held-out performance and five-seed stability.
+4. Endpoint-specific latent and attribution changes.
+
+Calibration, decision curves, confirmatory ablations, and subgroup inference
+remain blocked until their required prediction-level or matched-run artifacts
+are available.

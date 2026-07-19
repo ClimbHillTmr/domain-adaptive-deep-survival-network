@@ -1,0 +1,63 @@
+figure,panel,endpoint,series,metric,value,lower,upper,seed,artifact
+Fig1,A,,Source,sessions,211452,,,,experiments/audit/binary_data_preflight.json
+Fig1,A,,Source,patients,1628,,,,experiments/audit/binary_data_preflight.json
+Fig1,A,,Target,sessions,74947,,,,experiments/audit/binary_data_preflight.json
+Fig1,A,,Target,patients,430,,,,experiments/audit/binary_data_preflight.json
+Fig1,B,IDH,Source,event_rate_percent,14.515823922214025,,,,experiments/audit/binary_data_preflight.json
+Fig1,B,IDH,Target,event_rate_percent,38.535231563638305,,,,experiments/audit/binary_data_preflight.json
+Fig1,B,IH,Source,event_rate_percent,28.36482984317954,,,,experiments/audit/binary_data_preflight.json
+Fig1,B,IH,Target,event_rate_percent,11.957783500340241,,,,experiments/audit/binary_data_preflight.json
+Fig1,C,,Update,patients,219,,,20260715 split,experiments/final_results/main_mechanism_aware/split_manifest.json
+Fig1,C,,Update,sessions,38483,,,20260715 split,experiments/final_results/main_mechanism_aware/split_manifest.json
+Fig1,C,,Validation,patients,39,,,20260715 split,experiments/final_results/main_mechanism_aware/split_manifest.json
+Fig1,C,,Validation,sessions,6598,,,20260715 split,experiments/final_results/main_mechanism_aware/split_manifest.json
+Fig1,C,,Held-out test,patients,172,,,20260715 split,experiments/final_results/main_mechanism_aware/split_manifest.json
+Fig1,C,,Held-out test,sessions,29866,,,20260715 split,experiments/final_results/main_mechanism_aware/split_manifest.json
+Fig3,A,IDH,Source MLP,roc_auc,0.7188764883719915,0.696600542503734,0.740376695656716,2024,experiments/final_results/main_mechanism_aware/evaluation.json
+Fig3,A,IDH,Updated MLP,roc_auc,0.8370383975973739,0.8226489060480113,0.8520205034108851,2024,experiments/final_results/main_mechanism_aware/evaluation.json
+Fig3,A,IDH,Target-local logistic,roc_auc,0.8352779146538213,0.8207219218088588,0.8503851710829161,2024,experiments/final_results/main_mechanism_aware/evaluation.json
+Fig3,A,IH,Source MLP,roc_auc,0.8599847933071155,0.8439009950020353,0.8751254047189441,2024,experiments/final_results/main_mechanism_aware/evaluation.json
+Fig3,A,IH,Updated MLP,roc_auc,0.8683646934983396,0.8524828112824656,0.8827085792890318,2024,experiments/final_results/main_mechanism_aware/evaluation.json
+Fig3,A,IH,Target-local logistic,roc_auc,0.8677574794290623,0.852436439329242,0.8821961170119327,2024,experiments/final_results/main_mechanism_aware/evaluation.json
+Fig3,B,IDH,Source MLP,roc_auc,0.787611778526965,,,7,experiments/final_results/multiseed_seed7/evaluation.json
+Fig3,B,IDH,Updated MLP,roc_auc,0.8376171028180956,,,7,experiments/final_results/multiseed_seed7/evaluation.json
+Fig3,B,IDH,Source MLP,roc_auc,0.7942839808505002,,,13,experiments/final_results/multiseed_seed13/evaluation.json
+Fig3,B,IDH,Updated MLP,roc_auc,0.8372967479314792,,,13,experiments/final_results/multiseed_seed13/evaluation.json
+Fig3,B,IDH,Source MLP,roc_auc,0.7345957441331543,,,42,experiments/final_results/multiseed_seed42/evaluation.json
+Fig3,B,IDH,Updated MLP,roc_auc,0.8370024677835515,,,42,experiments/final_results/multiseed_seed42/evaluation.json
+Fig3,B,IDH,Source MLP,roc_auc,0.686470405903693,,,99,experiments/final_results/multiseed_seed99/evaluation.json
+Fig3,B,IDH,Updated MLP,roc_auc,0.8378889616664027,,,99,experiments/final_results/multiseed_seed99/evaluation.json
+Fig3,B,IDH,Source MLP,roc_auc,0.7188764883719915,,,2024,experiments/final_results/main_mechanism_aware/evaluation.json
+Fig3,B,IDH,Updated MLP,roc_auc,0.8370383975973739,,,2024,experiments/final_results/main_mechanism_aware/evaluation.json
+Fig3,C,IH,Source MLP,roc_auc,0.8610896090986454,,,7,experiments/final_results/multiseed_seed7/evaluation.json
+Fig3,C,IH,Updated MLP,roc_auc,0.8686007433768473,,,7,experiments/final_results/multiseed_seed7/evaluation.json
+Fig3,C,IH,Source MLP,roc_auc,0.8252227396967942,,,13,experiments/final_results/multiseed_seed13/evaluation.json
+Fig3,C,IH,Updated MLP,roc_auc,0.8681677590655964,,,13,experiments/final_results/multiseed_seed13/evaluation.json
+Fig3,C,IH,Source MLP,roc_auc,0.837896853807578,,,42,experiments/final_results/multiseed_seed42/evaluation.json
+Fig3,C,IH,Updated MLP,roc_auc,0.8682448969417564,,,42,experiments/final_results/multiseed_seed42/evaluation.json
+Fig3,C,IH,Source MLP,roc_auc,0.8250321406090613,,,99,experiments/final_results/multiseed_seed99/evaluation.json
+Fig3,C,IH,Updated MLP,roc_auc,0.8687577438973404,,,99,experiments/final_results/multiseed_seed99/evaluation.json
+Fig3,C,IH,Source MLP,roc_auc,0.8599847933071155,,,2024,experiments/final_results/main_mechanism_aware/evaluation.json
+Fig3,C,IH,Updated MLP,roc_auc,0.8683646934983396,,,2024,experiments/final_results/main_mechanism_aware/evaluation.json
+Fig3,D,IDH,Source MLP,pr_auc,0.6752180235078491,,,2024,experiments/final_results/main_mechanism_aware/evaluation.json
+Fig3,D,IH,Source MLP,pr_auc,0.5077518617771776,,,2024,experiments/final_results/main_mechanism_aware/evaluation.json
+Fig3,D,IDH,Updated MLP,pr_auc,0.7813780068437562,,,2024,experiments/final_results/main_mechanism_aware/evaluation.json
+Fig3,D,IH,Updated MLP,pr_auc,0.522247755172816,,,2024,experiments/final_results/main_mechanism_aware/evaluation.json
+Fig3,D,IDH,Target-local logistic,pr_auc,0.7800294036007862,,,2024,experiments/final_results/main_mechanism_aware/evaluation.json
+Fig3,D,IH,Target-local logistic,pr_auc,0.5171703118059034,,,2024,experiments/final_results/main_mechanism_aware/evaluation.json
+Fig4,rbf_mmd,IDH,Before,rbf_mmd,0.276398241519928,,,42,experiments/final_results/multiseed_seed42/latent_analysis.json
+Fig4,rbf_mmd,IDH,After,rbf_mmd,0.18607616424560547,,,42,experiments/final_results/multiseed_seed42/latent_analysis.json
+Fig4,rbf_mmd,IH,Before,rbf_mmd,0.012073099613189697,,,42,experiments/final_results/multiseed_seed42/latent_analysis.json
+Fig4,rbf_mmd,IH,After,rbf_mmd,0.011697709560394287,,,42,experiments/final_results/multiseed_seed42/latent_analysis.json
+Fig4,domain_auc,IDH,Before,domain_auc,0.9994761568013285,,,42,experiments/final_results/multiseed_seed42/latent_analysis.json
+Fig4,domain_auc,IDH,After,domain_auc,0.9985064747229342,,,42,experiments/final_results/multiseed_seed42/latent_analysis.json
+Fig4,domain_auc,IH,Before,domain_auc,0.7577065067636093,,,42,experiments/final_results/multiseed_seed42/latent_analysis.json
+Fig4,domain_auc,IH,After,domain_auc,0.7688554944518675,,,42,experiments/final_results/multiseed_seed42/latent_analysis.json
+Fig4,physio_ratio,IDH,Before,physio_ratio,0.5998852753010625,,,2024,experiments/final_results/main_mechanism_aware/shap_analysis_full.json
+Fig4,physio_ratio,IDH,After,physio_ratio,0.9456817759711919,,,2024,experiments/final_results/main_mechanism_aware/shap_analysis_full.json
+Fig4,physio_ratio,IH,Before,physio_ratio,0.9682166700515992,,,2024,experiments/final_results/main_mechanism_aware/shap_analysis_full.json
+Fig4,physio_ratio,IH,After,physio_ratio,0.9779776666816196,,,2024,experiments/final_results/main_mechanism_aware/shap_analysis_full.json
+Fig4,spearman,IDH,Before,spearman,0.6532931888725995,,,2024,experiments/final_results/main_mechanism_aware/shap_analysis_full.json
+Fig4,spearman,IDH,After,spearman,0.8155262104083851,,,2024,experiments/final_results/main_mechanism_aware/shap_analysis_full.json
+Fig4,spearman,IH,Before,spearman,0.9407665505226481,,,2024,experiments/final_results/main_mechanism_aware/shap_analysis_full.json
+Fig4,spearman,IH,After,spearman,0.9277003484320558,,,2024,experiments/final_results/main_mechanism_aware/shap_analysis_full.json
