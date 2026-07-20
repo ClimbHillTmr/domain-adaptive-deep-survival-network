@@ -17,7 +17,8 @@ Main sequence:
 2. Outcome-specific two-branch updating framework.
 3. Held-out performance and five-seed stability.
 4. Endpoint-specific latent and attribution changes.
+5. Held-out ROC, precision-recall, and calibration diagnostics.
 
-Calibration, decision curves, confirmatory ablations, and subgroup inference
-remain blocked until their required prediction-level or matched-run artifacts
+Decision curves, confirmatory ablations, and subgroup inference remain blocked
+until clinical thresholds, matched-run artifacts, and patient-cluster analyses
 are available.

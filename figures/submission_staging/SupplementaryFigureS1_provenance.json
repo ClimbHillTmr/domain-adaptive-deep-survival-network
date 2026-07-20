@@ -1,0 +1,37 @@
+{
+  "status": "registered_historical_v1_descriptive_supplementary_figure",
+  "training_performed": false,
+  "figure": "Supplementary Figure S1",
+  "registered_run_ids": [
+    "binary_20260719_044949_c6c955a30fc2",
+    "binary_20260719_052452_6913955efcfe",
+    "binary_20260719_053438_0be143d15776",
+    "binary_20260719_054003_190b64e7fcd5",
+    "binary_20260719_054454_fc09992c00bc"
+  ],
+  "seeds": [
+    7,
+    13,
+    42,
+    99,
+    2024
+  ],
+  "sources": {
+    "experiments/binary_results/binary_20260719_053438_0be143d15776/evaluation.json": "aae08a327c43eec0172e6b6eb608e1979f5f32cadbcde6cbb94fa27b4e433564",
+    "experiments/binary_results/binary_20260719_054003_190b64e7fcd5/evaluation.json": "cd75029cea4ca9fe6a9534c8ea9bd70ed3cdc3bffbda7eebf1606979176d9869",
+    "experiments/binary_results/binary_20260719_052452_6913955efcfe/evaluation.json": "ba1efa3eff879a03ba5fe0b7242be83ae9f1ce49c6ffadd4e559ebcf7a88036f",
+    "experiments/binary_results/binary_20260719_054454_fc09992c00bc/evaluation.json": "522ba628faafc57a748c88dc83277a009f14fabdbde90bcd80f8840d8eb95f49",
+    "experiments/binary_results/binary_20260719_044949_c6c955a30fc2/evaluation.json": "1f810397e7291c3c24509952514c2d61a7f0e40f4addfffe337cc2eec363e9d1"
+  },
+  "outputs": {
+    "SupplementaryFigureS1_Seed_Level_AUC_Stability.png": "963450d8b2750c6dacf287f6fe161a6c027d8556dcc93a5dae883f3e001011b8",
+    "SupplementaryFigureS1_Seed_Level_AUC_Stability.pdf": "2f0f766ecf1f0d5e9b2f63e32ceddd59ac1d5721b38e446686f4e2b2fedff26a",
+    "SupplementaryFigureS1_source_data.csv": "53837e380047bfe58e6204df302df98f9e15d03b1429fc2a634e9a83367af989",
+    "SupplementaryFigureS1_ALT_TEXT.md": "dca823c4d2f97e0cf1a3d15de1b098cad0b5ea63f363802d8ad24e890dcdf9f5"
+  },
+  "claim_limits": [
+    "across_seed_variation_is_descriptive_not_a_confidence_interval",
+    "within_run_source_to_updated_lines_do_not_isolate_alignment_effect",
+    "historical_v1_only_do_not_mix_with_confirmatory_v2"
+  ]
+}

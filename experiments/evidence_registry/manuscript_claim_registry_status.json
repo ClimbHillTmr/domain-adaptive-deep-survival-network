@@ -1,0 +1,12 @@
+{
+  "registry_version": "manuscript_claim_registry_v1",
+  "manuscript_path": "docs/manuscript_draft.md",
+  "manuscript_sha256": "8b4478e3b1712b2007687f96cbd7edb8f5c98cfebdfee2fbcbabd96b8fe42a48",
+  "quantitative_paragraphs": 27,
+  "mapped_claims": 28,
+  "unmapped_quantitative_paragraphs": 0,
+  "multiply_mapped_quantitative_paragraphs": 0,
+  "status": "passed",
+  "errors": [],
+  "unmapped_previews": []
+}

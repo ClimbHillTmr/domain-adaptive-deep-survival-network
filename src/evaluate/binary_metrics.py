@@ -8,11 +8,27 @@ import numpy as np
 from sklearn.metrics import average_precision_score, brier_score_loss, roc_auc_score, roc_curve
 
 
+def expected_calibration_error(
+    y_true: np.ndarray, probability: np.ndarray, bins: int = 10
+) -> float:
+    """Session-weighted absolute calibration error in quantile probability bins."""
+    outcome = np.asarray(y_true, dtype=float)
+    probability = np.asarray(probability, dtype=float)
+    order = np.argsort(probability, kind="stable")
+    groups = np.array_split(order, min(bins, len(order)))
+    return float(sum(
+        len(indices) / len(order)
+        * abs(float(outcome[indices].mean()) - float(probability[indices].mean()))
+        for indices in groups if len(indices)
+    ))
+
+
 def _metric_functions() -> dict[str, Callable[[np.ndarray, np.ndarray], float]]:
     return {
         "roc_auc": roc_auc_score,
         "pr_auc": average_precision_score,
         "brier": brier_score_loss,
+        "ece_10_quantile_bins": expected_calibration_error,
     }
 
 
@@ -109,4 +125,51 @@ def paired_patient_bootstrap_delta(
         "lower": float(np.quantile(deltas, 0.025)),
         "upper": float(np.quantile(deltas, 0.975)),
         "valid_replicates": len(deltas),
+    }
+
+
+def paired_patient_bootstrap_metric_deltas(
+    y_true: np.ndarray,
+    probability_a: np.ndarray,
+    probability_b: np.ndarray,
+    patient_ids: np.ndarray,
+    *,
+    n_bootstrap: int,
+    seed: int,
+) -> dict[str, dict[str, float | int | str]]:
+    """Paired patient-cluster contrasts for all locked confirmatory metrics."""
+    y_true = np.asarray(y_true, dtype=int)
+    probability_a = np.asarray(probability_a, dtype=float)
+    probability_b = np.asarray(probability_b, dtype=float)
+    patient_ids = np.asarray(patient_ids).astype(str)
+    if not (len(y_true) == len(probability_a) == len(probability_b) == len(patient_ids)):
+        raise ValueError("Outcome, probabilities, and patient ID lengths differ.")
+    functions = _metric_functions()
+    point = {
+        name: float(function(y_true, probability_a) - function(y_true, probability_b))
+        for name, function in functions.items()
+    }
+    samples: dict[str, list[float]] = {name: [] for name in functions}
+    patients = np.unique(patient_ids)
+    patient_rows = {patient: np.flatnonzero(patient_ids == patient) for patient in patients}
+    rng = np.random.default_rng(seed)
+    for _ in range(n_bootstrap):
+        sampled = rng.choice(patients, size=len(patients), replace=True)
+        indices = np.concatenate([patient_rows[patient] for patient in sampled])
+        if len(np.unique(y_true[indices])) < 2:
+            continue
+        for name, function in functions.items():
+            samples[name].append(float(
+                function(y_true[indices], probability_a[indices])
+                - function(y_true[indices], probability_b[indices])
+            ))
+    return {
+        name: {
+            "delta_a_minus_b": point[name],
+            "lower": float(np.quantile(samples[name], 0.025)),
+            "upper": float(np.quantile(samples[name], 0.975)),
+            "valid_replicates": len(samples[name]),
+            "favorable_direction": "positive" if name in {"roc_auc", "pr_auc"} else "negative",
+        }
+        for name in functions
     }

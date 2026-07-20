@@ -1,0 +1,31 @@
+{
+  "run_id": "binary_20260719_044949_c6c955a30fc2",
+  "evidence_tier": "registered_descriptive_clinical_utility",
+  "source_evaluation": {
+    "path": "experiments/binary_results/binary_20260719_044949_c6c955a30fc2/evaluation.json",
+    "sha256": "1f810397e7291c3c24509952514c2d61a7f0e40f4addfffe337cc2eec363e9d1"
+  },
+  "source_predictions": {
+    "path": "experiments/binary_results/binary_20260719_044949_c6c955a30fc2/test_predictions.csv",
+    "sha256": "f0578c61cfb8f0bbef7c58d8ab338b9d31850912e618d5abe81846aa15e5c298"
+  },
+  "outputs": {
+    "README.md": "22c63416df56a8f1d19f8e43aff17e3bf5d2c9b58fe3d159e2b26b21f0e20a67",
+    "alert_analysis.csv": "a5811882c8ede7bce7b8c602b368cfd1c8538fb91bab7cf4aa5fab861a256f08",
+    "calibration_curve_data.csv": "0cdf5f74f4be36a9b9a03cad9ffbed169244dd15e2eecee8cf8b772d474c7c82",
+    "calibration_summary.csv": "78f16775258c430f5cf1cef9b4d0285ed3654b9a5dcdbf364d991fabb624b999",
+    "clinical_utility.pdf": "905c98ef528c15a08f9048f5f4bdba5bc586b3a52f7d148631bc54d0146b000c",
+    "clinical_utility.png": "5ddebe1c964cb3970342529c5e908fb0ccf1bf402e5467e12c163d80d0f1a60e",
+    "decision_curve_data.csv": "f3e124705ab10b80e51f04f0dc37853fa9620918395742d9df0e23fbd6e324fb"
+  },
+  "claim_limits": [
+    "dca_threshold_range_not_clinically_prespecified",
+    "alert_operating_points_are_validation_youden_thresholds"
+  ],
+  "uncertainty": {
+    "unit": "patient_id",
+    "method": "percentile_95",
+    "replicates": 1000,
+    "seed": 20260715
+  }
+}

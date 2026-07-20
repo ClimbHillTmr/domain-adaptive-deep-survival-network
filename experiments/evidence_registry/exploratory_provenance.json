@@ -1,0 +1,28 @@
+{
+  "run_id": "binary_20260719_044949_c6c955a30fc2",
+  "evidence_tier": "exploratory",
+  "sources": {
+    "latent_analysis": {
+      "path": "experiments/final_results/main_mechanism_aware/latent_analysis.json",
+      "sha256": "838a0e9b6af588928f626c05c26b03456c826b009722f89537aba13905c3d6cb"
+    },
+    "shap_analysis": {
+      "path": "experiments/final_results/main_mechanism_aware/shap_analysis_full.json",
+      "sha256": "1610315a675d3e63c29e3647c19cfa29ad39f3d25b1fdecaf6c7b7a4c8f293b2"
+    }
+  },
+  "outputs": {
+    "latent_table": {
+      "path": "experiments/evidence_registry/exploratory_latent_metrics.csv",
+      "sha256": "ccc24a5e7521ac4aad2ee983d243ebf2a04b970a06a0f9d212a6a9a8717de2de"
+    },
+    "shap_table": {
+      "path": "experiments/evidence_registry/exploratory_shap_summary.csv",
+      "sha256": "e0848c36ffd44afd5cdac764a64eb5a5ebaebd7a507128f5244d49409965d68c"
+    }
+  },
+  "claim_limits": [
+    "does_not_establish_domain_invariance",
+    "model_attribution_not_causal_mechanism"
+  ]
+}

@@ -1,117 +1,138 @@
 # Visualization Plan for the Dual-Binary Manuscript
 
-Status: draft design specification
+Status: submission staging; Figures 1, 3, 4, and 5 generated, Figure 2 evidence-gated
 
 Scope: current dual-binary evidence only
 
 ## Visual Narrative
 
-The main figure sequence should answer four questions in order:
+The main figure sequence should answer five questions in order:
 
 1. What shifted between centers, and how was the target cohort separated without patient overlap?
-2. What exactly does outcome-specific updating align and preserve?
-3. How much did held-out performance change, and how stable was the updated model?
-4. Did representation diagnostics move consistently with the proposed mechanism?
+2. Does outcome-specific alignment add value under architecture-matched controls?
+3. What operating performance and alert burden arise at registered validation-derived thresholds?
+4. Did target updating improve ranking performance and probability calibration?
+5. Did representation diagnostics move consistently with the proposed mechanism?
 
 The figures should not imply that mechanism-aware alignment is superior until architecture-matched, seed-matched ablations exist.
 
 ## Main Figures
 
-### Figure 1. Cross-center outcome shift and target-center study design
+### Figure 1. Study design and outcome-specific target-center updating
 
 **Purpose:** Establish the clinical shift and the target-center updating design.
 
 **Panels**
 
-- A: Source and target cohort counts, shown as labeled patient/session blocks rather than a decorative flowchart.
-- B: Grouped bars for IDH and IH event prevalence at each center, with counts printed directly.
+- A: Source and target cohort counts, with patients and sessions labeled directly.
+- B: Grouped bars for IDH and IH event prevalence at each center.
 - C: Target patient split into update, validation, and held-out test sets, with patients and sessions displayed together.
+- D: Registered IDH workflow, aligning the physiology/history branch while retaining treatment context.
+- E: Registered IH workflow, aligning the treatment-context branch while retaining physiology/history.
 
 **Inputs**
 
 - `experiments/audit/binary_data_preflight.json`
 - `experiments/final_results/main_mechanism_aware/split_manifest.json`
+- `experiments/final_results/main_mechanism_aware/config.yaml`
 
-**Required caption caveat:** The target test set is held out from updating and calibration, but the study is not zero-shot external validation because labeled target data were used.
+**Current artifact:** Native vector PDF and 300 dpi PNG under `figures/submission_staging/`; the PDF contains embedded vector text and no raster image objects.
 
-### Figure 2. Outcome-specific two-branch updating framework
+**Required caption caveat:** The target test set is held out from updating and calibration, but the study is not zero-shot external validation because labeled target data were used. The branch diagram describes the registered historical configuration and does not establish mechanism superiority.
 
-**Purpose:** Make the model intervention auditable.
+### Figure 2. Architecture-matched ablation
 
-**Panels**
+**Purpose:** Isolate alignment strategy from architecture and target supervision.
 
-- A: Session-start features split into physiology/history (20 features) and treatment context (4 features).
-- B: IDH path: align the physiology/history representation with CORAL; retain treatment context.
-- C: IH path: align the treatment-context representation with CORAL; retain physiology/history.
-- D: Pooled supervised prediction loss plus branch-specific CORAL loss, followed by target-validation Platt calibration.
+This figure is not generated until all 25 server configurations pass acceptance. The upper panels show absolute held-out ROC AUC: pale lines connect the same initialization seed across all five strategies, colored markers identify strategies, and short horizontal ticks show descriptive means. The lower panels show the seed-specific, patient-paired ROC AUC difference between outcome-specific CORAL and each comparator with 95% patient-cluster intervals. PR AUC, Brier, and ECE remain in the complete confirmatory table. This makes the blocked comparison explicit without turning five seeds into an inferential confidence interval. Do not use a ranking bar chart or infer superiority from source-to-updated deltas.
 
-**Design rule:** Use line style and labels in addition to color. Solid blue means aligned; dashed charcoal means retained without CORAL. Do not use brain, hospital, or AI stock icons.
+### Figure 3. Registered clinical utility diagnostics
 
-**Required caption caveat:** Feature grouping is clinically prespecified and has not been independently validated as a biological decomposition.
-
-### Figure 3. Updating improves and stabilizes held-out target performance
-
-**Purpose:** Show the strongest supported quantitative result without an invalid method-superiority claim.
+**Purpose:** Show sensitivity, specificity, PPV, NPV, event capture, and false-alert burden with patient-cluster uncertainty at fixed validation-derived thresholds.
 
 **Panels**
 
-- A: Forest/dot plot of source MLP, updated MLP, and target-local logistic AUC with patient-cluster 95% CIs for IDH and IH in the seed-2024 run.
-- B: Individual points for source and updated MLP AUC across the five seeds. Connect observations from the same seed; report mean and SD in text.
-- D: PR AUC for the seed-2024 run. Brier scores remain in the main results table rather than being mixed onto a second axis.
+- A/B: IDH and IH forest plots for sensitivity, specificity, PPV, and NPV across source MLP, updated MLP, and target-local logistic regression.
+- C/D: IDH and IH grouped bars for events detected and false alerts per 1,000 sessions, with patient-cluster error bars.
 
 **Inputs**
 
-- `experiments/final_results/main_mechanism_aware/evaluation.json`
-- `experiments/final_results/multiseed_seed*/evaluation.json`
+- `clinical_utility_report/alert_analysis.csv`
+- `clinical_utility_report/provenance.json`
 
-**Do not show:** A four-method delta bar chart. Source baselines differ by architecture and seed, so that visual exaggerates a non-isolated effect.
+**Required caption caveat:** Thresholds were selected on validation patients using Youden's index. They are not clinically prespecified deployment thresholds, and Figure 3 does not establish net clinical benefit.
 
-### Figure 4. Representation changes are endpoint and metric dependent
+### Figure 4. Calibration and transportability analysis
 
-**Purpose:** Test the proposed mechanism rather than decorate it.
+**Purpose:** Show the complete predictive picture using real held-out target predictions.
 
 **Panels**
 
-- A: IDH and IH RBF MMD before and after updating, with seed 42 stated in the panel title.
-- B: Domain-classifier AUC before and after updating. Include a reference line at 0.5 and show that IDH remains near 1.0.
-- C: Target physiology/history attribution proportion before and after updating, with seed 2024 and `n=400` SHAP samples stated.
-- D: Cross-domain feature-rank Spearman correlation before and after updating.
+- A/D: IDH and IH ROC curves for source MLP, updated MLP, and target-local logistic.
+- B/E: Precision-recall curves with endpoint prevalence reference lines.
+- C/F: Probability-decile calibration curves with descriptive calibration intercept and slope.
 
 **Inputs**
 
-- `experiments/final_results/multiseed_seed42/latent_analysis.json`
-- `experiments/final_results/main_mechanism_aware/shap_analysis_full.json`
+- `experiments/binary_results/binary_20260719_044949_c6c955a30fc2/test_predictions.csv`
+- Matching registered `evaluation.json`.
 
-**Required caption caveat:** Panels combine separate prespecified runs and are descriptive. SHAP attribution is not a causal mechanism estimate. RBF MMD did not agree with every alternative discrepancy metric.
+**Required caption caveat:** Curves are descriptive held-out diagnostics. Calibration intercept and slope have patient-cluster intervals in the clinical-utility table, although the plotted calibration curve itself is not interval-banded.
+
+### Figure 5. Exploratory representation analysis
+
+**Purpose:** Show that representation changes are endpoint and metric dependent rather than claiming domain invariance.
+
+**Panels**
+
+- A: IDH and IH RBF MMD before and after updating.
+- B: Domain-classifier AUC before and after updating, with a chance line at 0.5.
+- C: Target physiology/history SHAP proportion before and after updating (`n=400` per domain).
+- D: Cross-center feature-rank Spearman correlation before and after updating.
+
+**Inputs**
+
+- `experiments/evidence_registry/exploratory_latent_metrics.csv`
+- `experiments/evidence_registry/exploratory_shap_summary.csv`
+- `experiments/evidence_registry/exploratory_provenance.json`
+
+**Required caption caveat:** Panels are exploratory. SHAP attribution is not causal, discrepancy measures did not move uniformly, and center membership remained readily distinguishable.
 
 ## Supplementary Figures
 
-### Figure S1. Calibration and clinical utility
+### Figure S1. Seed-level performance stability
 
-Generate only after the exact prediction-level artifact is restored. Include calibration curves with intercept/slope, Brier score, and decision curves over prespecified clinically relevant thresholds. Do not infer calibration from AUC or the aggregate Brier score alone.
+Generated under `figures/submission_staging/` from the five registered historical runs. It shows individual source and updated AUC values on common endpoint scales, with source-to-updated lines paired within run. The accompanying CSV contains 20 run/model/endpoint rows and registered evaluation hashes. Do not treat the across-seed range or sample SD as an inferential confidence interval, and do not interpret the line segments as an isolated alignment effect.
 
-### Figure S2. Architecture-matched ablations
+### Figure S2. Exploratory subgroup heterogeneity
 
-Show absolute held-out AUC distributions across matched seeds for dual-branch no alignment, global CORAL, outcome-specific CORAL, and random partition. Use paired seed dots and patient-level paired intervals where available.
+Generate only after the locked protocol is bound to an accepted confirmatory-v2 server run and the patient-cluster analysis passes. Display subgroup-specific absolute updated-model AUC and updated-minus-source paired deltas with interaction estimates. Avoid dichotomizing continuous variables unless cut points are clinically justified and prespecified before target-test subgroup performance is inspected.
 
-### Figure S3. Exploratory subgroup heterogeneity
-
-Generate only after patient-cluster bootstrap re-analysis. Display subgroup-specific absolute AUC for both models and paired deltas. Avoid dichotomizing continuous variables unless cut points are clinically justified and prespecified.
+The conditional generator is `scripts/build_subgroup_figure.py --build`. It refuses the current blocked shell and requires 12 registered rows, one centrally registered outcome-specific v2 run, 1,000 valid patient-cluster replicates, the six prespecified subgroup domains, and matching subgroup provenance before creating S2.
 
 ## Artifact Map and Gates
 
 | Visual element | Current artifact | Ready now? | Gate |
 |---|---|---:|---|
 | Cohort/session counts | Binary preflight | Yes | Label artifact date and contract |
-| Target split | Main split manifest | Yes | Verify exact frozen data restoration before submission |
+| Target split | Registered v1 and audited v2 split manifests | Yes | Disclose v1 byte-level limitation; do not mix contracts |
 | Event prevalence | Binary preflight | Yes | Descriptive only |
 | Main AUC/CI | Main evaluation JSON | Yes | State seed and patient-cluster bootstrap |
 | Five-seed stability | Five evaluation JSON files | Yes | Show individual seeds |
 | Method superiority | Current baseline JSON files | No | Matched architecture and seeds |
 | Latent RBF MMD/domain AUC | Seed-42 latent JSON | Exploratory | Report conflicting metrics |
 | SHAP group proportions | Main SHAP JSON | Exploratory | State sample size and manual grouping |
-| Calibration/ROC/PR curves | Prediction CSV | No | Restore hash-matched predictions |
+| Calibration/ROC/PR curves | Main-run prediction CSV | Yes | Label as descriptive held-out diagnostics |
+| Fixed validation-threshold alert metrics | Registered prediction CSV | Descriptive | Patient-cluster intervals complete; threshold is not clinically prespecified |
 | DCA | Prediction CSV plus threshold protocol | No | Prespecify thresholds |
+
+## Main Tables
+
+- Table 1: registered cohort totals and patient-level source/target allocations from the historical v1 registry and split manifest. It is not a baseline-characteristics table.
+- Table 2: registered seed-2024 held-out ROC AUC, PR AUC, Brier score, and explicitly directed paired AUC contrasts with patient-cluster intervals.
+- Table 3: architecture-matched ablation shell; it remains empty until all accepted v2 server runs are returned.
+
+Source and rendered Markdown versions are under `tables/manuscript/`, with hashes recorded in `tables/manuscript/provenance.json`.
 | Subgroup inference | Current subgroup JSON | No | Patient-cluster re-analysis |
 
 ## Style System

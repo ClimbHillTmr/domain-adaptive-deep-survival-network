@@ -1,0 +1,241 @@
+{
+  "contract": "dual_binary_hemodynamic_confirmatory_v2",
+  "protocol": "architecture_matched_ablation_v1",
+  "purpose": "server_confirmatory_training_package",
+  "training_performed": false,
+  "locked_config_count": 25,
+  "file_count": 46,
+  "package_sha256": "1d3a6371cf54a2b043560ee3056c47d18ca39c63abe275961396f3602a8af289",
+  "files": [
+    {
+      "path": "conf/confirmatory_ablation.yaml",
+      "size_bytes": 1732,
+      "sha256": "85a3d3bb5f3bb7205bc1bd3dc9daa1314d56b18049a67c3bf55b124306b8c13f"
+    },
+    {
+      "path": "data/confirmatory_v2/confirmatory_data_manifest.json",
+      "size_bytes": 2781,
+      "sha256": "041ec74c81be7cd00c3e98cb1033d1d450ab0c9a992210cc07dec0a8f4b07322"
+    },
+    {
+      "path": "data/confirmatory_v2/source_confirmatory_v2.csv",
+      "size_bytes": 251103591,
+      "sha256": "758eb188b10c057cca0ef1f7ed6bb0e6c3f68846d525bb8ff9e7a22b9c30cb54"
+    },
+    {
+      "path": "data/confirmatory_v2/target_confirmatory_v2.csv",
+      "size_bytes": 92075426,
+      "sha256": "5db5118f63d8170c105c94054be3d4d8701d86611f1977de03414446c4b51628"
+    },
+    {
+      "path": "experiments/audit/feature_allowlist.csv",
+      "size_bytes": 5886,
+      "sha256": "b4576ce861621a3950e4c88294bd9641de90dc293098dab0751451caa244e6b9"
+    },
+    {
+      "path": "experiments/confirmatory_configs/A_dual_no_alignment__seed_13.yaml",
+      "size_bytes": 2344,
+      "sha256": "3067d763ee2007641815c2740b9b1916c0b1d9ac5a4e89418ee866261859f3b9"
+    },
+    {
+      "path": "experiments/confirmatory_configs/A_dual_no_alignment__seed_2024.yaml",
+      "size_bytes": 2346,
+      "sha256": "6550b758605f408bf1ea4c8eaa0b8bed42dca6e2afb5ba65145f1e7fcf0fe2ec"
+    },
+    {
+      "path": "experiments/confirmatory_configs/A_dual_no_alignment__seed_42.yaml",
+      "size_bytes": 2344,
+      "sha256": "bdcad2ac22aa1bfc753ced8ef3770c3ba453e4527de851c2191c4fb36ec07c26"
+    },
+    {
+      "path": "experiments/confirmatory_configs/A_dual_no_alignment__seed_7.yaml",
+      "size_bytes": 2343,
+      "sha256": "8bb1fe9b3406d57b70910ea469e215da3d6f09c8b046ad5944aebb500ee44347"
+    },
+    {
+      "path": "experiments/confirmatory_configs/A_dual_no_alignment__seed_99.yaml",
+      "size_bytes": 2344,
+      "sha256": "33f8ba8bff88141a7ad0a478aba82dc2c22f336f7a777eef251abd90fe44b199"
+    },
+    {
+      "path": "experiments/confirmatory_configs/B_dual_global_coral__seed_13.yaml",
+      "size_bytes": 2343,
+      "sha256": "4a572a0e7703e3b174006a796eb7cd4b631cdce16f2b77901d66eaba102f97ee"
+    },
+    {
+      "path": "experiments/confirmatory_configs/B_dual_global_coral__seed_2024.yaml",
+      "size_bytes": 2345,
+      "sha256": "c3e5ddf70cb8a1aa25c18b14bebccb379a76e7ad0571b2cbad7c5539da248b20"
+    },
+    {
+      "path": "experiments/confirmatory_configs/B_dual_global_coral__seed_42.yaml",
+      "size_bytes": 2343,
+      "sha256": "0711657b4d819b41346aaafc549a9e4d8861805f154c5be17486f715e4012fdf"
+    },
+    {
+      "path": "experiments/confirmatory_configs/B_dual_global_coral__seed_7.yaml",
+      "size_bytes": 2342,
+      "sha256": "88cd11b52d03bf7cfdf2357fc1a9cba5f8c29c01b17afd4eff083869a5433a4b"
+    },
+    {
+      "path": "experiments/confirmatory_configs/B_dual_global_coral__seed_99.yaml",
+      "size_bytes": 2343,
+      "sha256": "f70f435d89f380a579197c570ca9137a0c3b7a4a6fa7cde5b1e963569701342d"
+    },
+    {
+      "path": "experiments/confirmatory_configs/C_dual_random_feature_coral__seed_13.yaml",
+      "size_bytes": 2367,
+      "sha256": "96e572a11a4253e62fd146d6bccbc9d34a36b4da692629f248f401c5ea923c63"
+    },
+    {
+      "path": "experiments/confirmatory_configs/C_dual_random_feature_coral__seed_2024.yaml",
+      "size_bytes": 2369,
+      "sha256": "ea9b1d55bc8504d94b7118709c7d01f7e3c81f802d1d81c4cbf486f9224a9cc6"
+    },
+    {
+      "path": "experiments/confirmatory_configs/C_dual_random_feature_coral__seed_42.yaml",
+      "size_bytes": 2367,
+      "sha256": "2916f4896b55eb7b2b72cd04bfad83e1caba8d772795cea70ca475e3123c2484"
+    },
+    {
+      "path": "experiments/confirmatory_configs/C_dual_random_feature_coral__seed_7.yaml",
+      "size_bytes": 2366,
+      "sha256": "8b85a9b27785dcc725af8e26d500fb08c38d4751d3bddb2e5b6f09e194a087c8"
+    },
+    {
+      "path": "experiments/confirmatory_configs/C_dual_random_feature_coral__seed_99.yaml",
+      "size_bytes": 2367,
+      "sha256": "b64da817f52d4a641f1e1565b6d1262ae02fd7a803ccd88eccdce325d28a1d8f"
+    },
+    {
+      "path": "experiments/confirmatory_configs/D_dual_outcome_specific_coral__seed_13.yaml",
+      "size_bytes": 2372,
+      "sha256": "5535c46c3acbec0cb7c3cf81b607cbb2cb4410c4039a946a930226c14d0930c5"
+    },
+    {
+      "path": "experiments/confirmatory_configs/D_dual_outcome_specific_coral__seed_2024.yaml",
+      "size_bytes": 2374,
+      "sha256": "a26987ff6ce523a70d2d387596666bb31658aeab15f7f6e205ef46f85dddc210"
+    },
+    {
+      "path": "experiments/confirmatory_configs/D_dual_outcome_specific_coral__seed_42.yaml",
+      "size_bytes": 2372,
+      "sha256": "88477e9624619aac5ed42f55f7ec477280b39073e8ced034efaaa7d2270b1e45"
+    },
+    {
+      "path": "experiments/confirmatory_configs/D_dual_outcome_specific_coral__seed_7.yaml",
+      "size_bytes": 2371,
+      "sha256": "67fd03ef050404791fe3013c113a9ea8627ad77a199b64a070dc5dbd584d6952"
+    },
+    {
+      "path": "experiments/confirmatory_configs/D_dual_outcome_specific_coral__seed_99.yaml",
+      "size_bytes": 2372,
+      "sha256": "0ace7f70009968bf56c976dcf3d5896e04d18186c02fc4349b29aeea90fde504"
+    },
+    {
+      "path": "experiments/confirmatory_configs/E_single_encoder_reference__seed_13.yaml",
+      "size_bytes": 2362,
+      "sha256": "ad33fba7f47c3a4b2896c2e6c5bc6e64faf8f40417fbcb4e09132f7afa3e536e"
+    },
+    {
+      "path": "experiments/confirmatory_configs/E_single_encoder_reference__seed_2024.yaml",
+      "size_bytes": 2364,
+      "sha256": "6ce444f14519a2c67e3dd7f6ed367b2e898189501359851df6cd850adde7b88a"
+    },
+    {
+      "path": "experiments/confirmatory_configs/E_single_encoder_reference__seed_42.yaml",
+      "size_bytes": 2362,
+      "sha256": "d9480ff366c2fdb7046bc7967f9da3e4a6f58c0e19e5710b63def08c0c87b71c"
+    },
+    {
+      "path": "experiments/confirmatory_configs/E_single_encoder_reference__seed_7.yaml",
+      "size_bytes": 2361,
+      "sha256": "e1b667c1c4ae012f0ae1ffdf3d81ba96526dfecd6b76012aecd9dff6c57fbae5"
+    },
+    {
+      "path": "experiments/confirmatory_configs/E_single_encoder_reference__seed_99.yaml",
+      "size_bytes": 2362,
+      "sha256": "56c265123bbf8f231b5941ac322f58b33b2409b6e03cf5de550e1029bd05922d"
+    },
+    {
+      "path": "experiments/final_results/main_mechanism_aware/split_manifest.json",
+      "size_bytes": 33568,
+      "sha256": "6552a9085aed3f4b82ce3964768503d74ae28c038864b8d71c38af102513e568"
+    },
+    {
+      "path": "pyproject.toml",
+      "size_bytes": 800,
+      "sha256": "3a837dd8c5fd916ddfbdfe56386c4e77ea2944cd4bf8dcd1a5fea7eaeec9b9eb"
+    },
+    {
+      "path": "requirements.txt",
+      "size_bytes": 65,
+      "sha256": "ff9b13fdd27bf13638dc79e1231081be5677351a8e4375356c935a675a2b3c5f"
+    },
+    {
+      "path": "scripts/build_confirmatory_tables.py",
+      "size_bytes": 10530,
+      "sha256": "44d97813554a8118210700c500e1ba086504aa09ddcbdd42a62627342a4bfff4"
+    },
+    {
+      "path": "scripts/build_server_confirmatory_package_manifest.py",
+      "size_bytes": 4140,
+      "sha256": "d30fc70420954b8daedd04298e69938e161cc23b3dee056d1603da57749b6472"
+    },
+    {
+      "path": "scripts/register_server_confirmatory_runs.py",
+      "size_bytes": 4198,
+      "sha256": "12fe416171d7bd00c2ad96097bf95c562572aba889990753bd823f587a34a23c"
+    },
+    {
+      "path": "scripts/run_confirmatory_ablation.py",
+      "size_bytes": 11362,
+      "sha256": "395ad52440a59df486543dbd5fe63b3ed6f18b20824247f3995620b8f37606b6"
+    },
+    {
+      "path": "scripts/verify_server_confirmatory_results.py",
+      "size_bytes": 15858,
+      "sha256": "ff2ed9b3ad7f02b21bc915601d9238d0400576e9b6453cdb3ee1067da4b8aca2"
+    },
+    {
+      "path": "src/data/binary_dataset.py",
+      "size_bytes": 12655,
+      "sha256": "709a83fa363dc9aece020ae4cf4dc846fcd3dc349e33aafea0c27f17afd26433"
+    },
+    {
+      "path": "src/evaluate/audit_binary_data.py",
+      "size_bytes": 5390,
+      "sha256": "4b67892e793b61d4fb9fa7d3b69f2123b36c0f9b59b33036663bcdbc40057120"
+    },
+    {
+      "path": "src/evaluate/binary_metrics.py",
+      "size_bytes": 6912,
+      "sha256": "d3f3380e95b37cdff457a00be7bb0304c5d77b6f89e9f276b677bfe8b4a773db"
+    },
+    {
+      "path": "src/main_binary.py",
+      "size_bytes": 16323,
+      "sha256": "9b1afd9d18515945b35c76a659b48d3b14b21479d698c9e75e3c767b7e5f3249"
+    },
+    {
+      "path": "src/reproducibility.py",
+      "size_bytes": 4840,
+      "sha256": "02565c5c10983cb5fa2b1e697721434d3442f53a1cc4eec6061e7ce5dd4e8152"
+    },
+    {
+      "path": "src/train/binary_models.py",
+      "size_bytes": 22965,
+      "sha256": "526d1b3958bba6f456b8fe0dfb213ddb4db0d41b69486c4173f828632e536c32"
+    },
+    {
+      "path": "tests/test_binary_pipeline.py",
+      "size_bytes": 14594,
+      "sha256": "7595db25f658090e2dbfd0d48f6c84ca4c53e87a312062dcba1b8ad1724e69bf"
+    },
+    {
+      "path": "tests/test_data_pipeline.py",
+      "size_bytes": 1801,
+      "sha256": "f5bd00302945b6f3e6d5709aab6cf42f53f4b66face102d4ff66c20e80543095"
+    }
+  ]
+}

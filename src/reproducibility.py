@@ -14,6 +14,15 @@ import torch
 
 ROOT = Path(__file__).resolve().parents[1]
 
+CONFIRMATORY_ANALYSIS_FILES = (
+    "src/main_binary.py",
+    "src/reproducibility.py",
+    "src/data/binary_dataset.py",
+    "src/evaluate/audit_binary_data.py",
+    "src/evaluate/binary_metrics.py",
+    "src/train/binary_models.py",
+)
+
 def seed_everything(seed: int = 42) -> None:
     """
     固定所有随机种子，确保实验的绝对可复现性。
@@ -43,6 +52,17 @@ def _stable_json(payload: Any) -> str:
 
 def config_fingerprint(config: Dict[str, Any]) -> str:
     return hashlib.sha256(_stable_json(config).encode("utf-8")).hexdigest()
+
+
+def confirmatory_analysis_fingerprint(root: Path = ROOT) -> str:
+    """Fingerprint the exact code paths used by the locked binary analysis."""
+    records = []
+    for relative_path in CONFIRMATORY_ANALYSIS_FILES:
+        path = root / relative_path
+        if not path.is_file():
+            raise FileNotFoundError(f"Missing confirmatory analysis file: {relative_path}")
+        records.append({"path": relative_path, "sha256": sha256_file(str(path))})
+    return hashlib.sha256(_stable_json(records).encode("utf-8")).hexdigest()
 
 
 def prepare_locked_run_context(

@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import pickle
+import socket
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -20,7 +21,13 @@ from src.evaluate.binary_metrics import (
     paired_patient_bootstrap_delta,
     select_youden_threshold,
 )
-from src.reproducibility import config_fingerprint, record_environment, seed_everything, sha256_file
+from src.reproducibility import (
+    confirmatory_analysis_fingerprint,
+    config_fingerprint,
+    record_environment,
+    seed_everything,
+    sha256_file,
+)
 from src.train.binary_models import (
     calibrate_probability,
     fit_logistic_with_validation,
@@ -31,15 +38,37 @@ from src.train.binary_models import (
 )
 
 
-def _select_alignment_indices(endpoint: str, model_config: dict) -> list[int] | None:
-    if not bool(model_config.get("use_stratified_alignment", False)):
+def _select_branch_indices(endpoint: str, model_config: dict) -> list[int] | None:
+    if "alignment_strategy" not in model_config:
+        if not bool(model_config.get("use_stratified_alignment", False)):
+            return None
+        if bool(model_config.get("use_outcome_specific_alignment", False)):
+            return model_config.get("physio_indices") if endpoint == "idh" else model_config.get("treat_indices")
+        return model_config.get("physio_indices")
+    if model_config.get("architecture") == "single_encoder":
         return None
-    if bool(model_config.get("use_outcome_specific_alignment", False)):
+    strategy = model_config.get("alignment_strategy")
+    if strategy == "random_feature_coral":
+        return model_config[f"random_{endpoint}_indices"]
+    if strategy == "outcome_specific_coral":
         if endpoint == "idh":
             return model_config.get("physio_indices")
-        elif endpoint == "ih":
+        if endpoint == "ih":
             return model_config.get("treat_indices")
+    if model_config.get("architecture") == "dual_branch":
+        return model_config.get("physio_indices")
+    if not bool(model_config.get("use_stratified_alignment", False)):
+        return None
     return model_config.get("physio_indices")
+
+
+def _alignment_scope(model_config: dict) -> str:
+    if "alignment_strategy" not in model_config:
+        return "selected_branch" if bool(model_config.get("use_outcome_specific_alignment", False)) else "global"
+    strategy = model_config.get("alignment_strategy")
+    if strategy in {"outcome_specific_coral", "random_feature_coral"}:
+        return "selected_branch"
+    return "global"
 
 
 def _arrays(bundle, name: str, outcome_col: str) -> tuple[np.ndarray, np.ndarray]:
@@ -60,11 +89,52 @@ def main() -> None:
     parser.add_argument("--config", type=Path, default=ROOT / "conf" / "binary_config.yaml")
     parser.add_argument("--initialization-seed", type=int)
     parser.add_argument("--train", action="store_true", help="Required safety gate for model fitting.")
+    parser.add_argument(
+        "--execution-context",
+        choices=("server_confirmatory",),
+        help="Required for confirmatory-v2 fitting; prevents accidental local invocation.",
+    )
     args = parser.parse_args()
     if not args.train:
         raise SystemExit("Training was not started. Re-run with --train after reviewing the binary data preflight.")
 
     config = yaml.safe_load(args.config.read_text(encoding="utf-8"))
+    confirmatory = config.get("confirmatory", {})
+    if confirmatory.get("data_contract") == "dual_binary_hemodynamic_confirmatory_v2":
+        if (
+            args.execution_context != "server_confirmatory"
+            or confirmatory.get("execution_context") != "server_confirmatory"
+        ):
+            raise SystemExit(
+                "Confirmatory-v2 training was not started. Both the locked config and command "
+                "must declare --execution-context server_confirmatory."
+            )
+        if not torch.cuda.is_available():
+            raise SystemExit(
+                "Confirmatory-v2 training was not started: a CUDA device is required on the compute server."
+            )
+        evidence_lock = confirmatory.get("evidence_lock", {})
+        required_lock_fields = {
+            "source_sha256", "target_sha256", "feature_allowlist_sha256",
+            "split_manifest_sha256", "analysis_code_sha256",
+        }
+        if not required_lock_fields.issubset(evidence_lock):
+            raise SystemExit("Confirmatory-v2 training was not started: the config evidence lock is incomplete.")
+        locked_paths = {
+            "source_sha256": ROOT / config["data"]["source_file"],
+            "target_sha256": ROOT / config["data"]["target_file"],
+            "feature_allowlist_sha256": ROOT / config["data"]["feature_allowlist"],
+            "split_manifest_sha256": ROOT / "experiments" / "final_results" / "main_mechanism_aware" / "split_manifest.json",
+        }
+        for lock_name, path in locked_paths.items():
+            if not path.is_file() or sha256_file(str(path)) != evidence_lock[lock_name]:
+                raise SystemExit(
+                    f"Confirmatory-v2 training was not started: {lock_name} does not match the locked bytes."
+                )
+        if confirmatory_analysis_fingerprint(ROOT) != evidence_lock["analysis_code_sha256"]:
+            raise SystemExit(
+                "Confirmatory-v2 training was not started: analysis code does not match the locked fingerprint."
+            )
     if args.initialization_seed is not None:
         config["training"]["initialization_seed"] = args.initialization_seed
     seed = int(config["training"]["initialization_seed"])
@@ -140,7 +210,9 @@ def main() -> None:
             mask_l1_weight=float(model_config.get("mask_l1_weight", 0.01)),
             coral_weight=float(model_config.get("coral_weight", 0.1)),
             mmd_weight=float(model_config.get("mmd_weight", 1.0)),
-            physio_indices=_select_alignment_indices(endpoint, model_config),
+            physio_indices=_select_branch_indices(endpoint, model_config),
+            alignment_scope=_alignment_scope(model_config),
+            pooled_update=bool(model_config.get("pooled_update", False)),
         )
         use_cdan = bool(model_config.get("use_cdan", False))
         raw_val_probabilities = {
@@ -236,7 +308,10 @@ def main() -> None:
     )
     payload = {
         "run_id": run_id,
-        "contract": "dual_binary_hemodynamic_v1",
+        "contract": config.get("confirmatory", {}).get(
+            "data_contract", "dual_binary_hemodynamic_v1"
+        ),
+        "confirmatory": config.get("confirmatory"),
         "split_seed": data_config["split_seed"],
         "initialization_seed": seed,
         "feature_names": bundle.feature_names,
@@ -253,7 +328,10 @@ def main() -> None:
             "source_sha256": sha256_file(str(source_path)),
             "target_sha256": sha256_file(str(target_path)),
             "feature_allowlist_sha256": sha256_file(str(allowlist_path)),
+            "analysis_code_sha256": confirmatory_analysis_fingerprint(ROOT),
             "device": str(device),
+            "hostname": socket.gethostname(),
+            "execution_context": args.execution_context,
         },
     }
     (output / "evaluation.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")

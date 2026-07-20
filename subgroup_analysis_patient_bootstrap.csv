@@ -1,0 +1,7 @@
+endpoint,subgroup,candidate_feature,definition,subgroup_level,n_patients,n_sessions,subgroup_auc,delta_auc,ci_lower,ci_upper,interaction_p_value,bootstrap_unit,bootstrap_replicates,status
+IDH,baseline_blood_pressure,透前收缩压,REQUIRED_CLINICAL_PRESPECIFICATION,,,,,,,,,patient_id,1000,blocked_pending_clinical_and_statistical_prespecification
+IDH,prior_instability_history,history_IDH_rate,REQUIRED_CLINICAL_PRESPECIFICATION,,,,,,,,,patient_id,1000,blocked_pending_clinical_and_statistical_prespecification
+IDH,ultrafiltration_intensity,历史平均超滤率_mean,REQUIRED_CLINICAL_PRESPECIFICATION,,,,,,,,,patient_id,1000,blocked_pending_clinical_and_statistical_prespecification
+IH,treatment_intensity,历史平均超滤量MAX,REQUIRED_CLINICAL_PRESPECIFICATION,,,,,,,,,patient_id,1000,blocked_pending_clinical_and_statistical_prespecification
+IH,volume_overload,超负荷,REQUIRED_CLINICAL_PRESPECIFICATION,,,,,,,,,patient_id,1000,blocked_pending_clinical_and_statistical_prespecification
+IH,hypertension_history,history_HBP_rate,REQUIRED_CLINICAL_PRESPECIFICATION,,,,,,,,,patient_id,1000,blocked_pending_clinical_and_statistical_prespecification

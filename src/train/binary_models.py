@@ -103,9 +103,21 @@ class BinaryMLP(nn.Module):
     def get_features(self, features: torch.Tensor) -> torch.Tensor:
         if self.physio_indices is not None:
             physio_feat = features[:, self.physio_indices]
-            return self.physio_extractor(physio_feat)
+            treat_feat = features[:, self.treat_indices]
+            return torch.cat(
+                [self.physio_extractor(physio_feat), self.treat_extractor(treat_feat)], dim=-1
+            )
         else:
             return self.feature_extractor(features)
+
+    def get_alignment_features(self, features: torch.Tensor, scope: str) -> torch.Tensor:
+        if scope == "global":
+            return self.get_features(features)
+        if scope == "selected_branch":
+            if self.physio_indices is None:
+                raise ValueError("Selected-branch alignment requires a dual-branch model.")
+            return self.physio_extractor(features[:, self.physio_indices])
+        raise ValueError(f"Unknown alignment scope: {scope}")
 
 
 class FocalLoss(nn.Module):
@@ -304,8 +316,10 @@ def _fit_mlp_phase(
     mask_l1_weight: float = 0.01,
     is_cdan: bool = False,
     x_target_train: np.ndarray = None,
+    x_source_alignment: np.ndarray = None,
     coral_weight: float = 0.0,
     mmd_weight: float = 0.0,
+    alignment_scope: str = "global",
 ) -> dict[str, float | int]:
     if len(np.unique(y_train)) < 2 or len(np.unique(y_val)) < 2:
         raise ValueError("MLP fitting requires both classes in train and validation folds.")
@@ -329,6 +343,13 @@ def _fit_mlp_phase(
             shuffle=True,
             generator=torch.Generator().manual_seed(seed + 1),
         )
+        if x_source_alignment is not None:
+            source_alignment_loader = DataLoader(
+                TensorDataset(torch.as_tensor(x_source_alignment, dtype=torch.float32)),
+                batch_size=batch_size,
+                shuffle=True,
+                generator=torch.Generator().manual_seed(seed + 2),
+            )
     
     positives = float(y_train.sum())
     alpha = (len(y_train) - positives) / len(y_train)
@@ -345,6 +366,8 @@ def _fit_mlp_phase(
         
         if x_target_train is not None:
             target_iter = iter(target_loader)
+            if x_source_alignment is not None:
+                source_alignment_iter = iter(source_alignment_loader)
         
         for batch in loader:
             optimizer.zero_grad()
@@ -378,8 +401,17 @@ def _fit_mlp_phase(
                     target_batch = next(target_iter)
                 
                 target_features = target_batch[0].to(device)
-                source_feat = model.get_features(features)
-                target_feat = model.get_features(target_features)
+                if x_source_alignment is not None:
+                    try:
+                        source_batch = next(source_alignment_iter)
+                    except StopIteration:
+                        source_alignment_iter = iter(source_alignment_loader)
+                        source_batch = next(source_alignment_iter)
+                    alignment_source_features = source_batch[0].to(device)
+                else:
+                    alignment_source_features = features
+                source_feat = model.get_alignment_features(alignment_source_features, alignment_scope)
+                target_feat = model.get_alignment_features(target_features, alignment_scope)
                 loss += coral_weight * coral_loss(source_feat, target_feat)
             
             if mmd_weight > 0.0 and x_target_train is not None:
@@ -390,8 +422,17 @@ def _fit_mlp_phase(
                     target_batch = next(target_iter)
                 
                 target_features = target_batch[0].to(device)
-                source_feat = model.get_features(features)
-                target_feat = model.get_features(target_features)
+                if x_source_alignment is not None:
+                    try:
+                        source_batch = next(source_alignment_iter)
+                    except StopIteration:
+                        source_alignment_iter = iter(source_alignment_loader)
+                        source_batch = next(source_alignment_iter)
+                    alignment_source_features = source_batch[0].to(device)
+                else:
+                    alignment_source_features = features
+                source_feat = model.get_alignment_features(alignment_source_features, alignment_scope)
+                target_feat = model.get_alignment_features(target_features, alignment_scope)
                 loss += mmd_weight * mmd_loss(source_feat, target_feat)
             
             loss.backward()
@@ -444,6 +485,8 @@ def fit_source_and_update_mlp(
     use_mmd: bool = False,
     mmd_weight: float = 1.0,
     physio_indices: list[int] | None = None,
+    alignment_scope: str = "global",
+    pooled_update: bool = False,
 ) -> tuple:
     torch.manual_seed(seed)
     np.random.seed(seed)
@@ -521,7 +564,9 @@ def fit_source_and_update_mlp(
             patience=patience,
             seed=seed + 1,
             x_target_train=x_target_train,
+            x_source_alignment=x_source_train,
             coral_weight=coral_weight,
+            alignment_scope=alignment_scope,
         )
     elif use_mmd:
         x_finetune_train = np.vstack([x_source_train, x_target_train])
@@ -540,13 +585,21 @@ def fit_source_and_update_mlp(
             patience=patience,
             seed=seed + 1,
             x_target_train=x_target_train,
+            x_source_alignment=x_source_train,
             mmd_weight=mmd_weight,
+            alignment_scope=alignment_scope,
         )
     else:
+        if pooled_update:
+            x_update_train = np.vstack([x_source_train, x_target_train])
+            y_update_train = np.concatenate([y_source_train, y_target_train])
+        else:
+            x_update_train = x_target_train
+            y_update_train = y_target_train
         finetune = _fit_mlp_phase(
             updated_model,
-            x_target_train,
-            y_target_train,
+            x_update_train,
+            y_update_train,
             x_target_val,
             y_target_val,
             device=device,

@@ -1,0 +1,17 @@
+{
+  "cohort": "shenyi",
+  "input_path": "/Users/cht/.cache/huggingface/hub/datasets--LongGoodbye--Shenyi-Fuding-original/snapshots/b125e7730d526b43c6cbd17dca3ff00b57b9cf1c/updated_dataset_shenyi.csv",
+  "input_rows": 222836,
+  "output_rows": 211452,
+  "rejected": {
+    "invalid_sequence": 6521,
+    "misaligned_sequence": 4728,
+    "invalid_time": 135
+  },
+  "n_patients": 1628,
+  "n_idh_events": 30694,
+  "n_ih_events": 59978,
+  "idh_rule": "baseline_sbp - intradialytic_sbp >= 30 or intradialytic_sbp <= 90",
+  "ih_rule": "intradialytic_map - baseline_map > 10",
+  "non_event_time_min": 0.0
+}

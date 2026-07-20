@@ -14,4 +14,8 @@ The seed-2024 forest plot shows a large IDH AUC increase from source to updated 
 
 ## Figure 4
 
-Four slope charts compare representation diagnostics before and after updating. IDH RBF MMD decreases and physiology/history SHAP share rises markedly, while IH changes little. Domain-classifier AUC remains high, especially for IDH, and cross-center SHAP rank correlation increases for IDH but slightly decreases for IH. The panels use different prespecified seeds and are exploratory.
+Four slope charts compare seed-2024 representation diagnostics before and after updating. The metrics move in different directions: center discrimination remains high, IDH physiology/history SHAP share increases, and neither endpoint shows uniform improvement across discrepancy measures. The analyses are exploratory.
+
+## Figure 5
+
+Six panels show held-out target ROC, precision-recall, and probability-decile calibration for IDH and IH. Updated MLP and target-local logistic curves are nearly overlapping. Both are better calibrated than the source MLP; the source IDH model underpredicts risk and the source IH model has an overly steep calibration slope.

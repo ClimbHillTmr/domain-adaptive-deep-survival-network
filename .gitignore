@@ -72,6 +72,7 @@ backup/data_preprocessing/data/
 # 大型数据文件 - 存储在 Hugging Face
 data/raw/
 data/processed/
+data/confirmatory_v2/*.csv
 data_preprocessing/data/
 
 # 大型预测结果文件

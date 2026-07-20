@@ -1,0 +1,43 @@
+protocol_version: clinical_threshold_prespecification_v1
+status: blocked_pending_nephrology_and_statistical_prespecification
+run_id: binary_20260719_044949_c6c955a30fc2
+prespecified_without_target_test_dca_access: false
+lock:
+  locked_at_utc: REQUIRED
+  nephrology_approver_role: REQUIRED
+  statistical_approver_role: REQUIRED
+  clinical_workflow_approver_role: REQUIRED
+  rationale_document: REQUIRED
+population_and_use:
+  population: adult maintenance hemodialysis sessions at the target center
+  prediction_time: start of dialysis session
+  intended_use: research evaluation of monitoring or treatment-review alerts
+  alert_action: REQUIRED_CLINICAL_WORKFLOW_DEFINITION
+  excluded_use: autonomous treatment recommendation or individual-patient treatment selection
+endpoints:
+  idh:
+    dca_threshold_range:
+      lower: REQUIRED_CLINICAL_PRESPECIFICATION
+      upper: REQUIRED_CLINICAL_PRESPECIFICATION
+      step: REQUIRED_CLINICAL_PRESPECIFICATION
+    operating_thresholds: REQUIRED_CLINICAL_PRESPECIFICATION
+    false_alert_consequence: REQUIRED_CLINICAL_PRESPECIFICATION
+    missed_event_consequence: REQUIRED_CLINICAL_PRESPECIFICATION
+    clinical_rationale: REQUIRED_CLINICAL_PRESPECIFICATION
+  ih:
+    dca_threshold_range:
+      lower: REQUIRED_CLINICAL_PRESPECIFICATION
+      upper: REQUIRED_CLINICAL_PRESPECIFICATION
+      step: REQUIRED_CLINICAL_PRESPECIFICATION
+    operating_thresholds: REQUIRED_CLINICAL_PRESPECIFICATION
+    false_alert_consequence: REQUIRED_CLINICAL_PRESPECIFICATION
+    missed_event_consequence: REQUIRED_CLINICAL_PRESPECIFICATION
+    clinical_rationale: REQUIRED_CLINICAL_PRESPECIFICATION
+reporting:
+  models: [source_mlp, updated_mlp, local_logistic]
+  comparators: [alert_all, alert_none]
+  bootstrap_unit: patient_id
+  bootstrap_replicates: 1000
+  bootstrap_seed: 20260715
+  confidence_interval: percentile_95
+  interpretation: population_level_research_not_clinical_recommendation

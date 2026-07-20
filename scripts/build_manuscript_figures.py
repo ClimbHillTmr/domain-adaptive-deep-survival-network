@@ -1,26 +1,30 @@
-"""Build draft manuscript figures from frozen aggregate binary-study artifacts.
+"""Build draft manuscript figures from frozen binary-study artifacts.
 
-This script does not fit models or rebuild data. It deliberately excludes legacy
-time-to-event tables and prediction-dependent plots such as calibration and DCA.
+This script does not fit models or rebuild data. It excludes legacy time-to-event
+tables and uses held-out binary predictions only for descriptive diagnostic plots.
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from matplotlib.patches import FancyBboxPatch
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import precision_recall_curve, roc_curve
 
 
 ROOT = Path(__file__).resolve().parents[1]
 PREFLIGHT = ROOT / "experiments" / "audit" / "binary_data_preflight.json"
 MAIN_DIR = ROOT / "experiments" / "final_results" / "main_mechanism_aware"
-LATENT = ROOT / "experiments" / "final_results" / "multiseed_seed42" / "latent_analysis.json"
+LATENT = MAIN_DIR / "latent_analysis.json"
 SEED_DIRS = [
     ROOT / "experiments" / "final_results" / "multiseed_seed42",
     ROOT / "experiments" / "final_results" / "multiseed_seed7",
@@ -29,6 +33,8 @@ SEED_DIRS = [
     MAIN_DIR,
 ]
 DEFAULT_OUTPUT = ROOT / "figures" / "manuscript_draft"
+RUN_REGISTRY = ROOT / "experiments" / "evidence_registry" / "run_registry.csv"
+DATASET_MANIFEST = ROOT / "experiments" / "evidence_registry" / "dataset_manifest.csv"
 
 PHYSIO = "#0072B2"
 TREATMENT = "#D55E00"
@@ -47,6 +53,42 @@ def _read_json(path: Path) -> dict[str, Any]:
 
 def _relative(path: Path) -> str:
     return str(path.relative_to(ROOT))
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _artifact_provenance(artifact: str, registry: pd.DataFrame, datasets: pd.DataFrame) -> dict[str, str]:
+    path = ROOT / artifact
+    if not path.exists():
+        raise FileNotFoundError(f"Figure source artifact is missing: {path}")
+    artifact_hash = _sha256(path)
+    run_matches = []
+    for _, record in registry.iterrows():
+        aliases = str(record["final_result_aliases"]).split(";")
+        canonical = {
+            str(record["evaluation_file"]),
+            str(record["prediction_file"]),
+            str(record["checkpoint_path"]),
+        }
+        if artifact in canonical or any(artifact == alias or artifact.startswith(f"{alias}/") for alias in aliases):
+            run_matches.append(str(record["run_id"]))
+    run_matches = sorted(set(run_matches))
+    if len(run_matches) > 1:
+        raise ValueError(f"Figure artifact maps to multiple registered runs: {artifact}: {run_matches}")
+    if run_matches:
+        return {"run_id": run_matches[0], "evidence_id": run_matches[0], "artifact_sha256": artifact_hash}
+    if artifact == _relative(PREFLIGHT):
+        versions = sorted(set(datasets["dataset_version"].astype(str)))
+        if len(versions) != 1:
+            raise ValueError(f"Preflight artifact does not map to one dataset version: {versions}")
+        return {"run_id": "", "evidence_id": versions[0], "artifact_sha256": artifact_hash}
+    raise ValueError(f"Figure artifact is not linked to a registered run or dataset: {artifact}")
 
 
 def _setup_style() -> None:
@@ -83,8 +125,8 @@ def _panel_label(ax: plt.Axes, label: str) -> None:
 def _draft_note(fig: plt.Figure) -> None:
     fig.text(
         0.995,
-        0.005,
-        "DRAFT | aggregate artifacts | exact data restoration pending",
+        0.002,
+        "DRAFT | registered historical v1 evidence | confirmatory v2 pending",
         ha="right",
         va="bottom",
         fontsize=6.5,
@@ -106,6 +148,12 @@ def _load_artifacts() -> dict[str, Any]:
     latent = _read_json(LATENT)
     shap = _read_json(MAIN_DIR / "shap_analysis_full.json")
     seed_runs = [_read_json(path / "evaluation.json") for path in SEED_DIRS]
+    prediction_path = ROOT / "experiments" / "binary_results" / main_eval["run_id"] / "test_predictions.csv"
+    if not prediction_path.exists():
+        raise FileNotFoundError(f"Main-run prediction artifact is missing: {prediction_path}")
+    predictions = pd.read_csv(prediction_path)
+    registry = pd.read_csv(RUN_REGISTRY)
+    datasets = pd.read_csv(DATASET_MANIFEST)
     return {
         "preflight": preflight,
         "main_eval": main_eval,
@@ -113,6 +161,10 @@ def _load_artifacts() -> dict[str, Any]:
         "latent": latent,
         "shap": shap,
         "seed_runs": seed_runs,
+        "predictions": predictions,
+        "prediction_path": prediction_path,
+        "registry": registry,
+        "datasets": datasets,
     }
 
 
@@ -121,6 +173,8 @@ def _validate(artifacts: dict[str, Any]) -> None:
     main_eval = artifacts["main_eval"]
     split = artifacts["split"]
     runs = artifacts["seed_runs"]
+    registry = artifacts["registry"]
+    registered_run_ids = set(registry["run_id"].astype(str))
     if not preflight.get("passed"):
         raise ValueError("Binary data preflight did not pass.")
     if main_eval.get("contract") != "dual_binary_hemodynamic_v1":
@@ -128,6 +182,9 @@ def _validate(artifacts: dict[str, Any]) -> None:
     seeds = [int(run["initialization_seed"]) for run in runs]
     if len(seeds) != 5 or len(set(seeds)) != 5:
         raise ValueError(f"Expected five unique initialization seeds, found {seeds}.")
+    run_ids = [str(run.get("run_id", "")) for run in runs]
+    if any(run_id not in registered_run_ids for run_id in run_ids):
+        raise ValueError(f"Figure inputs include unregistered run IDs: {sorted(set(run_ids) - registered_run_ids)}")
     split_seed = int(main_eval["split_seed"])
     if int(split["split_seed"]) != split_seed or any(int(run["split_seed"]) != split_seed for run in runs):
         raise ValueError("Split seeds differ across the selected artifacts.")
@@ -138,6 +195,17 @@ def _validate(artifacts: dict[str, Any]) -> None:
             result = run["metrics"][endpoint]["updated_mlp"]
             if int(result["n_sessions"]) != expected_sessions or int(result["n_patients"]) != expected_patients:
                 raise ValueError("Held-out target counts differ across seed artifacts.")
+    predictions = artifacts["predictions"]
+    if len(predictions) != expected_sessions or predictions["patient_id"].astype(str).nunique() != expected_patients:
+        raise ValueError("Main prediction artifact does not match the held-out target manifest.")
+    required = {f"{endpoint}_event" for endpoint in ("idh", "ih")} | {
+        f"probability_{endpoint}_{model}"
+        for endpoint in ("idh", "ih")
+        for model in ("source_mlp", "updated_mlp", "local_logistic")
+    }
+    missing = sorted(required - set(predictions.columns))
+    if missing:
+        raise ValueError(f"Main prediction artifact is missing columns: {missing}")
 
 
 def _figure1(artifacts: dict[str, Any], output_dir: Path, rows: list[dict[str, Any]]) -> None:
@@ -237,7 +305,7 @@ def _box(ax: plt.Axes, xy: tuple[float, float], width: float, height: float, tex
     ax.text(xy[0] + width / 2, xy[1] + height / 2, text, ha="center", va="center", fontsize=8, color=INK)
 
 
-def _figure2(output_dir: Path) -> None:
+def _figure2(output_dir: Path, rows: list[dict[str, Any]]) -> None:
     fig, axes = plt.subplots(1, 2, figsize=(11.5, 4.2))
     fig.suptitle("Outcome-specific updating aligns one representation and retains the other", fontweight="bold", y=1.01)
     for ax, endpoint, align_label, retain_label, align_color in (
@@ -267,6 +335,25 @@ def _figure2(output_dir: Path) -> None:
     fig.text(0.5, 0.01, "Clinical grouping is prespecified but not a validated biological decomposition.", ha="center", fontsize=7.5, color=SOURCE)
     fig.tight_layout(rect=(0, 0.04, 1, 0.98))
     _save(fig, output_dir, "Fig2_Outcome_Specific_Framework")
+    config_artifact = _relative(MAIN_DIR / "config.yaml")
+    for endpoint, aligned_branch, retained_branch in (
+        ("IDH", "physiology_history", "treatment_context"),
+        ("IH", "treatment_context", "physiology_history"),
+    ):
+        rows.extend(
+            [
+                {
+                    "figure": "Fig2", "panel": endpoint, "endpoint": endpoint,
+                    "series": aligned_branch, "metric": "coral_alignment_applied", "value": 1,
+                    "seed": 2024, "artifact": config_artifact,
+                },
+                {
+                    "figure": "Fig2", "panel": endpoint, "endpoint": endpoint,
+                    "series": retained_branch, "metric": "coral_alignment_applied", "value": 0,
+                    "seed": 2024, "artifact": config_artifact,
+                },
+            ]
+        )
 
 
 def _ci(metric: dict[str, Any]) -> tuple[float, float, float]:
@@ -385,8 +472,8 @@ def _figure4(artifacts: dict[str, Any], output_dir: Path, rows: list[dict[str, A
         "physio_ratio": {e: (shap[e]["before_alignment"]["target"]["physiology_ratio"], shap[e]["after_alignment"]["target"]["physiology_ratio"]) for e in ("idh", "ih")},
         "spearman": {e: (shap[e]["before_alignment"]["cross_domain_correlation"]["spearman_r"], shap[e]["after_alignment"]["cross_domain_correlation"]["spearman_r"]) for e in ("idh", "ih")},
     }
-    _slope_panel(axes[0, 0], metrics["rbf_mmd"], ylabel="RBF MMD", title="Latent discrepancy (seed 42)", ylim=(0, 0.31))
-    _slope_panel(axes[0, 1], metrics["domain_auc"], ylabel="Domain-classifier AUC", title="Center separability (seed 42)", ylim=(0.45, 1.03))
+    _slope_panel(axes[0, 0], metrics["rbf_mmd"], ylabel="RBF MMD", title="Latent discrepancy (seed 2024)", ylim=(0, 0.23))
+    _slope_panel(axes[0, 1], metrics["domain_auc"], ylabel="Domain-classifier AUC", title="Center separability (seed 2024)", ylim=(0.45, 1.03))
     axes[0, 1].axhline(0.5, color=SOURCE, linestyle=":", linewidth=1.0)
     axes[0, 1].text(0.5, 0.515, "chance", ha="center", fontsize=7, color=SOURCE)
     _slope_panel(axes[1, 0], metrics["physio_ratio"], ylabel="Physiology/history attribution", title="Target SHAP group share (seed 2024; n=400)", ylim=(0.5, 1.02), percent=True)
@@ -398,21 +485,170 @@ def _figure4(artifacts: dict[str, Any], output_dir: Path, rows: list[dict[str, A
     for metric_name, metric_values in metrics.items():
         for endpoint, (before, after) in metric_values.items():
             artifact = LATENT if metric_name in {"rbf_mmd", "domain_auc"} else MAIN_DIR / "shap_analysis_full.json"
-            seed = 42 if metric_name in {"rbf_mmd", "domain_auc"} else 2024
+            seed = 2024
             for phase, value in (("Before", before), ("After", after)):
                 rows.append({"figure": "Fig4", "panel": metric_name, "endpoint": endpoint.upper(), "series": phase, "metric": metric_name, "value": value, "lower": "", "upper": "", "seed": seed, "artifact": _relative(artifact)})
 
-    fig.text(0.5, 0.01, "RBF MMD decreased for IDH, but other discrepancy measures did not uniformly improve.", ha="center", fontsize=7.5, color=SOURCE)
-    fig.tight_layout(rect=(0, 0.04, 1, 0.97))
+    fig.text(0.5, 0.026, "Representation diagnostics changed in different directions; no metric establishes general domain invariance.", ha="center", fontsize=7.5, color=SOURCE)
+    fig.tight_layout(rect=(0, 0.06, 1, 0.97))
     _save(fig, output_dir, "Fig4_Representation_Diagnostics")
 
 
-def _write_source_table(output_dir: Path, rows: list[dict[str, Any]]) -> None:
-    fields = ["figure", "panel", "endpoint", "series", "metric", "value", "lower", "upper", "seed", "artifact"]
+def _calibration_summary(y_true: np.ndarray, probability: np.ndarray) -> tuple[float, float]:
+    clipped = np.clip(probability, 1e-6, 1 - 1e-6)
+    logit = np.log(clipped / (1 - clipped)).reshape(-1, 1)
+    model = LogisticRegression(C=1e6, max_iter=2000, solver="lbfgs").fit(logit, y_true)
+    return float(model.intercept_[0]), float(model.coef_[0, 0])
+
+
+def _quantile_calibration(
+    y_true: np.ndarray, probability: np.ndarray, n_bins: int = 10
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    frame = pd.DataFrame({"outcome": y_true, "probability": probability})
+    frame["bin"] = pd.qcut(frame["probability"], q=n_bins, duplicates="drop")
+    grouped = frame.groupby("bin", observed=True).agg(
+        mean_predicted=("probability", "mean"),
+        observed=("outcome", "mean"),
+        n=("outcome", "size"),
+    )
+    return (
+        grouped["mean_predicted"].to_numpy(),
+        grouped["observed"].to_numpy(),
+        grouped["n"].to_numpy(),
+    )
+
+
+def _downsample_curve(x: np.ndarray, y: np.ndarray, max_points: int = 200) -> tuple[np.ndarray, np.ndarray]:
+    """Retain an evenly spaced, compact source table without changing plotted curves."""
+    if len(x) <= max_points:
+        return x, y
+    indices = np.unique(np.linspace(0, len(x) - 1, max_points, dtype=int))
+    return x[indices], y[indices]
+
+
+def _figure5(artifacts: dict[str, Any], output_dir: Path, rows: list[dict[str, Any]]) -> None:
+    predictions = artifacts["predictions"]
+    evaluation = artifacts["main_eval"]
+    prediction_path = artifacts["prediction_path"]
+    models = [
+        ("Source MLP", "source_mlp", SOURCE, "--", "o"),
+        ("Updated MLP", "updated_mlp", UPDATED, "-", "s"),
+        ("Target-local logistic", "local_logistic", LOCAL, ":", "D"),
+    ]
+    fig, axes = plt.subplots(2, 3, figsize=(12.0, 7.4))
+    fig.suptitle(
+        "Target updating improved discrimination and probability calibration",
+        fontweight="bold",
+        y=0.995,
+    )
+
+    for row_index, endpoint in enumerate(("idh", "ih")):
+        y_true = predictions[f"{endpoint}_event"].to_numpy(dtype=int)
+        prevalence = float(y_true.mean())
+        endpoint_label = endpoint.upper()
+        roc_ax, pr_ax, cal_ax = axes[row_index]
+        roc_ax.plot([0, 1], [0, 1], color=LIGHT, linestyle=":", linewidth=1.0)
+        pr_ax.axhline(
+            prevalence,
+            color=SOURCE,
+            linestyle=":",
+            linewidth=1.0,
+            label=f"Event rate {prevalence:.1%}",
+        )
+        cal_ax.plot([0, 1], [0, 1], color=SOURCE, linestyle=":", linewidth=1.0, label="Ideal")
+
+        for model_label, key, color, linestyle, marker in models:
+            probability = predictions[f"probability_{endpoint}_{key}"].to_numpy(dtype=float)
+            fpr, tpr, _ = roc_curve(y_true, probability)
+            precision, recall, _ = precision_recall_curve(y_true, probability)
+            auc_value = evaluation["metrics"][endpoint][key]["roc_auc"]
+            pr_value = evaluation["metrics"][endpoint][key]["pr_auc"]
+            roc_ax.plot(
+                fpr,
+                tpr,
+                color=color,
+                linestyle=linestyle,
+                linewidth=1.7,
+                label=f"{model_label} ({auc_value:.3f})",
+            )
+            pr_ax.plot(
+                recall,
+                precision,
+                color=color,
+                linestyle=linestyle,
+                linewidth=1.7,
+                label=f"{model_label} ({pr_value:.3f})",
+            )
+
+            mean_predicted, observed, bin_n = _quantile_calibration(y_true, probability)
+            intercept, slope = _calibration_summary(y_true, probability)
+            cal_ax.plot(
+                mean_predicted,
+                observed,
+                color=color,
+                linestyle=linestyle,
+                marker=marker,
+                markersize=3.5,
+                linewidth=1.5,
+                label=f"{model_label} (a={intercept:.2f}, b={slope:.2f})",
+            )
+
+            source_fpr, source_tpr = _downsample_curve(fpr, tpr)
+            source_recall, source_precision = _downsample_curve(recall, precision)
+            for x_value, y_value in zip(source_fpr, source_tpr):
+                rows.append({"figure": "Fig5", "panel": f"{endpoint_label}_ROC", "endpoint": endpoint_label, "series": model_label, "metric": "roc_curve", "x": x_value, "value": y_value, "n": "", "lower": "", "upper": "", "seed": 2024, "artifact": _relative(prediction_path)})
+            for x_value, y_value in zip(source_recall, source_precision):
+                rows.append({"figure": "Fig5", "panel": f"{endpoint_label}_PR", "endpoint": endpoint_label, "series": model_label, "metric": "precision_recall_curve", "x": x_value, "value": y_value, "n": "", "lower": "", "upper": "", "seed": 2024, "artifact": _relative(prediction_path)})
+            for x_value, y_value, n_value in zip(mean_predicted, observed, bin_n):
+                rows.append({"figure": "Fig5", "panel": f"{endpoint_label}_calibration", "endpoint": endpoint_label, "series": model_label, "metric": "observed_rate", "x": x_value, "value": y_value, "n": int(n_value), "lower": "", "upper": "", "seed": 2024, "artifact": _relative(prediction_path)})
+
+        for ax in (roc_ax, pr_ax, cal_ax):
+            ax.set_xlim(0, 1)
+            ax.set_ylim(0, 1)
+            _clean_axis(ax, grid=True)
+        roc_ax.set_xlabel("False-positive rate")
+        roc_ax.set_ylabel("True-positive rate")
+        roc_ax.set_title(f"{endpoint_label}: ROC")
+        pr_ax.set_xlabel("Recall")
+        pr_ax.set_ylabel("Precision")
+        pr_ax.set_title(f"{endpoint_label}: precision-recall")
+        cal_ax.set_xlabel("Mean predicted probability")
+        cal_ax.set_ylabel("Observed event proportion")
+        cal_ax.set_title(f"{endpoint_label}: probability-decile calibration")
+        roc_ax.legend(frameon=False, loc="lower right", fontsize=7)
+        pr_ax.legend(frameon=False, loc="lower left", fontsize=7)
+        cal_ax.legend(frameon=False, loc="upper left", fontsize=6.5)
+
+    for label, ax in zip(("A", "B", "C", "D", "E", "F"), axes.flat):
+        _panel_label(ax, label)
+    fig.text(
+        0.5,
+        0.026,
+        "Held-out target sessions (29,866; 172 patients). Calibration intercept a and slope b are descriptive test-set diagnostics.",
+        ha="center",
+        fontsize=7.3,
+        color=SOURCE,
+    )
+    fig.tight_layout(rect=(0, 0.06, 1, 0.97))
+    _save(fig, output_dir, "Fig5_ROC_PR_Calibration")
+
+
+def _write_source_table(
+    output_dir: Path, rows: list[dict[str, Any]], registry: pd.DataFrame, datasets: pd.DataFrame
+) -> None:
+    provenance_cache: dict[str, dict[str, str]] = {}
+    for row in rows:
+        artifact = str(row["artifact"])
+        provenance_cache.setdefault(artifact, _artifact_provenance(artifact, registry, datasets))
+        row.update(provenance_cache[artifact])
+    fields = [
+        "figure", "panel", "endpoint", "series", "metric", "x", "value", "lower", "upper", "n", "seed",
+        "run_id", "evidence_id", "artifact", "artifact_sha256",
+    ]
     with (output_dir / "figure_source_data.csv").open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fields)
+        writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n")
         writer.writeheader()
-        writer.writerows(rows)
+        writer.writerows({field: row.get(field, "") for field in fields} for row in rows)
 
 
 def _write_alt_text(output_dir: Path) -> None:
@@ -432,7 +668,11 @@ The seed-2024 forest plot shows a large IDH AUC increase from source to updated 
 
 ## Figure 4
 
-Four slope charts compare representation diagnostics before and after updating. IDH RBF MMD decreases and physiology/history SHAP share rises markedly, while IH changes little. Domain-classifier AUC remains high, especially for IDH, and cross-center SHAP rank correlation increases for IDH but slightly decreases for IH. The panels use different prespecified seeds and are exploratory.
+Four slope charts compare seed-2024 representation diagnostics before and after updating. The metrics move in different directions: center discrimination remains high, IDH physiology/history SHAP share increases, and neither endpoint shows uniform improvement across discrepancy measures. The analyses are exploratory.
+
+## Figure 5
+
+Six panels show held-out target ROC, precision-recall, and probability-decile calibration for IDH and IH. Updated MLP and target-local logistic curves are nearly overlapping. Both are better calibrated than the source MLP; the source IDH model underpredicts risk and the source IH model has an overly steep calibration slope.
 """
     (output_dir / "ALT_TEXT.md").write_text(text, encoding="utf-8")
 
@@ -453,10 +693,11 @@ def main() -> None:
     _setup_style()
     rows: list[dict[str, Any]] = []
     _figure1(artifacts, output_dir, rows)
-    _figure2(output_dir)
+    _figure2(output_dir, rows)
     _figure3(artifacts, output_dir, rows)
     _figure4(artifacts, output_dir, rows)
-    _write_source_table(output_dir, rows)
+    _figure5(artifacts, output_dir, rows)
+    _write_source_table(output_dir, rows, artifacts["registry"], artifacts["datasets"])
     _write_alt_text(output_dir)
     print(f"Wrote draft figures and source tables to {output_dir}")
 

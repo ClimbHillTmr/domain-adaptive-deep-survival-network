@@ -1,0 +1,143 @@
+registry_version: manuscript_claim_registry_v1
+manuscript: docs/manuscript_draft.md
+claims:
+  - claim_id: STATUS-FREEZE-DATE
+    locator: "Manuscript status: registered historical evidence; confirmatory submission freeze blocked, 2026-07-19"
+    evidence_tier: project_status
+    run_ids: []
+    artifacts: [docs/submission_freeze_status.md]
+  - claim_id: MTH-COHORT-ABSTRACT
+    locator: "We conducted a retrospective two-center study using 211,452 sessions"
+    evidence_tier: registered_historical_v1
+    run_ids: [binary_20260719_044949_c6c955a30fc2]
+    artifacts: [experiments/audit/binary_data_preflight.json, experiments/final_results/main_mechanism_aware/split_manifest.json, experiments/final_results/main_mechanism_aware/evaluation.json]
+  - claim_id: RES-ABSTRACT
+    locator: "Outcome burden differed substantially between centers: IDH occurred in 14.5%"
+    evidence_tier: registered_historical_v1_and_exploratory
+    run_ids: [binary_20260719_044949_c6c955a30fc2, binary_20260719_052452_6913955efcfe, binary_20260719_053438_0be143d15776, binary_20260719_054003_190b64e7fcd5, binary_20260719_054454_fc09992c00bc]
+    artifacts: [experiments/audit/binary_data_preflight.json, experiments/final_results/main_mechanism_aware/evaluation.json, experiments/evidence_registry/exploratory_provenance.json]
+  - claim_id: MTH-SETTING
+    locator: "The binary preflight artifact records 211,452 eligible source-center sessions"
+    evidence_tier: registered_dataset
+    run_ids: []
+    artifacts: [experiments/audit/binary_data_preflight.json, experiments/evidence_registry/dataset_manifest.csv]
+  - claim_id: MTH-OUTCOMES
+    locator: "IDH: baseline systolic blood pressure minus intradialytic systolic blood pressure of at least 30"
+    evidence_tier: registered_historical_v1
+    run_ids: [binary_20260719_044949_c6c955a30fc2]
+    artifacts: [experiments/final_results/main_mechanism_aware/config.yaml]
+  - claim_id: MTH-FEATURES
+    locator: "The frozen run used 24 variables"
+    evidence_tier: registered_historical_v1
+    run_ids: [binary_20260719_044949_c6c955a30fc2]
+    artifacts: [experiments/evidence_registry/feature_manifest.csv, experiments/final_results/main_mechanism_aware/evaluation.json]
+  - claim_id: MTH-SPLIT
+    locator: "All splits were performed at patient level. Source-center patients were divided into 1,465"
+    evidence_tier: registered_historical_v1
+    run_ids: [binary_20260719_044949_c6c955a30fc2]
+    artifacts: [experiments/final_results/main_mechanism_aware/split_manifest.json, experiments/evidence_registry/split_audit.json]
+  - claim_id: MTH-MODEL-ROLES
+    locator: "A source logistic regression trained on source-center data."
+    evidence_tier: registered_historical_v1
+    run_ids: [binary_20260719_044949_c6c955a30fc2]
+    artifacts: [experiments/final_results/main_mechanism_aware/config.yaml, experiments/final_results/main_mechanism_aware/evaluation.json]
+  - claim_id: MTH-ARCHITECTURE
+    locator: "The mechanism-aware MLP used separate two-layer encoders"
+    evidence_tier: registered_historical_v1
+    run_ids: [binary_20260719_044949_c6c955a30fc2]
+    artifacts: [experiments/final_results/main_mechanism_aware/config.yaml]
+  - claim_id: MTH-CORAL
+    locator: "During updating, CORAL penalized differences"
+    evidence_tier: registered_historical_v1
+    run_ids: [binary_20260719_044949_c6c955a30fc2]
+    artifacts: [experiments/final_results/main_mechanism_aware/config.yaml]
+  - claim_id: MTH-STATISTICS
+    locator: "Confidence intervals for model metrics and paired differences"
+    evidence_tier: registered_historical_v1
+    run_ids: [binary_20260719_044949_c6c955a30fc2, binary_20260719_052452_6913955efcfe, binary_20260719_053438_0be143d15776, binary_20260719_054003_190b64e7fcd5, binary_20260719_054454_fc09992c00bc]
+    artifacts: [experiments/final_results/main_mechanism_aware/evaluation.json, experiments/evidence_registry/run_registry.csv]
+  - claim_id: MTH-EXPLORATORY-SAMPLE
+    locator: "Existing subgroup outputs used session-level rather than patient-cluster resampling"
+    evidence_tier: exploratory_limit
+    run_ids: [binary_20260719_044949_c6c955a30fc2]
+    artifacts: [experiments/final_results/main_mechanism_aware/shap_analysis_full.json, conf/subgroup_protocol.yaml]
+  - claim_id: MTH-REPRODUCIBILITY
+    locator: "Each frozen evaluation JSON records the split seed"
+    evidence_tier: registered_dual_contract_audit
+    run_ids: []
+    artifacts: [experiments/evidence_registry/run_registry.csv, experiments/evidence_registry/split_audit.json, data/confirmatory_v2/confirmatory_data_manifest.json]
+  - claim_id: RES-COHORT
+    locator: "IDH prevalence was 14.5% at the source center"
+    evidence_tier: registered_historical_v1
+    run_ids: [binary_20260719_044949_c6c955a30fc2]
+    artifacts: [experiments/audit/binary_data_preflight.json, experiments/final_results/main_mechanism_aware/evaluation.json]
+  - claim_id: RES-IDH
+    locator: "In the seed-2024 run, the source IDH MLP achieved"
+    evidence_tier: registered_historical_v1
+    run_ids: [binary_20260719_044949_c6c955a30fc2]
+    artifacts: [experiments/final_results/main_mechanism_aware/evaluation.json]
+  - claim_id: RES-IH
+    locator: "For IH, source-model AUC was 0.8516"
+    evidence_tier: registered_historical_v1
+    run_ids: [binary_20260719_044949_c6c955a30fc2]
+    artifacts: [experiments/final_results/main_mechanism_aware/evaluation.json]
+  - claim_id: RES-LOCAL
+    locator: "The target-local logistic model achieved AUCs"
+    evidence_tier: registered_historical_v1
+    run_ids: [binary_20260719_044949_c6c955a30fc2]
+    artifacts: [experiments/final_results/main_mechanism_aware/evaluation.json]
+  - claim_id: RES-MULTISEED
+    locator: "Across five seeds, source-model AUC varied"
+    evidence_tier: registered_historical_v1
+    run_ids: [binary_20260719_044949_c6c955a30fc2, binary_20260719_052452_6913955efcfe, binary_20260719_053438_0be143d15776, binary_20260719_054003_190b64e7fcd5, binary_20260719_054454_fc09992c00bc]
+    artifacts: [experiments/evidence_registry/run_registry.csv]
+  - claim_id: RES-CALIBRATION
+    locator: "From the registered seed-2024 held-out predictions, IDH calibration"
+    evidence_tier: registered_historical_v1_cluster_bootstrap
+    run_ids: [binary_20260719_044949_c6c955a30fc2]
+    artifacts: [clinical_utility_report/calibration_summary.csv, clinical_utility_report/provenance.json]
+  - claim_id: RES-ALERTS
+    locator: "At thresholds selected previously on validation patients by Youden's index"
+    evidence_tier: registered_historical_v1_cluster_bootstrap
+    run_ids: [binary_20260719_044949_c6c955a30fc2]
+    artifacts: [clinical_utility_report/alert_analysis.csv, clinical_utility_report/provenance.json]
+  - claim_id: EXP-LATENT-IDH
+    locator: "Latent analyses from the seed-2024 main run were metric dependent"
+    evidence_tier: exploratory
+    run_ids: [binary_20260719_044949_c6c955a30fc2]
+    artifacts: [experiments/evidence_registry/exploratory_latent_metrics.csv, experiments/evidence_registry/exploratory_provenance.json]
+  - claim_id: EXP-LATENT-IH
+    locator: "For IH, latent discrepancies changed little"
+    evidence_tier: exploratory
+    run_ids: [binary_20260719_044949_c6c955a30fc2]
+    artifacts: [experiments/evidence_registry/exploratory_latent_metrics.csv]
+  - claim_id: EXP-SHAP-IDH
+    locator: "In the seed-2024 SHAP analysis, physiology/history variables accounted for 83.5%"
+    evidence_tier: exploratory
+    run_ids: [binary_20260719_044949_c6c955a30fc2]
+    artifacts: [experiments/evidence_registry/exploratory_shap_summary.csv, experiments/evidence_registry/exploratory_provenance.json]
+  - claim_id: EXP-SHAP-IH
+    locator: "For IH, physiology/history variables already accounted for 96.8%"
+    evidence_tier: exploratory
+    run_ids: [binary_20260719_044949_c6c955a30fc2]
+    artifacts: [experiments/evidence_registry/exploratory_shap_summary.csv]
+  - claim_id: IMP-TARGET-FRACTION
+    locator: "At the same time, use of 60% of target patients for updating"
+    evidence_tier: registered_historical_v1
+    run_ids: [binary_20260719_044949_c6c955a30fc2]
+    artifacts: [experiments/final_results/main_mechanism_aware/config.yaml, experiments/final_results/main_mechanism_aware/split_manifest.json]
+  - claim_id: LIM-TARGET-SIZE
+    locator: "The target test set contains 172 patients"
+    evidence_tier: registered_historical_v1
+    run_ids: [binary_20260719_044949_c6c955a30fc2]
+    artifacts: [experiments/final_results/main_mechanism_aware/split_manifest.json]
+  - claim_id: LIM-ABLATION
+    locator: "The current historical ablation set is confounded by encoder architecture"
+    evidence_tier: registered_historical_v1_limit
+    run_ids: []
+    artifacts: [experiments/evidence_registry/run_registry.csv, experiments/confirmatory_results/architecture_matched_ablation.csv]
+  - claim_id: STATUS-SUBMISSION-FIGURES
+    locator: "Figures 1, 3, 4, and 5 are staged under `figures/submission_staging/`; Figure 2 is deliberately absent"
+    evidence_tier: project_status
+    run_ids: []
+    artifacts: [figures/submission_staging/figure_status.csv, figures/submission_staging/provenance.json, experiments/evidence_registry/submission_supplement_provenance.json]

@@ -1,0 +1,68 @@
+{
+  "package_status": "submission_staging_4_of_5_figures",
+  "figure_status": [
+    {
+      "figure": "Figure 1",
+      "title": "Study design and target-center updating framework",
+      "status": "staged_registered_vector",
+      "gate": "none"
+    },
+    {
+      "figure": "Figure 2",
+      "title": "Architecture-matched ablation",
+      "status": "blocked",
+      "gate": "25_accepted_server_runs_required"
+    },
+    {
+      "figure": "Figure 3",
+      "title": "Clinical utility",
+      "status": "staged_registered_fixed_threshold_diagnostics",
+      "gate": "clinical_threshold_prespecification_required_for_DCA_interpretation"
+    },
+    {
+      "figure": "Figure 4",
+      "title": "Calibration and transportability",
+      "status": "staged_registered_evidence",
+      "gate": "none_for_descriptive_interpretation"
+    },
+    {
+      "figure": "Figure 5",
+      "title": "Exploratory representation analysis",
+      "status": "staged_exploratory",
+      "gate": "retain_exploratory_label"
+    }
+  ],
+  "sources": {
+    "figures/manuscript_draft/figure_source_data.csv": "081ec0bba825c64e8e509ebfe92de0f8f6174fda2ad0bbfb2947c11f737a938a",
+    "experiments/audit/binary_data_preflight.json": "17e04feb534548e5dfacf6dd1342d0aa0c9eeaf841ae585d6f9dfe904d43180d",
+    "experiments/final_results/main_mechanism_aware/split_manifest.json": "6552a9085aed3f4b82ce3964768503d74ae28c038864b8d71c38af102513e568",
+    "experiments/final_results/main_mechanism_aware/config.yaml": "07120fb605ee8ee0a04ab7b5717a45f6cd7441e78faf8b8f592547427f0ffdfa",
+    "clinical_utility_report/alert_analysis.csv": "a5811882c8ede7bce7b8c602b368cfd1c8538fb91bab7cf4aa5fab861a256f08",
+    "experiments/confirmatory_results/architecture_matched_ablation.csv": "5b1010273244485112f68be5312d9615e2ea97aeea07d2e3e658c6679516876e",
+    "experiments/confirmatory_results/architecture_matched_paired_contrasts.csv": "155146c81d114e8e6e43d6079cf59e4ba12009924bffdd403ddde292d481229f",
+    "clinical_utility_report/provenance.json": "6dd83ff772ce224d3754a673cacb0d7b5fa474d444ee2dd67e4b5a49d563fdf2"
+  },
+  "outputs": {
+    "ALT_TEXT.md": "8c431fb78fbeddc21e914153425d398fa26a4a216242f80a964144435c0bf7e0",
+    "Figure1_Study_Design_and_Updating_Framework.pdf": "9f958f527ea0bd2289fe97f98b6b8fd30c84cbbe6f181b2f8307f7f0efeb7431",
+    "Figure1_Study_Design_and_Updating_Framework.png": "0f64a4c0e8281f5991bc2e32631e2211b7b2386f2367b37a63bf55f8304a1133",
+    "Figure3_Clinical_Utility.pdf": "dfeb9cf0812940995f4578be27aff6213023dfdef196fea6ee638d5822d66b07",
+    "Figure3_Clinical_Utility.png": "5bb4fa2b483368d3e520a5c504cfa66c3757772ea57ee0b84abf8b685822425d",
+    "Figure4_Calibration_and_Transportability.pdf": "8134ca344d745736abb5c4275a10a1a74d49b095ae84162a2426434a49ecb203",
+    "Figure4_Calibration_and_Transportability.png": "ef307ede65e4a9f74f9fcecc08a83a1e0ef028d8b1c113d6ecd3f9fbd66754a0",
+    "Figure5_Exploratory_Representation.pdf": "247e45d52637d66a7bf72654efa099ddaec178d41ec50c01143d339dd777d13d",
+    "Figure5_Exploratory_Representation.png": "1e1928b86cf97537342a69fe785601a3e6786d4bdc86a0ded55462cd460176f8",
+    "SupplementaryFigureS1_ALT_TEXT.md": "dca823c4d2f97e0cf1a3d15de1b098cad0b5ea63f363802d8ad24e890dcdf9f5",
+    "SupplementaryFigureS1_Seed_Level_AUC_Stability.pdf": "2f0f766ecf1f0d5e9b2f63e32ceddd59ac1d5721b38e446686f4e2b2fedff26a",
+    "SupplementaryFigureS1_Seed_Level_AUC_Stability.png": "963450d8b2750c6dacf287f6fe161a6c027d8556dcc93a5dae883f3e001011b8",
+    "SupplementaryFigureS1_provenance.json": "8f852e4d86e3c1b94bfc35fc28eb063b4cb1f58cedebcf3598f5598ca80f0505",
+    "SupplementaryFigureS1_source_data.csv": "53837e380047bfe58e6204df302df98f9e15d03b1429fc2a634e9a83367af989",
+    "figure_source_data.csv": "6ba447ab33211c549407a8ce803bd1d25f4c9572f3347b939719d04db3e9fa75",
+    "figure_status.csv": "d4257f8d62d9d224e791b0c2e1a35477e1b9686c0d4790237ca9c6ab48acd62a"
+  },
+  "claim_limits": [
+    "figure2_not_generated_without_server_acceptance",
+    "figure3_thresholds_are_validation_youden_not_clinical_recommendations",
+    "figure5_exploratory_only"
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "package_status": "tables_1_2_ready_table_3_pending_server",
+  "run_id": "binary_20260719_044949_c6c955a30fc2",
+  "sources": {
+    "experiments/evidence_registry/run_registry.csv": "059bf405f33abd6a3197950012ab212daf437a65a26e0569bec0011f0a390603",
+    "experiments/evidence_registry/dataset_manifest.csv": "f3a6eaa351a020b4b72001404d45c658da79a7c436fce0df67a34866d558f530",
+    "experiments/binary_results/binary_20260719_044949_c6c955a30fc2/evaluation.json": "1f810397e7291c3c24509952514c2d61a7f0e40f4addfffe337cc2eec363e9d1",
+    "experiments/binary_results/binary_20260719_044949_c6c955a30fc2/split_manifest.json": "6552a9085aed3f4b82ce3964768503d74ae28c038864b8d71c38af102513e568",
+    "experiments/confirmatory_results/architecture_matched_ablation.csv": "5b1010273244485112f68be5312d9615e2ea97aeea07d2e3e658c6679516876e"
+  },
+  "outputs": {
+    "table1_cohort_design.csv": "ac905a23918e4a0dcbbb8d6f76dac643bae07465144df7e30a35c736a79eb6ba",
+    "table2_main_performance.csv": "69d74491feedf820a4447829df4ce14d9447400a51fcce7b8486dbb2fcaf7327",
+    "table1_cohort_design.md": "4d0a4f1f08584c72c2a67f0368de1862db28b6248a5a28e5169b5ff40adb8b55",
+    "table2_main_performance.md": "33e068fa752be81c95b3fe6e980fc2eff87a19cf1f40a84fa46d38cf27d49000"
+  },
+  "table3": {
+    "path": "experiments/confirmatory_results/architecture_matched_ablation.csv",
+    "status_counts": {
+      "pending_server_confirmatory_run": 50
+    },
+    "registered_rows": 0
+  },
+  "claim_limits": [
+    "table1_is_cohort_and_analysis_design_not_unavailable_baseline_characteristics",
+    "table3_must_remain_pending_until_server_acceptance",
+    "historical_v1_exact_processed_bytes_unavailable"
+  ]
+}

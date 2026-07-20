@@ -209,12 +209,12 @@ def _add_prior_history(frame: pd.DataFrame) -> pd.DataFrame:
     frame = frame.sort_values(["患者id", "透析开始时间", "session_id"], kind="stable").reset_index(drop=True)
     groups = frame.groupby("患者id", sort=False)
     for column in HISTORY_MEAN_COLUMNS:
-        frame[f"历史平均{column}"] = groups[column].transform(lambda s: s.shift().expanding().mean()).fillna(0.0)
+        frame[f"历史平均{column}"] = groups[column].transform(
+            lambda series: pd.to_numeric(series, errors="coerce").shift().expanding().mean()
+        ).fillna(0.0)
     prior_count = groups.cumcount()
     prior_idh = groups["idh_event"].shift().fillna(0).groupby(frame["患者id"], sort=False).cumsum()
-    prior_hbp = (
-        groups["ih_event"].shift().fillna(0).groupby(frame["患者id"], sort=False).cumsum()
-    )
+    prior_hbp = groups["ih_event"].shift().fillna(0).groupby(frame["患者id"], sort=False).cumsum()
     denominator = prior_count.replace(0, np.nan)
     frame["history_IDH_rate"] = (prior_idh / denominator).fillna(0.0)
     frame["history_HBP_rate"] = (prior_hbp / denominator).fillna(0.0)
@@ -223,6 +223,28 @@ def _add_prior_history(frame: pd.DataFrame) -> pd.DataFrame:
         previous = groups["降幅时间点比值区间"].shift().eq(bin_number).fillna(False)
         count = previous.astype(int).groupby(frame["患者id"], sort=False).cumsum()
         frame[f"history_LBP_times_{bin_number}_rate"] = (count / denominator).fillna(0.0)
+
+    # Tied timestamps are rare, but neither row may use the other as history.
+    tied = frame.duplicated(["患者id", "透析开始时间"], keep=False)
+    for (patient_id, timestamp), indices in frame.loc[tied].groupby(
+        ["患者id", "透析开始时间"], sort=False
+    ).groups.items():
+        prior = frame.loc[
+            frame["患者id"].eq(patient_id) & frame["透析开始时间"].lt(timestamp)
+        ]
+        count = len(prior)
+        for column in HISTORY_MEAN_COLUMNS:
+            frame.loc[indices, f"历史平均{column}"] = pd.to_numeric(
+                prior[column], errors="coerce"
+            ).mean() if count else 0.0
+        prior_idh_count = int(prior["idh_event"].sum())
+        frame.loc[indices, "history_IDH_rate"] = prior_idh_count / count if count else 0.0
+        frame.loc[indices, "history_HBP_rate"] = float(prior["ih_event"].sum()) / count if count else 0.0
+        frame.loc[indices, "history_LBP_times_0_rate"] = (count - prior_idh_count) / count if count else 0.0
+        for bin_number in range(1, 5):
+            frame.loc[indices, f"history_LBP_times_{bin_number}_rate"] = (
+                float(prior["降幅时间点比值区间"].eq(bin_number).sum()) / count if count else 0.0
+            )
     return frame
 
 

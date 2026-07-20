@@ -1,0 +1,117 @@
+project:
+  name: confirmatory-A_dual_no_alignment
+  endpoint_rules:
+    idh: baseline SBP - intradialytic SBP >= 30 or intradialytic SBP <= 90
+    ih: intradialytic MAP - baseline MAP > 10
+confirmatory:
+  protocol_version: architecture_matched_ablation_v1
+  data_contract: dual_binary_hemodynamic_confirmatory_v2
+  execution_context: server_confirmatory
+  model_id: A_dual_no_alignment
+  feature_partition_seed: 20260715
+  evidence_lock:
+    source_sha256: 758eb188b10c057cca0ef1f7ed6bb0e6c3f68846d525bb8ff9e7a22b9c30cb54
+    target_sha256: 5db5118f63d8170c105c94054be3d4d8701d86611f1977de03414446c4b51628
+    feature_allowlist_sha256: b4576ce861621a3950e4c88294bd9641de90dc293098dab0751451caa244e6b9
+    split_manifest_sha256: 6552a9085aed3f4b82ce3964768503d74ae28c038864b8d71c38af102513e568
+    analysis_code_sha256: b98c0506a7b28985d603e2044514973ec9edd68c350d0eccf3c74a283c9a44a5
+data:
+  source_file: data/confirmatory_v2/source_confirmatory_v2.csv
+  target_file: data/confirmatory_v2/target_confirmatory_v2.csv
+  feature_allowlist: experiments/audit/feature_allowlist.csv
+  patient_col: 患者id
+  split_seed: 20260715
+  source_validation_fraction: 0.1
+  target_update_fraction: 0.6
+  target_validation_fraction: 0.15
+model:
+  architecture: dual_branch
+  alignment_strategy: no_alignment
+  pooled_update: true
+  logistic_c_values:
+  - 0.01
+  - 0.1
+  - 1.0
+  - 10.0
+  mlp_hidden_dims:
+  - 64
+  - 32
+  dropout: 0.2
+  use_cdan: false
+  use_coral: false
+  coral_weight: 0.01
+  use_mmd: false
+  mmd_weight: 1.0
+  use_stratified_alignment: true
+  use_outcome_specific_alignment: false
+  physio_indices:
+  - 0
+  - 1
+  - 4
+  - 5
+  - 6
+  - 7
+  - 9
+  - 10
+  - 11
+  - 12
+  - 13
+  - 14
+  - 15
+  - 16
+  - 17
+  - 18
+  - 19
+  - 20
+  - 21
+  - 22
+  treat_indices:
+  - 2
+  - 3
+  - 8
+  - 23
+  random_idh_indices:
+  - 0
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  - 11
+  - 12
+  - 14
+  - 15
+  - 16
+  - 17
+  - 18
+  - 19
+  - 20
+  - 21
+  random_ih_indices:
+  - 1
+  - 2
+  - 11
+  - 19
+training:
+  initialization_seed: 7
+  initialization_seeds:
+  - 42
+  - 7
+  - 13
+  - 99
+  - 2024
+  batch_size: 256
+  pretrain_learning_rate: 0.001
+  finetune_learning_rate: 0.0001
+  pretrain_epochs: 40
+  finetune_epochs: 20
+  patience: 5
+evaluation:
+  patient_bootstrap_replicates: 1000
+  bootstrap_seed: 20260715
+paths:
+  output_dir: experiments/confirmatory_results

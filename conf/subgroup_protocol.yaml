@@ -1,0 +1,40 @@
+protocol_version: patient_cluster_subgroup_v1
+status: blocked_pending_clinical_and_statistical_prespecification
+run_id: REQUIRED_ACCEPTED_CONFIRMATORY_V2_RUN_ID
+prespecified_without_target_test_access: false
+prespecification:
+  locked_at_utc: REQUIRED
+  clinical_approver_role: REQUIRED
+  statistical_approver_role: REQUIRED
+  rationale_document: REQUIRED
+resampling:
+  unit: patient_id
+  replicates: 1000
+  seed: 20260715
+  confidence_interval: percentile_95
+  interaction_method: patient_cluster_bootstrap_difference_in_delta_auc
+endpoints:
+  idh:
+    - subgroup: baseline_blood_pressure
+      candidate_feature: 透前收缩压
+      definition: REQUIRED_CLINICAL_PRESPECIFICATION
+    - subgroup: prior_instability_history
+      candidate_feature: history_IDH_rate
+      definition: REQUIRED_CLINICAL_PRESPECIFICATION
+    - subgroup: ultrafiltration_intensity
+      candidate_feature: 历史平均超滤率_mean
+      definition: REQUIRED_CLINICAL_PRESPECIFICATION
+  ih:
+    - subgroup: treatment_intensity
+      candidate_feature: 历史平均超滤量MAX
+      definition: REQUIRED_CLINICAL_PRESPECIFICATION
+    - subgroup: volume_overload
+      candidate_feature: 超负荷
+      definition: REQUIRED_CLINICAL_PRESPECIFICATION
+    - subgroup: hypertension_history
+      candidate_feature: history_HBP_rate
+      definition: REQUIRED_CLINICAL_PRESPECIFICATION
+reporting:
+  metrics: [subgroup_auc, delta_auc, confidence_interval, interaction_p_value]
+  comparison: updated_mlp_minus_source_mlp
+  minimum_unique_patients_per_subgroup: REQUIRED_CLINICAL_AND_STATISTICAL_PRESPECIFICATION

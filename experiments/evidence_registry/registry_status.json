@@ -1,0 +1,15 @@
+{
+  "registry_version": "binary_evidence_registry_v1",
+  "registered_runs": 8,
+  "dataset_rows": 2,
+  "feature_rows": 57,
+  "split_patient_rows": 2058,
+  "exact_frozen_inputs_available": false,
+  "patient_split_gate_passed": true,
+  "temporal_leakage_gate_passed": false,
+  "confirmatory_training_authorized_by_evidence_gate": false,
+  "blocking_reasons": [
+    "Current processed CSV hashes do not match the hashes recorded by all frozen runs.",
+    "Temporal leakage cannot be re-audited without the exact frozen session-level datasets."
+  ]
+}
