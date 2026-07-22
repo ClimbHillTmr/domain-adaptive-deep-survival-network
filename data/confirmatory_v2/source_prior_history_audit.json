@@ -1,5 +1,5 @@
 {
-  "path": "/Users/cht/GitHub/domain-adaptive-deep-survival-network/data/confirmatory_v2/source_confirmatory_v2.csv",
+  "path": "/home/cht/Works/domain-adaptive-deep-survival-network/data/confirmatory_v2/source_confirmatory_v2.csv",
   "passed": true,
   "time_column": "透析开始时间",
   "missing_columns": [],
@@ -14,7 +14,7 @@
     },
     "历史平均透前收缩压": {
       "mismatched_rows": 0,
-      "maximum_absolute_error": 2.842170943040401e-14
+      "maximum_absolute_error": 5.684341886080802e-14
     },
     "历史平均透前舒张压": {
       "mismatched_rows": 0,
@@ -26,7 +26,7 @@
     },
     "历史平均超滤率_mean": {
       "mismatched_rows": 0,
-      "maximum_absolute_error": 4.547473508864641e-13
+      "maximum_absolute_error": 9.094947017729282e-13
     },
     "history_IDH_rate": {
       "mismatched_rows": 0,

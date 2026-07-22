@@ -1,5 +1,5 @@
 {
-  "package_status": "submission_staging_4_of_5_figures",
+  "package_status": "submission_staging_5_of_5_figures",
   "figure_status": [
     {
       "figure": "Figure 1",
@@ -10,8 +10,8 @@
     {
       "figure": "Figure 2",
       "title": "Architecture-matched ablation",
-      "status": "blocked",
-      "gate": "25_accepted_server_runs_required"
+      "status": "ready",
+      "gate": ""
     },
     {
       "figure": "Figure 3",
@@ -38,16 +38,18 @@
     "experiments/final_results/main_mechanism_aware/split_manifest.json": "6552a9085aed3f4b82ce3964768503d74ae28c038864b8d71c38af102513e568",
     "experiments/final_results/main_mechanism_aware/config.yaml": "07120fb605ee8ee0a04ab7b5717a45f6cd7441e78faf8b8f592547427f0ffdfa",
     "clinical_utility_report/alert_analysis.csv": "a5811882c8ede7bce7b8c602b368cfd1c8538fb91bab7cf4aa5fab861a256f08",
-    "experiments/confirmatory_results/architecture_matched_ablation.csv": "5b1010273244485112f68be5312d9615e2ea97aeea07d2e3e658c6679516876e",
-    "experiments/confirmatory_results/architecture_matched_paired_contrasts.csv": "155146c81d114e8e6e43d6079cf59e4ba12009924bffdd403ddde292d481229f",
+    "experiments/confirmatory_results/architecture_matched_ablation.csv": "2f56a18e34b524ec44cca536df7fc42b5196455801910d96c5716742d2b2d9e6",
+    "experiments/confirmatory_results/architecture_matched_paired_contrasts.csv": "24a6e7a2668aea0dd2a19dfad58dd5455bc851c033d7e33b813cb646ab2046a7",
     "clinical_utility_report/provenance.json": "6dd83ff772ce224d3754a673cacb0d7b5fa474d444ee2dd67e4b5a49d563fdf2"
   },
   "outputs": {
-    "ALT_TEXT.md": "8c431fb78fbeddc21e914153425d398fa26a4a216242f80a964144435c0bf7e0",
-    "Figure1_Study_Design_and_Updating_Framework.pdf": "9f958f527ea0bd2289fe97f98b6b8fd30c84cbbe6f181b2f8307f7f0efeb7431",
-    "Figure1_Study_Design_and_Updating_Framework.png": "0f64a4c0e8281f5991bc2e32631e2211b7b2386f2367b37a63bf55f8304a1133",
-    "Figure3_Clinical_Utility.pdf": "dfeb9cf0812940995f4578be27aff6213023dfdef196fea6ee638d5822d66b07",
-    "Figure3_Clinical_Utility.png": "5bb4fa2b483368d3e520a5c504cfa66c3757772ea57ee0b84abf8b685822425d",
+    "ALT_TEXT.md": "1dcabd78c819b3d14f9d9620a9c7ba36158a94e9d66da8f9b94bf882795cdd02",
+    "Figure1_Study_Design_and_Updating_Framework.pdf": "3361144f2729feb12db7dc42fdbe297dc7236737cfa6217b964f46f692ce426a",
+    "Figure1_Study_Design_and_Updating_Framework.png": "0e57a8cda64c926bcf1c72246ea71a9c28bd2924da0526533e75498a10808bcd",
+    "Figure2_Architecture_Matched_Ablation.pdf": "f666597e647a7d3846ccaab62d65e4c3c2c774a974d3a57c36d1c55a0d9e2e6f",
+    "Figure2_Architecture_Matched_Ablation.png": "aa68efdec50e19466da173c6991172784a59acb7f9535d0e250c21d523391541",
+    "Figure3_Clinical_Utility.pdf": "381da2ed42b70e4cc28b36031af201945c6f55e55f55cf0187f25a70e2c3e2f3",
+    "Figure3_Clinical_Utility.png": "84305bdded9e598a9b6829f3e434b61f62ccfb099a4e739cbfbd37fef75307be",
     "Figure4_Calibration_and_Transportability.pdf": "8134ca344d745736abb5c4275a10a1a74d49b095ae84162a2426434a49ecb203",
     "Figure4_Calibration_and_Transportability.png": "ef307ede65e4a9f74f9fcecc08a83a1e0ef028d8b1c113d6ecd3f9fbd66754a0",
     "Figure5_Exploratory_Representation.pdf": "247e45d52637d66a7bf72654efa099ddaec178d41ec50c01143d339dd777d13d",
@@ -57,8 +59,8 @@
     "SupplementaryFigureS1_Seed_Level_AUC_Stability.png": "963450d8b2750c6dacf287f6fe161a6c027d8556dcc93a5dae883f3e001011b8",
     "SupplementaryFigureS1_provenance.json": "8f852e4d86e3c1b94bfc35fc28eb063b4cb1f58cedebcf3598f5598ca80f0505",
     "SupplementaryFigureS1_source_data.csv": "53837e380047bfe58e6204df302df98f9e15d03b1429fc2a634e9a83367af989",
-    "figure_source_data.csv": "6ba447ab33211c549407a8ce803bd1d25f4c9572f3347b939719d04db3e9fa75",
-    "figure_status.csv": "d4257f8d62d9d224e791b0c2e1a35477e1b9686c0d4790237ca9c6ab48acd62a"
+    "figure_source_data.csv": "1d34e205e591412550fc1cb596a32d8167a71c516e245e10755460e6b346857c",
+    "figure_status.csv": "b339d4acb21073d24d101f65eae059d7f7d520c2506e0de3b356eba35774ef4b"
   },
   "claim_limits": [
     "figure2_not_generated_without_server_acceptance",

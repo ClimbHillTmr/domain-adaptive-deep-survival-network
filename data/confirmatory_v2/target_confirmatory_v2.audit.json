@@ -1,6 +1,6 @@
 {
   "cohort": "fuding",
-  "input_path": "/Users/cht/.cache/huggingface/hub/datasets--LongGoodbye--Shenyi-Fuding-original/snapshots/b125e7730d526b43c6cbd17dca3ff00b57b9cf1c/updated_dataset_fuding.csv",
+  "input_path": "/home/cht/.cache/huggingface/hub/datasets--LongGoodbye--Shenyi-Fuding-original/snapshots/b125e7730d526b43c6cbd17dca3ff00b57b9cf1c/updated_dataset_fuding.csv",
   "input_rows": 76519,
   "output_rows": 74947,
   "rejected": {

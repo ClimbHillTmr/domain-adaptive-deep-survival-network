@@ -6,7 +6,7 @@ The upper section compares source and target cohort size, opposing IDH and IH pr
 
 ## Figure 2
 
-Not generated. Architecture-matched server evidence has not passed acceptance.
+Upper panels show absolute held-out ROC AUC for five strategies across five paired seeds. Lower panels show outcome-specific-CORAL minus comparator ROC AUC differences with 95% patient-cluster intervals for each seed.
 
 ## Figure 3
 

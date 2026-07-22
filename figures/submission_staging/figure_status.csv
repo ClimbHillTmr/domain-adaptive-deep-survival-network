@@ -1,6 +1,6 @@
 figure,title,status,gate
 Figure 1,Study design and target-center updating framework,staged_registered_vector,none
-Figure 2,Architecture-matched ablation,blocked,25_accepted_server_runs_required
+Figure 2,Architecture-matched ablation,ready,
 Figure 3,Clinical utility,staged_registered_fixed_threshold_diagnostics,clinical_threshold_prespecification_required_for_DCA_interpretation
 Figure 4,Calibration and transportability,staged_registered_evidence,none_for_descriptive_interpretation
 Figure 5,Exploratory representation analysis,staged_exploratory,retain_exploratory_label

@@ -7,7 +7,7 @@
   "target_analysis_sha256": "5db5118f63d8170c105c94054be3d4d8701d86611f1977de03414446c4b51628",
   "source": {
     "cohort": "shenyi",
-    "input_path": "/Users/cht/.cache/huggingface/hub/datasets--LongGoodbye--Shenyi-Fuding-original/snapshots/b125e7730d526b43c6cbd17dca3ff00b57b9cf1c/updated_dataset_shenyi.csv",
+    "input_path": "/home/cht/.cache/huggingface/hub/datasets--LongGoodbye--Shenyi-Fuding-original/snapshots/b125e7730d526b43c6cbd17dca3ff00b57b9cf1c/updated_dataset_shenyi.csv",
     "input_rows": 222836,
     "output_rows": 211452,
     "rejected": {
@@ -21,12 +21,12 @@
     "idh_rule": "baseline_sbp - intradialytic_sbp >= 30 or intradialytic_sbp <= 90",
     "ih_rule": "intradialytic_map - baseline_map > 10",
     "non_event_time_min": 0.0,
-    "output_path": "/Users/cht/GitHub/domain-adaptive-deep-survival-network/data/confirmatory_v2/source_confirmatory_v2.csv",
-    "audit_path": "/Users/cht/GitHub/domain-adaptive-deep-survival-network/data/confirmatory_v2/source_confirmatory_v2.audit.json"
+    "output_path": "/home/cht/Works/domain-adaptive-deep-survival-network/data/confirmatory_v2/source_confirmatory_v2.csv",
+    "audit_path": "/home/cht/Works/domain-adaptive-deep-survival-network/data/confirmatory_v2/source_confirmatory_v2.audit.json"
   },
   "target": {
     "cohort": "fuding",
-    "input_path": "/Users/cht/.cache/huggingface/hub/datasets--LongGoodbye--Shenyi-Fuding-original/snapshots/b125e7730d526b43c6cbd17dca3ff00b57b9cf1c/updated_dataset_fuding.csv",
+    "input_path": "/home/cht/.cache/huggingface/hub/datasets--LongGoodbye--Shenyi-Fuding-original/snapshots/b125e7730d526b43c6cbd17dca3ff00b57b9cf1c/updated_dataset_fuding.csv",
     "input_rows": 76519,
     "output_rows": 74947,
     "rejected": {
@@ -40,8 +40,8 @@
     "idh_rule": "baseline_sbp - intradialytic_sbp >= 30 or intradialytic_sbp <= 90",
     "ih_rule": "intradialytic_map - baseline_map > 10",
     "non_event_time_min": 0.0,
-    "output_path": "/Users/cht/GitHub/domain-adaptive-deep-survival-network/data/confirmatory_v2/target_confirmatory_v2.csv",
-    "audit_path": "/Users/cht/GitHub/domain-adaptive-deep-survival-network/data/confirmatory_v2/target_confirmatory_v2.audit.json"
+    "output_path": "/home/cht/Works/domain-adaptive-deep-survival-network/data/confirmatory_v2/target_confirmatory_v2.csv",
+    "audit_path": "/home/cht/Works/domain-adaptive-deep-survival-network/data/confirmatory_v2/target_confirmatory_v2.audit.json"
   },
   "source_prior_history_passed": true,
   "target_prior_history_passed": true,

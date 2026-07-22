@@ -17,9 +17,9 @@
     },
     {
       "deliverable": "architecture_matched_ablation",
-      "status": "pending_server_confirmatory_runs",
+      "status": "ready",
       "evidence": "experiments/confirmatory_results/architecture_matched_ablation.csv",
-      "remaining_gate": "accepted=0/25;registered=0/25;pending=25"
+      "remaining_gate": ""
     },
     {
       "deliverable": "clinical_utility_package",
@@ -41,21 +41,21 @@
     },
     {
       "deliverable": "submission_supplement",
-      "status": "evidence_linked_draft",
+      "status": "failed_provenance_audit",
       "evidence": "experiments/evidence_registry/submission_supplement_provenance.json",
-      "remaining_gate": "rebuild_after_server_acceptance_and_locked_subgroup_prespecification"
+      "remaining_gate": "supplement_source_mismatch:experiments/evidence_registry/run_registry.csv"
     },
     {
       "deliverable": "manuscript_tables",
-      "status": "tables_1_2_ready_table_3_pending_server",
+      "status": "ready",
       "evidence": "tables/manuscript/provenance.json",
-      "remaining_gate": "table_3_pending_25_server_runs"
+      "remaining_gate": ""
     },
     {
       "deliverable": "final_figures",
-      "status": "submission_staging_4_of_5_figures",
+      "status": "submission_staging_5_of_5_figures",
       "evidence": "figures/submission_staging/provenance.json",
-      "remaining_gate": "figure_2_requires_25_accepted_server_runs"
+      "remaining_gate": ""
     },
     {
       "deliverable": "supplementary_figures",
@@ -67,14 +67,14 @@
       "deliverable": "frozen_submission_manuscript",
       "status": "blocked",
       "evidence": "docs/manuscript_draft.md",
-      "remaining_gate": "metadata_or_reference_placeholders=18;claims=passed;server_confirmatory=incomplete;subgroups=pending"
+      "remaining_gate": "metadata_or_reference_placeholders=18;claims=passed;server_confirmatory=complete;subgroups=pending"
     }
   ],
   "server_acceptance_summary": {
-    "status": "incomplete",
+    "status": "complete",
     "expected_runs": 25,
-    "accepted_server_runs": 0,
-    "pending_server_runs": 25,
+    "accepted_server_runs": 25,
+    "pending_server_runs": 0,
     "rejected_artifacts": 14
   },
   "manuscript_placeholder_count": 18,

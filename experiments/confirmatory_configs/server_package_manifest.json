@@ -5,7 +5,7 @@
   "training_performed": false,
   "locked_config_count": 25,
   "file_count": 46,
-  "package_sha256": "1d3a6371cf54a2b043560ee3056c47d18ca39c63abe275961396f3602a8af289",
+  "package_sha256": "443414727dcc9b95f6fa4a0b8c1a9c6885add35b9814454e1df36ed41f2ac454",
   "files": [
     {
       "path": "conf/confirmatory_ablation.yaml",
@@ -14,8 +14,8 @@
     },
     {
       "path": "data/confirmatory_v2/confirmatory_data_manifest.json",
-      "size_bytes": 2781,
-      "sha256": "041ec74c81be7cd00c3e98cb1033d1d450ab0c9a992210cc07dec0a8f4b07322"
+      "size_bytes": 2771,
+      "sha256": "8ced6217afccd3c08bff80912f161e905dbe17cb2ba8beffc446c665e3f1b854"
     },
     {
       "path": "data/confirmatory_v2/source_confirmatory_v2.csv",
