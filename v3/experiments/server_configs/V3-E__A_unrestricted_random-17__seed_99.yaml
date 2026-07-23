@@ -1,0 +1,118 @@
+project:
+  name: v3-E__A_unrestricted_random-17
+  endpoint_rules:
+    idh: baseline SBP - intradialytic SBP >= 30 or intradialytic SBP <= 90
+    ih: intradialytic MAP - baseline MAP > 10
+v3:
+  protocol_version: v3_training_protocol_1
+  contract_version: v3_research_contract_1
+  data_contract: v3_hbd_data_protocol_1
+  execution_context: server_v3
+  training_authorized: false
+  model_family_id: E__A_unrestricted_random-17
+  run_id: V3-E__A_unrestricted_random-17__seed_99
+  evidence_lock:
+    source_sha256: b967692a7a6d4289ecf7bd58b95550b7e8baa487120566e2f4d1775fdc547723
+    target_sha256: 721c408a2ab2fa8504173ab0daa8442cbebf0f620033a17ca711264b58040be1
+    feature_allowlist_sha256: 0e8139b4713c4141c6a04a1c681303d7fef72f290892c5bbadf44767ad410c08
+    split_manifest_sha256: 488191b7867519bb166cdd6403f78e73f46ed4bf3d6c21d4ab6a569f8465863c
+    preprocessing_sha256: 000a404e726bc977b20d443c5691995f9919199370f7514abc641d16e10497bb
+    primary_partition_sha256: 97f6c3580674f637dfb1a6f85c3e5af07cb347d436bf7142e951c4bb51a27891
+    random_partitions_sha256: 93d8aba11007ae6b8c77873a3ff1c937e4a22ddeaf310e3d2c63805967b9bc19
+    training_protocol_sha256: a6892ed9f871ece481c96ae581a73db9c96eea651af2236ab993386e820f36ef
+  experiment_id: V3-E3-RANDOM
+  random_partition_id: A_unrestricted_random-17
+  random_family: A_unrestricted_random
+data:
+  source_file: data/v3/source_v3_hbd.csv
+  target_file: data/v3/target_v3_hbd.csv
+  feature_allowlist: v3/data_contract/feature_allowlist.csv
+  split_manifest: v3/data_contract/split_manifest.csv
+  preprocessing_file: data/v3/preprocessing.json
+  patient_col: 患者id
+  split_seed: 20260715
+  source_validation_fraction: 0.1
+  target_update_fraction: 0.6
+  target_validation_fraction: 0.15
+model:
+  logistic_c_values:
+  - 0.01
+  - 0.1
+  - 1.0
+  - 10.0
+  dropout: 0.2
+  use_cdan: false
+  use_mmd: false
+  mmd_weight: 1.0
+  pooled_update: true
+  architecture_partition: random_aligned
+  architecture: dual_branch
+  alignment_strategy: random_feature_coral
+  training_mode: supervised_update
+  use_coral: true
+  coral_weight: 0.01
+  mlp_hidden_dims:
+  - 64
+  - 32
+  physio_indices: &id001
+  - 10
+  - 14
+  - 3
+  treat_indices:
+  - 0
+  - 1
+  - 2
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 11
+  - 12
+  - 13
+  - 15
+  - 16
+  - 17
+  - 18
+  - 19
+  - 20
+  - 21
+  dual_branch_physio_indices: *id001
+  alignment_scope: branch_a
+  use_stratified_alignment: true
+  use_outcome_specific_alignment: false
+  random_aligned_indices:
+  - 10
+  - 14
+  - 3
+training:
+  initialization_seed: 99
+  initialization_seeds:
+  - 7
+  - 13
+  - 42
+  - 99
+  - 2024
+  batch_size: 256
+  pretrain_learning_rate: 0.001
+  finetune_learning_rate: 0.0001
+  pretrain_epochs: 40
+  finetune_epochs: 20
+  patience: 5
+evaluation:
+  patient_bootstrap_replicates: 1000
+  bootstrap_seed: 20260715
+  endpoints:
+  - idh
+  - ih
+  primary_metric: ROC_AUC
+  secondary_metrics:
+  - PR_AUC
+  - Brier
+  - calibration_intercept
+  - calibration_slope
+  - ECE
+  multiplicity: Holm_for_two_co_primary_endpoints
+paths:
+  output_dir: experiments/v3_results

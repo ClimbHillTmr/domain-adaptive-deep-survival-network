@@ -1,0 +1,345 @@
+{
+  "contract_version": "v3_research_contract_1",
+  "data_protocol_version": "v3_hbd_data_protocol_1",
+  "dataset_version": "v3_hbd_20260723",
+  "frozen_at_utc": "2026-07-23T09:33:52+00:00",
+  "training_authorized": false,
+  "source": {
+    "cohort": "shenyi",
+    "data_protocol_version": "v3_hbd_data_protocol_1",
+    "input_path": "/Users/cht/.cache/huggingface/hub/datasets--LongGoodbye--Shenyi-Fuding-original/snapshots/b125e7730d526b43c6cbd17dca3ff00b57b9cf1c/updated_dataset_shenyi.csv",
+    "input_rows": 222836,
+    "output_rows": 211452,
+    "rejected": {
+      "invalid_sequence": 6521,
+      "misaligned_sequence": 4728,
+      "invalid_time": 135
+    },
+    "n_patients": 1628,
+    "n_idh_events": 30694,
+    "n_ih_events": 59978,
+    "idh_rule": "baseline_sbp - intradialytic_sbp >= 30 or intradialytic_sbp <= 90",
+    "ih_rule": "intradialytic_map - baseline_map > 10",
+    "non_event_time_min": 0.0,
+    "quality_protocol": {
+      "protocol_version": "v3_hbd_data_protocol_1",
+      "sex_mapping": {
+        "female": 0,
+        "male": 1,
+        "unknown": null
+      },
+      "sex_raw_counts": {
+        "男": 138674,
+        "女": 72778
+      },
+      "sex_unknown_rows": 0,
+      "age_derived_from_birth_date_rows": 210811,
+      "age_fallback_raw_rows": 0,
+      "age_raw_derived_difference_gt_1_5_years": 0,
+      "age_missing_rows": 641,
+      "age_under_18_rows": 246,
+      "age_under_18_patients": 6,
+      "dialysis_vintage_invalid_or_missing_rows": 1181,
+      "temperature_valid_range_c": [
+        30.0,
+        45.0
+      ],
+      "temperature_invalid_rows_set_missing": 338,
+      "temperature_missing_rows_after_gate": 105409,
+      "canonical_baseline_map_column": "透前动脉压",
+      "excluded_current_session_map_column": "平均动脉压",
+      "dropped_direct_identifier_columns": [
+        "透析记录id",
+        "Unnamed: 0"
+      ]
+    },
+    "input_sha256": "607a7f115efa2db64c3f23190f82222978d10146570bdbf6e1f66118bd2320f9",
+    "output_sha256": "b967692a7a6d4289ecf7bd58b95550b7e8baa487120566e2f4d1775fdc547723",
+    "output_path": "/Users/cht/GitHub/domain-adaptive-deep-survival-network/data/v3/source_v3_hbd.csv",
+    "audit_path": "/Users/cht/GitHub/domain-adaptive-deep-survival-network/data/v3/source_v3_hbd.audit.json"
+  },
+  "target": {
+    "cohort": "fuding",
+    "data_protocol_version": "v3_hbd_data_protocol_1",
+    "input_path": "/Users/cht/.cache/huggingface/hub/datasets--LongGoodbye--Shenyi-Fuding-original/snapshots/b125e7730d526b43c6cbd17dca3ff00b57b9cf1c/updated_dataset_fuding.csv",
+    "input_rows": 76519,
+    "output_rows": 74947,
+    "rejected": {
+      "invalid_sequence": 176,
+      "misaligned_sequence": 1225,
+      "invalid_time": 171
+    },
+    "n_patients": 430,
+    "n_idh_events": 28881,
+    "n_ih_events": 8962,
+    "idh_rule": "baseline_sbp - intradialytic_sbp >= 30 or intradialytic_sbp <= 90",
+    "ih_rule": "intradialytic_map - baseline_map > 10",
+    "non_event_time_min": 0.0,
+    "quality_protocol": {
+      "protocol_version": "v3_hbd_data_protocol_1",
+      "sex_mapping": {
+        "female": 0,
+        "male": 1,
+        "unknown": null
+      },
+      "sex_raw_counts": {
+        "男": 45167,
+        "女": 29780
+      },
+      "sex_unknown_rows": 0,
+      "age_derived_from_birth_date_rows": 74947,
+      "age_fallback_raw_rows": 0,
+      "age_raw_derived_difference_gt_1_5_years": 0,
+      "age_missing_rows": 0,
+      "age_under_18_rows": 0,
+      "age_under_18_patients": 0,
+      "dialysis_vintage_invalid_or_missing_rows": 14,
+      "temperature_valid_range_c": [
+        30.0,
+        45.0
+      ],
+      "temperature_invalid_rows_set_missing": 0,
+      "temperature_missing_rows_after_gate": 342,
+      "canonical_baseline_map_column": "透前动脉压",
+      "excluded_current_session_map_column": "平均动脉压",
+      "dropped_direct_identifier_columns": [
+        "姓名",
+        "透析记录id",
+        "RECIPE_ID"
+      ]
+    },
+    "input_sha256": "6fcfd523cd60aedc245d4b51e072aeca777f65e9a56554fdebaf45d3ee5f3813",
+    "output_sha256": "721c408a2ab2fa8504173ab0daa8442cbebf0f620033a17ca711264b58040be1",
+    "output_path": "/Users/cht/GitHub/domain-adaptive-deep-survival-network/data/v3/target_v3_hbd.csv",
+    "audit_path": "/Users/cht/GitHub/domain-adaptive-deep-survival-network/data/v3/target_v3_hbd.audit.json"
+  },
+  "source_prior_history_audit": {
+    "path": "/Users/cht/GitHub/domain-adaptive-deep-survival-network/data/v3/source_v3_hbd.csv",
+    "passed": true,
+    "time_column": "透析开始时间",
+    "missing_columns": [],
+    "feature_checks": {
+      "历史平均超滤量MAX": {
+        "mismatched_rows": 0,
+        "maximum_absolute_error": 2.9103830456733704e-11
+      },
+      "历史平均透前体重": {
+        "mismatched_rows": 0,
+        "maximum_absolute_error": 1.4210854715202004e-14
+      },
+      "历史平均透前收缩压": {
+        "mismatched_rows": 0,
+        "maximum_absolute_error": 2.842170943040401e-14
+      },
+      "历史平均透前舒张压": {
+        "mismatched_rows": 0,
+        "maximum_absolute_error": 1.4210854715202004e-14
+      },
+      "历史平均透中低血压_计算": {
+        "mismatched_rows": 0,
+        "maximum_absolute_error": 1.1102230246251565e-16
+      },
+      "历史平均超滤率_mean": {
+        "mismatched_rows": 0,
+        "maximum_absolute_error": 4.547473508864641e-13
+      },
+      "history_IDH_rate": {
+        "mismatched_rows": 0,
+        "maximum_absolute_error": 1.1102230246251565e-16
+      },
+      "history_HBP_rate": {
+        "mismatched_rows": 0,
+        "maximum_absolute_error": 1.1102230246251565e-16
+      },
+      "history_LBP_times_0_rate": {
+        "mismatched_rows": 0,
+        "maximum_absolute_error": 1.1102230246251565e-16
+      },
+      "history_LBP_times_1_rate": {
+        "mismatched_rows": 0,
+        "maximum_absolute_error": 9.974659986866641e-17
+      },
+      "history_LBP_times_2_rate": {
+        "mismatched_rows": 0,
+        "maximum_absolute_error": 9.974659986866641e-17
+      },
+      "history_LBP_times_3_rate": {
+        "mismatched_rows": 0,
+        "maximum_absolute_error": 9.974659986866641e-17
+      },
+      "history_LBP_times_4_rate": {
+        "mismatched_rows": 0,
+        "maximum_absolute_error": 9.974659986866641e-17
+      }
+    },
+    "sessions": 211452,
+    "patients": 1628,
+    "missing_session_times": 0,
+    "duplicate_session_ids": 0,
+    "tied_patient_time_rows": 2,
+    "first_session_nonzero_history_rows": 0,
+    "total_feature_mismatches": 0,
+    "strictly_prior_definition": "patient-time sorted; tied sessions share history from strictly earlier timestamps",
+    "errors": []
+  },
+  "target_prior_history_audit": {
+    "path": "/Users/cht/GitHub/domain-adaptive-deep-survival-network/data/v3/target_v3_hbd.csv",
+    "passed": true,
+    "time_column": "透析开始时间",
+    "missing_columns": [],
+    "feature_checks": {
+      "历史平均超滤量MAX": {
+        "mismatched_rows": 0,
+        "maximum_absolute_error": 4.547473508864641e-13
+      },
+      "历史平均透前体重": {
+        "mismatched_rows": 0,
+        "maximum_absolute_error": 1.4210854715202004e-14
+      },
+      "历史平均透前收缩压": {
+        "mismatched_rows": 0,
+        "maximum_absolute_error": 2.842170943040401e-14
+      },
+      "历史平均透前舒张压": {
+        "mismatched_rows": 0,
+        "maximum_absolute_error": 1.4210854715202004e-14
+      },
+      "历史平均透中低血压_计算": {
+        "mismatched_rows": 0,
+        "maximum_absolute_error": 1.1102230246251565e-16
+      },
+      "历史平均超滤率_mean": {
+        "mismatched_rows": 0,
+        "maximum_absolute_error": 2.2737367544323206e-13
+      },
+      "history_IDH_rate": {
+        "mismatched_rows": 0,
+        "maximum_absolute_error": 1.1102230246251565e-16
+      },
+      "history_HBP_rate": {
+        "mismatched_rows": 0,
+        "maximum_absolute_error": 1.1102230246251565e-16
+      },
+      "history_LBP_times_0_rate": {
+        "mismatched_rows": 0,
+        "maximum_absolute_error": 1.1102230246251565e-16
+      },
+      "history_LBP_times_1_rate": {
+        "mismatched_rows": 0,
+        "maximum_absolute_error": 9.71445146547012e-17
+      },
+      "history_LBP_times_2_rate": {
+        "mismatched_rows": 0,
+        "maximum_absolute_error": 9.71445146547012e-17
+      },
+      "history_LBP_times_3_rate": {
+        "mismatched_rows": 0,
+        "maximum_absolute_error": 9.71445146547012e-17
+      },
+      "history_LBP_times_4_rate": {
+        "mismatched_rows": 0,
+        "maximum_absolute_error": 9.71445146547012e-17
+      }
+    },
+    "sessions": 74947,
+    "patients": 430,
+    "missing_session_times": 0,
+    "duplicate_session_ids": 0,
+    "tied_patient_time_rows": 0,
+    "first_session_nonzero_history_rows": 0,
+    "total_feature_mismatches": 0,
+    "strictly_prior_definition": "patient-time sorted; tied sessions share history from strictly earlier timestamps",
+    "errors": []
+  },
+  "feature_allowlist": "v3/data_contract/feature_allowlist.csv",
+  "feature_allowlist_sha256": "0e8139b4713c4141c6a04a1c681303d7fef72f290892c5bbadf44767ad410c08",
+  "primary_feature_count": 22,
+  "primary_features": [
+    "年龄",
+    "性别",
+    "透析龄年",
+    "透前收缩压",
+    "透前舒张压",
+    "透前呼吸频率",
+    "透前体温",
+    "透前体重-干体重",
+    "超负荷",
+    "历史平均超滤量MAX",
+    "历史平均超滤率_mean",
+    "历史平均透前体重",
+    "历史平均透前收缩压",
+    "历史平均透前舒张压",
+    "历史平均透中低血压_计算",
+    "history_IDH_rate",
+    "history_HBP_rate",
+    "history_LBP_times_0_rate",
+    "history_LBP_times_1_rate",
+    "history_LBP_times_2_rate",
+    "history_LBP_times_3_rate",
+    "history_LBP_times_4_rate"
+  ],
+  "primary_groups": {
+    "年龄": "physiology_history",
+    "性别": "physiology_history",
+    "透析龄年": "physiology_history",
+    "透前收缩压": "physiology_history",
+    "透前舒张压": "physiology_history",
+    "透前呼吸频率": "physiology_history",
+    "透前体温": "physiology_history",
+    "透前体重-干体重": "treatment_context",
+    "超负荷": "treatment_context",
+    "历史平均超滤量MAX": "treatment_context",
+    "历史平均超滤率_mean": "treatment_context",
+    "历史平均透前体重": "physiology_history",
+    "历史平均透前收缩压": "physiology_history",
+    "历史平均透前舒张压": "physiology_history",
+    "历史平均透中低血压_计算": "physiology_history",
+    "history_IDH_rate": "physiology_history",
+    "history_HBP_rate": "physiology_history",
+    "history_LBP_times_0_rate": "physiology_history",
+    "history_LBP_times_1_rate": "physiology_history",
+    "history_LBP_times_2_rate": "physiology_history",
+    "history_LBP_times_3_rate": "physiology_history",
+    "history_LBP_times_4_rate": "physiology_history"
+  },
+  "split_id": "V3-SPLIT-20260715",
+  "split_summary": {
+    "source_train": {
+      "patients": 1465,
+      "sessions": 187479,
+      "idh_events": 27367,
+      "ih_events": 52531
+    },
+    "source_validation": {
+      "patients": 163,
+      "sessions": 23973,
+      "idh_events": 3327,
+      "ih_events": 7447
+    },
+    "target_update": {
+      "patients": 219,
+      "sessions": 38483,
+      "idh_events": 14955,
+      "ih_events": 4609
+    },
+    "target_calibration": {
+      "patients": 39,
+      "sessions": 6598,
+      "idh_events": 2351,
+      "ih_events": 666
+    },
+    "target_test": {
+      "patients": 172,
+      "sessions": 29866,
+      "idh_events": 11575,
+      "ih_events": 3687
+    }
+  },
+  "split_manifest_csv_sha256": "488191b7867519bb166cdd6403f78e73f46ed4bf3d6c21d4ab6a569f8465863c",
+  "split_manifest_json_sha256": "6552a9085aed3f4b82ce3964768503d74ae28c038864b8d71c38af102513e568",
+  "preprocessing_sha256": "000a404e726bc977b20d443c5691995f9919199370f7514abc641d16e10497bb",
+  "dataset_manifest_sha256": "2f735c0bbcecafc99ed2450490f3f8ea8489751179dc4ef7f6308d7d84a1b152",
+  "pipeline_code_sha256": "9e53310bd7d2cf9a117368657fff579e7afc69a08d8f31e53552e861b3b0dd53",
+  "preprocessing_code_sha256": "8bf9cedba695a6f55c35c85b4f069b7b4f66fb7ed8fb61bc2e78fd8f80b6eb11",
+  "interpretation": "Internal V3 revalidation; not a newly untouched external target cohort."
+}

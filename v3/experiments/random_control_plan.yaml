@@ -1,0 +1,46 @@
+protocol_version: v3_random_partition_controls_1
+status: locked
+scientific_question: Does a clinically motivated partition outperform appropriate random feature partitions?
+independent_units:
+  sampling: patient
+  optimization_block: initialization_seed
+  randomization_unit: feature_partition
+partition_master_seed: 20260715
+feature_manifest_hash: 0e8139b4713c4141c6a04a1c681303d7fef72f290892c5bbadf44767ad410c08
+clinical_partition_hash: 97f6c3580674f637dfb1a6f85c3e5af07cb347d436bf7142e951c4bb51a27891
+partition_artifact: v3/experiments/random_partitions.csv
+partition_artifact_hash: 93d8aba11007ae6b8c77873a3ff1c937e4a22ddeaf310e3d2c63805967b9bc19
+families:
+  A_unrestricted_random:
+    role: exploratory_null
+    rule: Sample non-empty feature partitions uniformly; capacity must be rematched for each realized size.
+    minimum_partitions: 19
+    limitation: Group size varies and therefore this is not the primary fair null.
+  B_variance_matched:
+    role: structural_sensitivity
+    rule: Match clinical-group size plus the source-development raw variance and missingness strata.
+    minimum_partitions: 19
+    limitation: Matching variables and tolerances must be frozen before generation.
+  C_group_size_matched:
+    role: primary_random_null
+    rule: Sample uniformly from partitions with exactly the same feature count as the clinical group.
+    minimum_partitions: 19
+    rationale: Nineteen partitions provide minimum empirical one-sided resolution of 0.05 when the clinical partition is ranked with the null samples.
+  D_clinical_type_matched:
+    role: ontology_sensitivity
+    rule: Preserve counts from broad observable types such as vital signs demographics history and treatment but randomize membership within those constraints.
+    minimum_partitions: 19
+    limitation: Requires enough exchangeable features within each type; otherwise report that this control is infeasible.
+requirements:
+  - Generate and hash all partitions before any V3 model result is visible.
+  - Use partition seeds distinct from initialization seeds.
+  - Match each physiology-sized and treatment-sized clinical partition separately.
+  - Evaluate the same partition for both IDH and IH; do not encode the expected outcome mapping.
+  - Report every generated partition and failed run.
+  - Use seed-blocked comparisons and patient-cluster uncertainty.
+  - Do not select a random family based on which gives the most favorable clinical-partition result.
+primary_test:
+  comparator: C_group_size_matched
+  statistic: mean of IDH and IH seed-averaged paired held-out target AUC improvements for the primary mapping
+  empirical_p_value: (1 + number_of_random_partitions_at_least_as_favorable) / (1 + number_of_random_partitions)
+secondary_tests: [A_unrestricted_random, B_variance_matched, D_clinical_type_matched]

@@ -1,0 +1,53 @@
+{
+  "cohort": "shenyi",
+  "data_protocol_version": "v3_hbd_data_protocol_1",
+  "input_path": "/Users/cht/.cache/huggingface/hub/datasets--LongGoodbye--Shenyi-Fuding-original/snapshots/b125e7730d526b43c6cbd17dca3ff00b57b9cf1c/updated_dataset_shenyi.csv",
+  "input_rows": 222836,
+  "output_rows": 211452,
+  "rejected": {
+    "invalid_sequence": 6521,
+    "misaligned_sequence": 4728,
+    "invalid_time": 135
+  },
+  "n_patients": 1628,
+  "n_idh_events": 30694,
+  "n_ih_events": 59978,
+  "idh_rule": "baseline_sbp - intradialytic_sbp >= 30 or intradialytic_sbp <= 90",
+  "ih_rule": "intradialytic_map - baseline_map > 10",
+  "non_event_time_min": 0.0,
+  "quality_protocol": {
+    "protocol_version": "v3_hbd_data_protocol_1",
+    "sex_mapping": {
+      "female": 0,
+      "male": 1,
+      "unknown": null
+    },
+    "sex_raw_counts": {
+      "男": 138674,
+      "女": 72778
+    },
+    "sex_unknown_rows": 0,
+    "age_derived_from_birth_date_rows": 210811,
+    "age_fallback_raw_rows": 0,
+    "age_raw_derived_difference_gt_1_5_years": 0,
+    "age_missing_rows": 641,
+    "age_under_18_rows": 246,
+    "age_under_18_patients": 6,
+    "dialysis_vintage_invalid_or_missing_rows": 1181,
+    "temperature_valid_range_c": [
+      30.0,
+      45.0
+    ],
+    "temperature_invalid_rows_set_missing": 338,
+    "temperature_missing_rows_after_gate": 105409,
+    "canonical_baseline_map_column": "透前动脉压",
+    "excluded_current_session_map_column": "平均动脉压",
+    "dropped_direct_identifier_columns": [
+      "透析记录id",
+      "Unnamed: 0"
+    ]
+  },
+  "input_sha256": "607a7f115efa2db64c3f23190f82222978d10146570bdbf6e1f66118bd2320f9",
+  "output_sha256": "b967692a7a6d4289ecf7bd58b95550b7e8baa487120566e2f4d1775fdc547723",
+  "output_path": "/Users/cht/GitHub/domain-adaptive-deep-survival-network/data/v3/source_v3_hbd.csv"
+}

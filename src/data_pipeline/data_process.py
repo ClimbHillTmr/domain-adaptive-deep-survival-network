@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import hashlib
 import json
 from collections.abc import Iterable
 from pathlib import Path
@@ -12,6 +13,19 @@ import pandas as pd
 
 IDH_HISTORY_BINS = (0.25, 0.5, 0.75)
 IH_MAP_RISE_MMHG = 10.0
+DATA_PROTOCOL_VERSION = "v3_hbd_data_protocol_1"
+TEMPERATURE_VALID_RANGE_C = (30.0, 45.0)
+SEX_CODE_MAP = {
+    "女": 0.0,
+    "female": 0.0,
+    "f": 0.0,
+    "0": 0.0,
+    "男": 1.0,
+    "male": 1.0,
+    "m": 1.0,
+    "1": 1.0,
+}
+DIRECT_IDENTIFIER_COLUMNS = ("姓名", "透析记录id", "RECIPE_ID", "Unnamed: 0")
 HISTORY_MEAN_COLUMNS = (
     "超滤量MAX",
     "透前体重",
@@ -117,6 +131,94 @@ def _series_mean(value: object) -> float:
     return np.nan
 
 
+def _missing_series(frame: pd.DataFrame) -> pd.Series:
+    return pd.Series(np.nan, index=frame.index, dtype=float)
+
+
+def _canonicalize_sex(series: pd.Series) -> pd.Series:
+    normalized = series.astype("string").str.strip().str.lower()
+    return normalized.map(SEX_CODE_MAP).astype(float)
+
+
+def _apply_start_time_protocol(frame: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, object]]:
+    """Apply deterministic V3 cleaning without using outcomes or model performance."""
+    out = frame.copy()
+
+    raw_sex = (
+        out["性别"]
+        if "性别" in out
+        else pd.Series(pd.NA, index=out.index, dtype="string")
+    )
+    sex = _canonicalize_sex(raw_sex)
+    sex_counts = raw_sex.astype("string").fillna("__MISSING__").value_counts().to_dict()
+    out["性别"] = sex
+
+    dialysis_date = pd.to_datetime(out["透析日期"], errors="coerce")
+    birth_date = (
+        pd.to_datetime(out["出生日期"], errors="coerce")
+        if "出生日期" in out
+        else pd.Series(pd.NaT, index=out.index)
+    )
+    raw_age = (
+        pd.to_numeric(out["年龄"], errors="coerce")
+        if "年龄" in out
+        else _missing_series(out)
+    )
+    derived_age = (dialysis_date - birth_date).dt.days / 365.25
+    derived_age = derived_age.where(derived_age.gt(0) & derived_age.le(120))
+    raw_age = raw_age.where(raw_age.gt(0) & raw_age.le(120))
+    age_difference = (raw_age - derived_age).abs()
+    out["年龄"] = derived_age.fillna(raw_age)
+
+    first_dialysis = (
+        pd.to_datetime(out["首次透析日期"], errors="coerce")
+        if "首次透析日期" in out
+        else pd.Series(pd.NaT, index=out.index)
+    )
+    vintage_years = (dialysis_date - first_dialysis).dt.days / 365.25
+    valid_vintage = vintage_years.ge(0) & out["年龄"].gt(0) & vintage_years.le(out["年龄"])
+    out["透析龄年"] = vintage_years.where(valid_vintage)
+    out["透析龄占比"] = (out["透析龄年"] / out["年龄"]).where(valid_vintage)
+
+    raw_temperature = (
+        pd.to_numeric(out["透前体温"], errors="coerce")
+        if "透前体温" in out
+        else _missing_series(out)
+    )
+    lower, upper = TEMPERATURE_VALID_RANGE_C
+    invalid_temperature = raw_temperature.notna() & ~raw_temperature.between(lower, upper)
+    out["透前体温_异常标记"] = invalid_temperature.astype(int)
+    out["透前体温_缺失标记"] = (raw_temperature.isna() | invalid_temperature).astype(int)
+    out["透前体温"] = raw_temperature.where(raw_temperature.between(lower, upper))
+
+    # `平均动脉压` is a current-session source sequence, not a baseline predictor.
+    # Baseline MAP is represented once, canonically, by `透前动脉压`.
+    out = out.drop(columns=["平均动脉压"], errors="ignore")
+    dropped_identifiers = [column for column in DIRECT_IDENTIFIER_COLUMNS if column in out]
+    out = out.drop(columns=[*DIRECT_IDENTIFIER_COLUMNS, "出生日期"], errors="ignore")
+
+    quality = {
+        "protocol_version": DATA_PROTOCOL_VERSION,
+        "sex_mapping": {"female": 0, "male": 1, "unknown": None},
+        "sex_raw_counts": {str(key): int(value) for key, value in sex_counts.items()},
+        "sex_unknown_rows": int(sex.isna().sum()),
+        "age_derived_from_birth_date_rows": int(derived_age.notna().sum()),
+        "age_fallback_raw_rows": int(derived_age.isna().mul(raw_age.notna()).sum()),
+        "age_raw_derived_difference_gt_1_5_years": int(age_difference.gt(1.5).sum()),
+        "age_missing_rows": int(out["年龄"].isna().sum()),
+        "age_under_18_rows": int(out["年龄"].lt(18).sum()),
+        "age_under_18_patients": int(out.loc[out["年龄"].lt(18), "患者id"].nunique()),
+        "dialysis_vintage_invalid_or_missing_rows": int(out["透析龄占比"].isna().sum()),
+        "temperature_valid_range_c": [lower, upper],
+        "temperature_invalid_rows_set_missing": int(invalid_temperature.sum()),
+        "temperature_missing_rows_after_gate": int(out["透前体温"].isna().sum()),
+        "canonical_baseline_map_column": "透前动脉压",
+        "excluded_current_session_map_column": "平均动脉压",
+        "dropped_direct_identifier_columns": dropped_identifiers,
+    }
+    return out, quality
+
+
 def _ultrafiltration_max(value: object) -> float:
     if isinstance(value, (int, float)) and np.isfinite(value):
         return float(value) * 1000.0  # Fuding stores liters.
@@ -192,7 +294,6 @@ def _build_rows(raw: pd.DataFrame, cohort: str) -> tuple[pd.DataFrame, dict[str,
                 "降幅时间点差值区间": _ratio_bin(event_time / 60.0, (1.0, 2.0, 3.0)),
                 "透前动脉压": (float(baseline_sbp) + 2 * float(baseline_dbp)) / 3,
                 "脉压差": float(baseline_sbp) - float(baseline_dbp),
-                "平均动脉压": (float(baseline_sbp) + 2 * float(baseline_dbp)) / 3,
                 "超滤量MAX": _ultrafiltration_max(row.get("超滤量")),
                 "超滤率_mean": _series_mean(row.get("超滤率")),
             }
@@ -261,13 +362,11 @@ def build_cohort(raw_path: str | Path, cohort: str) -> tuple[pd.DataFrame, dict[
         + ":"
         + frame.groupby(["患者id", "透析日期", "透析开始时间"], sort=False).cumcount().astype(str)
     )
-    first_dialysis = pd.to_datetime(frame.get("首次透析日期"), errors="coerce")
-    age = pd.to_numeric(frame.get("年龄"), errors="coerce")
-    vintage_years = (frame["透析日期"] - first_dialysis).dt.days / 365.25
-    frame["透析龄占比"] = (vintage_years / age.replace(0, np.nan)).clip(0, 1)
+    frame, quality = _apply_start_time_protocol(frame)
     frame = _add_prior_history(frame)
     audit: dict[str, object] = {
         "cohort": cohort,
+        "data_protocol_version": DATA_PROTOCOL_VERSION,
         "input_path": str(raw_path),
         "input_rows": int(len(raw)),
         "output_rows": int(len(frame)),
@@ -278,15 +377,57 @@ def build_cohort(raw_path: str | Path, cohort: str) -> tuple[pd.DataFrame, dict[
         "idh_rule": "baseline_sbp - intradialytic_sbp >= 30 or intradialytic_sbp <= 90",
         "ih_rule": f"intradialytic_map - baseline_map > {IH_MAP_RISE_MMHG:g}",
         "non_event_time_min": 0.0,
+        "quality_protocol": quality,
     }
     return frame, audit
 
 
-def write_cohort(raw_path: str | Path, cohort: str, output_path: str | Path) -> dict[str, object]:
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def write_cohort(
+    raw_path: str | Path,
+    cohort: str,
+    output_path: str | Path,
+    *,
+    expected_raw_sha256: str | None = None,
+    expected_summary: dict[str, int] | None = None,
+) -> dict[str, object]:
+    raw = Path(raw_path)
+    input_hash = _sha256(raw)
+    if expected_raw_sha256 is not None and input_hash != expected_raw_sha256:
+        raise ValueError(
+            f"Raw {cohort} SHA-256 mismatch: expected {expected_raw_sha256}, observed {input_hash}"
+        )
     frame, audit = build_cohort(raw_path, cohort)
+    if expected_summary is not None:
+        observed_summary = {
+            "output_rows": int(audit["output_rows"]),
+            "n_patients": int(audit["n_patients"]),
+            "n_idh_events": int(audit["n_idh_events"]),
+            "n_ih_events": int(audit["n_ih_events"]),
+        }
+        mismatches = {
+            key: {"expected": int(expected), "observed": observed_summary.get(key)}
+            for key, expected in expected_summary.items()
+            if observed_summary.get(key) != int(expected)
+        }
+        if mismatches:
+            raise ValueError(f"Locked {cohort} cohort summary mismatch: {mismatches}")
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
     frame.to_csv(output, index=False)
+    complete_audit = {
+        **audit,
+        "input_sha256": input_hash,
+        "output_sha256": _sha256(output),
+        "output_path": str(output),
+    }
     audit_path = output.with_suffix(".audit.json")
-    audit_path.write_text(json.dumps(audit, ensure_ascii=False, indent=2), encoding="utf-8")
-    return {**audit, "output_path": str(output), "audit_path": str(audit_path)}
+    audit_path.write_text(json.dumps(complete_audit, ensure_ascii=False, indent=2), encoding="utf-8")
+    return {**complete_audit, "audit_path": str(audit_path)}

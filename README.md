@@ -1,30 +1,45 @@
-# Outcome-Specific Target-Center Updating for Hemodynamic Event Prediction
+# Clinical AI Transportability Under Heterogeneous Cross-Center Shift
 
-This repository contains a two-center, session-level framework for predicting intradialytic hypotension (IDH) and intradialytic hypertension (IH) at the start of a hemodialysis session.
+The active V3 study asks which components of clinical information are transportable across centers and whether knowing what to align adds value beyond supervised target-center updating. The application is session-level prediction of intradialytic hypotension (IDH) and intradialytic hypertension (IH) using data from two hemodialysis centers.
 
-The active study uses labeled target-center data for model updating, validation, calibration, and held-out testing. It is therefore a **target-center updating study**, not zero-shot external validation. Earlier survival/CDAN-GSN components remain in the repository as legacy code and are not part of the current scientific claim.
+Start every V3 research or implementation task from [CLAUDE.md](CLAUDE.md). It is the versioned research, data, estimand, and statistical checkpoint enforced by the scientific audit.
 
-## Current Evidence Status
+V3 is an evidence-driven clinical AI transportability study, not a CORAL algorithm paper. It does not assume that physiological features are invariant, that treatment features are center-specific, or that reducing domain discrepancy improves prediction. Models are experimental tools nested under the Evidence Tree.
 
-The existing artifacts support three conclusions:
+## Active V3 Status
 
-1. Endpoint burden differs substantially between the source and target centers.
-2. The complete target-center updating procedure improves held-out target performance over the corresponding source MLP, particularly for IDH.
-3. Updated-model discrimination is stable across five initialization seeds.
+No V3 model result exists. V1/V2 artifacts are retained as historical, hypothesis-generating evidence and cannot support V3 confirmatory claims. The current authorized scope is documentation, static audit, and data-contract review only; data regeneration and training are not authorized.
 
-The existing artifacts do **not** yet establish that outcome-specific CORAL is superior to fine-tuning or global CORAL. Those methods currently differ in encoder architecture and are not all available under matched seeds. Mechanism-specific superiority remains a confirmatory hypothesis.
+The V3 Evidence Tree has five branches:
 
-See [the frozen registry](experiments/evidence_registry), [evidence audit](docs/evidence_audit.md), [working manuscript](docs/manuscript_draft.md), and [visualization plan](docs/visualization_plan.md) for the claim-to-artifact mapping and submission blockers.
+1. observed heterogeneous shift;
+2. feature, representation, and outcome transportability;
+3. selective alignment with architecture-matched and random-partition controls;
+4. representation validation and information preservation;
+5. conditional clinical utility.
 
-## Reproducibility Pipeline
+See [the V3 research contract](v3/README.md), [Evidence Tree](v3/evidence_tree.md), [research protocol](v3/research_protocol.md), and [current audit report](v3/registry/scientific_audit_status.json).
 
-Historical v1 evidence and the new confirmatory v2 protocol are separate contracts. The eight historical runs remain frozen for the current target-center-updating claims. The corrected v2 cohorts reproduce their cohort counts and patient split while fixing a tied-time prior-history issue; v2 is reserved for new server validation and must not be mixed numerically with v1.
+Run the audit-only entry point locally or on the server:
+
+```bash
+bash scripts/run_v3_server.sh scientific-audit
+bash scripts/run_v3_server.sh training-readiness
+bash scripts/run_v3_server.sh tests
+```
+
+The expected current result is `structure_passed=true` and `training_ready=false`. The launcher has no V3 training implementation and rejects `train`.
+
+## Historical V1/V2 Evidence Boundary
+
+V1 reported target-center updating observations, and V2 was designed as an architecture-matched follow-up. They remain useful for hypothesis generation, failure-mode identification, and pipeline safeguards only. They must not be copied into `v3/registry/run_registry.csv`, mixed with V3 estimates, or described as V3 confirmation.
+
+Historical reproducibility commands are retained below solely to document earlier project contracts. Do not execute their training modes as part of V3.
 
 ```bash
 python scripts/freeze_binary_evidence.py
 python scripts/run_confirmatory_ablation.py --prepare-configs
 python scripts/run_confirmatory_ablation.py --plan
-python scripts/run_confirmatory_ablation.py --train --execution-context server_confirmatory
 python scripts/verify_server_confirmatory_results.py --require-complete
 python scripts/build_confirmatory_tables.py
 python scripts/build_clinical_utility.py
@@ -36,9 +51,9 @@ python scripts/build_manuscript_claim_registry.py --require-complete
 python scripts/audit_submission_package.py
 ```
 
-Training is intended for the compute server, not the local workstation. The `--train` command proceeds only after exact-data, patient-split, and temporal-leakage gates pass and after the explicit `server_confirmatory` execution marker is supplied. The confirmatory table additionally rejects results without a recorded server hostname and CUDA device. Primary machine-readable outputs are under `experiments/evidence_registry/`, `experiments/confirmatory_results/`, `clinical_utility_report/`, and `subgroup_analysis_patient_bootstrap.csv`.
+These paths and commands belong to the historical V1/V2 contract. They do not authorize or register V3 experiments. V3 training will require a separately reviewed launcher only after the scientific audit and data contract pass.
 
-Use `--plan` on the server before `--train` to validate and list the complete five-model by five-seed grid without fitting or rewriting anything. The default execution policy is one process on one CUDA GPU, serially across five seed blocks; a cyclic balanced order places every model in each within-block execution position once. Rerunning the same launcher skips configurations already completed with valid server provenance.
+For historical V2 only, `--plan` was used to validate its five-model by five-seed grid without fitting or rewriting anything. That grid and its execution policy are not inherited by V3.
 
 Before server execution, verify `experiments/confirmatory_configs/server_package_manifest.json`; it locks the v2 datasets, feature allowlist, patient split, analysis code, dependencies, and all 25 configurations. Accepted server results must be appended to the central run registry with `scripts/register_server_confirmatory_runs.py` before confirmatory tables or Figure 2 can use them.
 
@@ -50,7 +65,7 @@ The manuscript claim registry requires every paragraph containing quantitative i
 
 The subgroup command is intentionally non-runnable with the template protocol. Complete and lock the [subgroup prespecification form](docs/subgroup_prespecification_form.md), bind it to an accepted confirmatory-v2 server run, and then execute it. Historical v1 predictions must not be joined to v2 feature rows.
 
-## Study Contract
+## Historical V1/V2 Study Contract
 
 | Item | Frozen binary-study definition |
 |---|---|
@@ -67,7 +82,7 @@ The subgroup command is intentionally non-runnable with the template protocol. C
 
 Outcome rates in the binary preflight artifact were 14.5% versus 38.5% for IDH and 28.4% versus 12.0% for IH at the source and target centers, respectively.
 
-## Model Design
+## Historical V1/V2 Model Design
 
 The mechanism-aware MLP contains two encoders:
 
@@ -78,7 +93,7 @@ For IDH, CORAL is applied to the physiology/history representation. For IH, CORA
 
 This grouping is a prespecified clinical design choice, not a validated biological decomposition.
 
-## Main Held-Out Results
+## Historical V1 Results (Hypothesis-Generating Only)
 
 The main mechanism-aware artifact uses initialization seed 2024.
 
@@ -95,7 +110,7 @@ The paired updated-versus-source AUC differences were +0.0424 (95% CI 0.0348 to 
 
 Across five seeds, updated AUC was 0.8371 +/- 0.0009 for IDH and 0.8687 +/- 0.0006 for IH. Source-model AUC was much more variable, so source-to-updated delta must not be interpreted as the isolated effect of CORAL.
 
-## Representation Analyses
+## Historical Exploratory Representation Analyses
 
 Exploratory analyses suggest a larger update effect for IDH than IH:
 
@@ -126,7 +141,7 @@ The existing files under `tables/`, `figures/Main_Figures/`, and `figures/Submis
 
 The only active manuscript tables are under `tables/manuscript/`. Table 1 reports registered cohort and analysis allocation because a submission-grade baseline-characteristics artifact is unavailable; Table 2 reports registered held-out performance; Table 3 remains the server-pending confirmatory CSV.
 
-## Static Audit and Training Gate
+## Historical Static Audit (Not a V3 Training Gate)
 
 Run the static audit without fitting models:
 
@@ -134,13 +149,7 @@ Run the static audit without fitting models:
 python run_all.py
 ```
 
-Training requires an explicit safety flag:
-
-```bash
-python run_all.py --train
-```
-
-Do not rerun or replace the historical v1 evidence. New confirmatory-v2 fitting is permitted only on the compute server under the locked runbook after its v2 data, history, split, and CUDA checks pass.
+Do not use `run_all.py --train` for V3. Do not rerun or replace historical V1 evidence. The only active V3 entry point is `scripts/run_v3_server.sh`, which currently permits audits and tests but no training.
 
 ## Draft Manuscript Figures
 

@@ -1,0 +1,53 @@
+{
+  "contract_version": "v3_initial_research_contract",
+  "status": "run_grid_generated_authorization_withheld",
+  "training_authorized": false,
+  "feature_protocol_approval": "PI_directive_CLAUDE_v3_research_contract_1_20260723",
+  "v3_registered_runs": 0,
+  "historical_runs_imported": 0,
+  "historical_evidence_policy": "hypothesis_generation_only",
+  "completed_checks": [
+    "candidate_cohort_construction_audited",
+    "candidate_processed_hashes_independently_verified",
+    "candidate_raw_hashes_independently_verified",
+    "claim_states_initialized_as_not_tested_or_blocked",
+    "conditional_manuscript_and_go_no_go_paths_created",
+    "corrected_v3_cohorts_frozen_and_hashed",
+    "csv_structure_validated",
+    "evidence_first_experiment_matrix_created",
+    "evidence_tree_created",
+    "falsifiable_analysis_and_interpretation_policies_created",
+    "future_only_run_registry_created",
+    "historical_run_id_contamination_check_passed",
+    "historical_v1_v2_evidence_classified",
+    "models_a_through_g_and_fair_primary_contrasts_specified",
+    "patient_level_split_manifest_frozen",
+    "primary_estimand_and_clustered_statistical_plan_locked_in_contract",
+    "primary_feature_partition_frozen",
+    "random_control_families_a_through_d_prespecified",
+    "random_control_families_generated_and_hashed",
+    "root_claude_research_contract_created",
+    "scientific_structure_audit_passed",
+    "sex_age_vintage_temperature_and_map_protocol_implemented",
+    "source_train_fitted_preprocessing_frozen",
+    "strictly_prior_history_audits_passed",
+    "transportability_ranking_plan_created",
+    "v3_directory_contract_created",
+    "v3_dual_branch_alignment_scopes_implemented",
+    "v3_feature_ontology_drafted_with_uncertainty",
+    "v3_frozen_split_and_preprocessing_loader_implemented",
+    "v3_run_grid_generated",
+    "v3_server_configs_generated_and_hashed"
+  ],
+  "blocking_gates": [],
+  "downstream_gates": [
+    "new_temporal_or_external_confirmatory_test_cohort_not_identified",
+    "clinical_threshold_and_alert_workflow_not_prespecified"
+  ],
+  "execution_gates": [
+    "v3_training_authorization_false_after_run_grid_review"
+  ],
+  "scope_limitations": [
+    "measurement_process_tier_not_observed_in_current_common_feature_table"
+  ]
+}

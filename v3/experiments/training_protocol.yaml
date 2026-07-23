@@ -1,0 +1,91 @@
+protocol_version: v3_training_protocol_1
+status: locked_design_no_training_authorization
+contract_version: v3_research_contract_1
+data:
+  source: data/v3/source_v3_hbd.csv
+  source_sha256: b967692a7a6d4289ecf7bd58b95550b7e8baa487120566e2f4d1775fdc547723
+  target: data/v3/target_v3_hbd.csv
+  target_sha256: 721c408a2ab2fa8504173ab0daa8442cbebf0f620033a17ca711264b58040be1
+  feature_allowlist: v3/data_contract/feature_allowlist.csv
+  feature_allowlist_sha256: 0e8139b4713c4141c6a04a1c681303d7fef72f290892c5bbadf44767ad410c08
+  split_manifest_sha256: 488191b7867519bb166cdd6403f78e73f46ed4bf3d6c21d4ab6a569f8465863c
+  preprocessing_sha256: 000a404e726bc977b20d443c5691995f9919199370f7514abc641d16e10497bb
+  primary_partition_sha256: 97f6c3580674f637dfb1a6f85c3e5af07cb347d436bf7142e951c4bb51a27891
+  random_partitions_sha256: 93d8aba11007ae6b8c77873a3ff1c937e4a22ddeaf310e3d2c63805967b9bc19
+models:
+  source_only: single encoder trained on source only
+  A: single encoder supervised target updating without alignment
+  B: single encoder supervised target updating with global CORAL
+  C: dual encoder supervised target updating without alignment
+  D1: dual encoder with physiology-history CORAL for both endpoints
+  D2: dual encoder with treatment-context CORAL for both endpoints
+  E: dual encoder using every locked random partition
+  F: target-only single-encoder local reference
+  G: dual encoder supervised target updating with global CORAL
+architecture:
+  activation: ReLU
+  dropout: 0.2
+  dual_branch_hidden_dims_per_branch:
+  - 64
+  - 32
+  dual_branch_parameter_count: 5761
+  single_encoder_hidden_dims:
+  - 64
+  - 65
+  single_encoder_parameter_count: 5763
+  parameter_count_relative_difference: 0.000347
+  prediction_head: linear_logit
+optimization:
+  loss: focal_binary_cross_entropy
+  focal_alpha: training_fold_negative_fraction
+  focal_gamma: 2.0
+  optimizer: AdamW
+  weight_decay: 0.0001
+  gradient_clip_norm: 1.0
+  batch_size: 256
+  source_pretrain_learning_rate: 0.001
+  target_update_learning_rate: 0.0001
+  source_pretrain_max_epochs: 40
+  target_update_max_epochs: 20
+  early_stopping_patience: 5
+  source_selection_metric: source_validation_ROC_AUC
+  update_selection_metric: target_calibration_ROC_AUC
+  update_sampling: pooled_source_and_target_update_sessions
+alignment:
+  operator: CORAL
+  weight: 0.01
+  lambda_selection: fixed_before_V3_results_no_test_tuning
+  selected_branch_only_for_D1_D2_E: true
+  global_representation_for_B_G: true
+seeds:
+  initialization:
+  - 7
+  - 13
+  - 42
+  - 99
+  - 2024
+  bootstrap: 20260715
+  random_partition_master: 20260715
+evaluation:
+  endpoints:
+  - idh
+  - ih
+  primary_metric: ROC_AUC
+  secondary_metrics:
+  - PR_AUC
+  - Brier
+  - calibration_intercept
+  - calibration_slope
+  - ECE
+  bootstrap_unit: patient
+  bootstrap_replicates: 1000
+  multiplicity: Holm_for_two_co_primary_endpoints
+calibration:
+  method: Platt_scaling
+  updated_and_target_local_fit_role: target_calibration
+  source_only_fit_role: source_validation
+execution:
+  required_context: server_v3
+  cuda_required: true
+  training_authorized: false
+  run_grid_status: generated_not_authorized

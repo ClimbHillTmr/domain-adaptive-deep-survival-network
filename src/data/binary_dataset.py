@@ -171,10 +171,16 @@ def _target_split(
     )
 
 
-def _apply_source_categories(source_train: pd.DataFrame, frames: list[pd.DataFrame]) -> dict[str, Any]:
+def _apply_source_categories(
+    source_train: pd.DataFrame,
+    frames: list[pd.DataFrame],
+    features: list[str],
+) -> dict[str, Any]:
     mappings: dict[str, dict[str, int]] = {}
     for column in CATEGORICAL_COLUMNS:
         code_column = f"{column}_code"
+        if code_column not in features:
+            continue
         if column not in source_train.columns:
             continue
         source_values = source_train[column].fillna("__MISSING__").astype(str).str.strip()
@@ -192,7 +198,7 @@ def _fit_source_transform(
     frames: list[pd.DataFrame],
     features: list[str],
 ) -> dict[str, Any]:
-    metadata = _apply_source_categories(source_train, frames)
+    metadata = _apply_source_categories(source_train, frames, features)
     medians: dict[str, float] = {}
     means: dict[str, float] = {}
     scales: dict[str, float] = {}
@@ -213,6 +219,101 @@ def _fit_source_transform(
         medians[column], means[column], scales[column] = median, mean, scale
     metadata.update({"fit_cohort": "source_train", "medians": medians, "means": means, "scales": scales})
     return metadata
+
+
+def _load_frozen_split(
+    source: pd.DataFrame,
+    target: pd.DataFrame,
+    *,
+    patient_col: str,
+    split_manifest_path: str | Path,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, dict[str, Any]]:
+    split = pd.read_csv(split_manifest_path, dtype=str)
+    required = {"center", "patient_id", "split_role"}
+    missing = sorted(required - set(split.columns))
+    if missing:
+        raise ValueError(f"Frozen split manifest is missing columns: {missing}")
+
+    role_map = {
+        "source_train": ("source", "source_train"),
+        "source_validation": ("source", "source_val"),
+        "target_update": ("target", "target_train"),
+        "target_calibration": ("target", "target_val"),
+        "target_test": ("target", "target_test"),
+    }
+    patients_by_role: dict[str, list[str]] = {name: [] for _, name in role_map.values()}
+    for role, patients in split.groupby("split_role")["patient_id"]:
+        if role not in role_map:
+            raise ValueError(f"Unknown split role in frozen manifest: {role}")
+        center, bundle_name = role_map[role]
+        center_patients = set(split.loc[split["split_role"].eq(role) & split["center"].eq(center), "patient_id"].astype(str))
+        patients_by_role[bundle_name] = sorted(center_patients)
+
+    source_train = _rows_for_patients(source, patient_col, np.asarray(patients_by_role["source_train"]))
+    source_val = _rows_for_patients(source, patient_col, np.asarray(patients_by_role["source_val"]))
+    target_train = _rows_for_patients(target, patient_col, np.asarray(patients_by_role["target_train"]))
+    target_val = _rows_for_patients(target, patient_col, np.asarray(patients_by_role["target_val"]))
+    target_test = _rows_for_patients(target, patient_col, np.asarray(patients_by_role["target_test"]))
+
+    assigned_source = set(patients_by_role["source_train"]) | set(patients_by_role["source_val"])
+    assigned_target = (
+        set(patients_by_role["target_train"])
+        | set(patients_by_role["target_val"])
+        | set(patients_by_role["target_test"])
+    )
+    source_ids = set(source[patient_col].astype(str))
+    target_ids = set(target[patient_col].astype(str))
+    if assigned_source != source_ids:
+        raise ValueError("Frozen source patient assignment does not cover the source cohort exactly.")
+    if assigned_target != target_ids:
+        raise ValueError("Frozen target patient assignment does not cover the target cohort exactly.")
+
+    metadata = {
+        "split_manifest_path": str(split_manifest_path),
+        "split_id": str(split["split_id"].iloc[0]) if "split_id" in split.columns and len(split) else "",
+        "roles": {role: len(ids) for role, ids in patients_by_role.items()},
+    }
+    return source_train, source_val, target_train, target_val, target_test, metadata
+
+
+def _apply_frozen_transform(
+    frames: list[pd.DataFrame],
+    features: list[str],
+    preprocessing_path: str | Path,
+) -> dict[str, Any]:
+    payload = json.loads(Path(preprocessing_path).read_text(encoding="utf-8"))
+    locked_features = [str(name) for name in payload.get("feature_names", [])]
+    if locked_features != features:
+        raise ValueError("Frozen preprocessing feature order does not match the feature allowlist.")
+    medians = payload.get("medians", {})
+    means = payload.get("means", {})
+    scales = payload.get("scales", {})
+    missing_stats = [name for name in features if name not in medians or name not in means or name not in scales]
+    if missing_stats:
+        raise ValueError(f"Frozen preprocessing is missing feature statistics: {missing_stats}")
+
+    for frame in frames:
+        for column in features:
+            frame[column] = pd.to_numeric(frame[column], errors="coerce")
+            frame[column] = frame[column].fillna(float(medians[column]))
+            scale = float(scales[column])
+            if not np.isfinite(scale) or scale == 0:
+                scale = 1.0
+            frame[column] = (frame[column] - float(means[column])) / scale
+
+    return {
+        "categorical_mappings": payload.get("categorical_mappings", {}),
+        "unknown_code": payload.get("unknown_code", "len(mapping)"),
+        "fit_cohort": payload.get("fit_cohort", "source_train"),
+        "medians": {name: float(medians[name]) for name in features},
+        "means": {name: float(means[name]) for name in features},
+        "scales": {name: float(scales[name]) for name in features},
+        "feature_names": features,
+        "primary_groups": payload.get("primary_groups", {}),
+        "data_protocol_version": payload.get("data_protocol_version"),
+        "split_id": payload.get("split_id"),
+        "frozen_preprocessing_path": str(preprocessing_path),
+    }
 
 
 def _split_summary(frame: pd.DataFrame, patient_col: str) -> dict[str, Any]:
@@ -237,6 +338,8 @@ def prepare_binary_data(
     source_validation_fraction: float = 0.1,
     target_update_fraction: float = 0.4,
     target_validation_fraction: float = 0.15,
+    split_manifest_path: str | Path | None = None,
+    preprocessing_path: str | Path | None = None,
 ) -> BinaryDataBundle:
     """Prepare fixed patient-level folds and source-fitted start-time features."""
     source = _validate_binary_cohort(pd.read_csv(source_path, low_memory=False), "source", patient_col)
@@ -257,21 +360,33 @@ def prepare_binary_data(
     if missing_source or missing_target:
         raise ValueError(f"Allowed features missing from cohorts: source={missing_source}, target={missing_target}")
 
-    source_train_patients, source_val_patients = _split_patients(
-        source, patient_col, holdout_fraction=source_validation_fraction, seed=split_seed
-    )
-    source_train = _rows_for_patients(source, patient_col, source_train_patients)
-    source_val = _rows_for_patients(source, patient_col, source_val_patients)
-    target_train, target_val, target_test = _target_split(
-        target,
-        patient_col,
-        update_fraction=target_update_fraction,
-        validation_fraction=target_validation_fraction,
-        seed=split_seed,
-    )
+    if split_manifest_path is not None:
+        source_train, source_val, target_train, target_val, target_test, frozen_split = _load_frozen_split(
+            source,
+            target,
+            patient_col=patient_col,
+            split_manifest_path=split_manifest_path,
+        )
+    else:
+        source_train_patients, source_val_patients = _split_patients(
+            source, patient_col, holdout_fraction=source_validation_fraction, seed=split_seed
+        )
+        source_train = _rows_for_patients(source, patient_col, source_train_patients)
+        source_val = _rows_for_patients(source, patient_col, source_val_patients)
+        target_train, target_val, target_test = _target_split(
+            target,
+            patient_col,
+            update_fraction=target_update_fraction,
+            validation_fraction=target_validation_fraction,
+            seed=split_seed,
+        )
+        frozen_split = None
 
     folds = [source_train, source_val, target_train, target_val, target_test]
-    preprocessing = _fit_source_transform(source_train, folds, features)
+    if preprocessing_path is not None:
+        preprocessing = _apply_frozen_transform(folds, features, preprocessing_path)
+    else:
+        preprocessing = _fit_source_transform(source_train, folds, features)
     manifest = {
         "split_seed": split_seed,
         "patient_col": patient_col,
@@ -281,6 +396,8 @@ def prepare_binary_data(
         "target_val": _split_summary(target_val, patient_col),
         "target_test": _split_summary(target_test, patient_col),
     }
+    if frozen_split is not None:
+        manifest["frozen_split"] = frozen_split
     target_sets = [set(manifest[name]["patient_ids"]) for name in ("target_train", "target_val", "target_test")]
     if any(target_sets[i] & target_sets[j] for i in range(3) for j in range(i + 1, 3)):
         raise AssertionError("Target patient split overlap detected.")

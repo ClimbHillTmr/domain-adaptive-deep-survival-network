@@ -73,6 +73,9 @@ backup/data_preprocessing/data/
 data/raw/
 data/processed/
 data/confirmatory_v2/*.csv
+data/v3/*.csv
+data/v3/split_manifest.json
+v3/data_contract/split_manifest.csv
 data_preprocessing/data/
 
 # 大型预测结果文件

@@ -113,10 +113,14 @@ class BinaryMLP(nn.Module):
     def get_alignment_features(self, features: torch.Tensor, scope: str) -> torch.Tensor:
         if scope == "global":
             return self.get_features(features)
-        if scope == "selected_branch":
+        if scope in {"selected_branch", "branch_a", "physio_branch"}:
             if self.physio_indices is None:
                 raise ValueError("Selected-branch alignment requires a dual-branch model.")
             return self.physio_extractor(features[:, self.physio_indices])
+        if scope in {"branch_b", "treat_branch"}:
+            if self.physio_indices is None:
+                raise ValueError("Treatment-branch alignment requires a dual-branch model.")
+            return self.treat_extractor(features[:, self.treat_indices])
         raise ValueError(f"Unknown alignment scope: {scope}")
 
 

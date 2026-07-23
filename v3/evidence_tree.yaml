@@ -1,0 +1,329 @@
+evidence_tree_version: v3_evidence_tree_1
+project_title: Mechanism-Aware Transportable Representation Learning for Clinical AI under Heterogeneous Domain Shift
+central_question: Why do clinical AI models fail to transport across hospitals and does knowing what to align improve transportability?
+independent_sampling_unit: patient
+prediction_unit: dialysis_session
+historical_evidence_role: hypothesis_generation_only
+nodes:
+  - node_id: E1.1
+    parent_id: E1
+    label: Population and outcome composition
+    scientific_question: Do centers differ in patient composition and endpoint burden?
+    claim_scope: observed_association
+    protocol_status: ready
+    evidence_status: not_started
+    required_before_model_training: true
+    inputs: [locked cohort table, patient identifiers, endpoint definitions, demographics]
+    experiment_ids: [V3-E1-POPULATION]
+    estimands: [patient-balanced demographic differences, session and patient-level endpoint prevalence differences]
+    statistical_unit: patient_cluster
+    statistics: [standardized effects, patient-cluster bootstrap intervals]
+    outputs: [v3/evaluation/results/population_shift.csv]
+    falsification: Differences are small or uncertain after patient-balanced estimation.
+    blockers: [clinical cohort definition not frozen]
+
+  - node_id: E1.2
+    parent_id: E1
+    label: Feature distribution and missingness shift
+    scientific_question: Do prespecified features differ in shift magnitude direction and missingness?
+    claim_scope: observed_association
+    protocol_status: ready
+    evidence_status: not_started
+    required_before_model_training: true
+    inputs: [locked feature ontology, source and target development-eligible data]
+    experiment_ids: [V3-E1-FEATURE]
+    estimands: [standardized mean difference, Wasserstein distance, PSI, KS effect statistic, missingness difference, feature-wise domain predictability]
+    statistical_unit: patient_cluster
+    statistics: [patient-cluster bootstrap intervals, multiplicity-adjusted feature-level inference, ontology sensitivity]
+    outputs: [v3/evaluation/results/feature_shift.csv, v3/evaluation/results/feature_domain_predictability.csv]
+    falsification: Apparent heterogeneity is explained by coding errors missingness or one metric and does not persist across sensitivity analyses.
+    blockers: [feature ontology and data-quality rules not frozen]
+
+  - node_id: E1.3
+    parent_id: E1
+    label: Treatment and policy proxy shift
+    scientific_question: Do measured treatment and workflow proxies differ between centers?
+    claim_scope: proxy_not_causal_policy_effect
+    protocol_status: ready
+    evidence_status: not_started
+    required_before_model_training: true
+    inputs: [clinically adjudicated treatment/context variables, cross-center semantic mappings]
+    experiment_ids: [V3-E1-POLICY]
+    estimands: [patient-balanced distribution differences, missingness and category-support differences]
+    statistical_unit: patient_cluster
+    statistics: [effect sizes, patient-cluster bootstrap intervals]
+    outputs: [v3/evaluation/results/policy_proxy_shift.csv]
+    falsification: Candidate policy variables are unavailable semantically incomparable or show no reproducible shift.
+    blockers: [treatment feature mappings not clinically approved]
+
+  - node_id: E1.4
+    parent_id: E1
+    label: Measurement and process shift
+    scientific_question: Do devices acquisition protocols or documentation processes differ in measurable ways?
+    claim_scope: currently_unmeasured
+    protocol_status: blocked
+    evidence_status: blocked
+    required_before_model_training: false
+    inputs: [device identifiers, acquisition frequency, workflow and documentation metadata]
+    experiment_ids: [V3-E1-MEASUREMENT]
+    estimands: [device mix, measurement frequency, missingness process, protocol differences]
+    statistical_unit: patient_cluster_or_device
+    statistics: [descriptive effects with cluster uncertainty]
+    outputs: [v3/evaluation/results/measurement_process_shift.csv]
+    falsification: Required metadata are absent or observed differences are not reproducible.
+    blockers: [no validated Tier 4 measurement/process variables in current common table]
+
+  - node_id: E1.5
+    parent_id: E1
+    label: Disease-mechanism attribution
+    scientific_question: Can observed center differences be attributed to true biological mechanism differences?
+    claim_scope: not_identifiable_in_two_center_retrospective_data
+    protocol_status: scope_limited
+    evidence_status: not_identifiable
+    required_before_model_training: false
+    inputs: [would require stronger causal and biological evidence]
+    experiment_ids: []
+    estimands: []
+    statistical_unit: not_applicable
+    statistics: []
+    outputs: [v3/interpretation/interpretation_policy.md]
+    falsification: Not applicable; the claim is outside the identifiable scope of V3.
+    blockers: [causal biological mechanism cannot be separated from center effects]
+
+  - node_id: E2.1
+    parent_id: E2
+    label: Feature-group transportability ranking
+    scientific_question: Which prespecified clinical information groups retain predictive value from source to target?
+    claim_scope: predictive_transportability
+    protocol_status: ready
+    evidence_status: not_started
+    required_before_model_training: false
+    inputs: [locked transportability groups, source-only capacity-controlled probes, common evaluation splits]
+    experiment_ids: [V3-E2-FEATURE-RANK]
+    estimands: [absolute target-minus-source performance change, normalized excess-AUC transportability index, calibration change]
+    statistical_unit: patient_cluster
+    statistics: [paired patient-cluster intervals, group-size sensitivity, bootstrap ranking stability]
+    outputs: [v3/evaluation/results/transportability_ranking.csv]
+    falsification: Rankings are unstable under resampling alternative ontology or size-matched controls.
+    blockers: [groups and source/target evaluation roles not locked]
+
+  - node_id: E2.2
+    parent_id: E2
+    label: Representation transportability
+    scientific_question: Which learned representations preserve outcome information across centers before alignment?
+    claim_scope: predictive_representation
+    protocol_status: ready
+    evidence_status: not_started
+    required_before_model_training: false
+    inputs: [registered source-only encoders, frozen latent extraction protocol]
+    experiment_ids: [V3-E2-REPRESENTATION]
+    estimands: [source and target linear-probe performance, latent discrepancy, domain predictability]
+    statistical_unit: patient_cluster
+    statistics: [patient-grouped probes, cluster bootstrap intervals]
+    outputs: [v3/evaluation/results/representation_transportability.csv]
+    falsification: Representation ranking does not persist across seeds or probes.
+    blockers: [latent extraction and probe protocol not code-locked]
+
+  - node_id: E2.3
+    parent_id: E2
+    label: Outcome-specific transportability
+    scientific_question: Do IDH and IH exhibit different information-transport patterns?
+    claim_scope: endpoint_interaction
+    protocol_status: ready
+    evidence_status: not_started
+    required_before_model_training: false
+    inputs: [E2.1 and E2.2 registered outputs for both outcomes]
+    experiment_ids: [V3-E2-OUTCOME]
+    estimands: [endpoint-by-feature-group transportability contrast]
+    statistical_unit: patient_cluster
+    statistics: [prespecified interaction, multiplicity control]
+    outputs: [v3/evaluation/results/outcome_transportability.csv]
+    falsification: Endpoint contrasts are small uncertain or seed-dependent.
+    blockers: [interaction and multiplicity rule awaiting final lock]
+
+  - node_id: E3.1
+    parent_id: E3
+    label: No-alignment and global-alignment controls
+    scientific_question: What are the effects of updating architecture and blind global alignment?
+    claim_scope: architecture_matched_model_contrast
+    protocol_status: ready
+    evidence_status: not_started
+    required_before_model_training: false
+    inputs: [Models A B C and G under matched capacity and training]
+    experiment_ids: [V3-E3-CONTROLS]
+    estimands: [paired held-out discrimination calibration PR-AUC and Brier differences]
+    statistical_unit: patient_cluster
+    statistics: [seed-blocked contrasts, patient-cluster bootstrap]
+    outputs: [v3/evaluation/results/alignment_controls.csv]
+    falsification: Global alignment does not improve over its architecture-matched no-alignment control.
+    blockers: [capacity matching and centered CORAL not implemented]
+
+  - node_id: E3.2
+    parent_id: E3
+    label: Clinically partitioned selective alignment
+    scientific_question: Does knowing what to align improve transportability beyond global and no alignment?
+    claim_scope: primary_mechanism_aware_test
+    protocol_status: ready
+    evidence_status: not_started
+    required_before_model_training: false
+    inputs: [Models C D1 D2 and G, both partitions tested for both outcomes]
+    experiment_ids: [V3-E3-SELECTIVE]
+    estimands: [D1/D2 minus G and C paired held-out differences, endpoint-by-strategy contrast]
+    statistical_unit: patient_cluster
+    statistics: [seed-blocked patient-paired inference, multiplicity control]
+    outputs: [v3/evaluation/results/selective_alignment.csv]
+    falsification: Selective alignment fails to outperform both global and no alignment or results depend on one seed.
+    blockers: [ontology, branch selection and model comparison code not locked]
+
+  - node_id: E3.3
+    parent_id: E3
+    label: Random partition controls
+    scientific_question: Does the clinical partition outperform appropriate random partition nulls?
+    claim_scope: falsification_control
+    protocol_status: ready
+    evidence_status: not_started
+    required_before_model_training: false
+    inputs: [locked random-control families A-D and partition seeds]
+    experiment_ids: [V3-E3-RANDOM]
+    estimands: [clinical-partition effect relative to empirical random nulls]
+    statistical_unit: patient_cluster_and_partition
+    statistics: [empirical randomization inference, seed-blocked paired contrasts]
+    outputs: [v3/evaluation/results/random_partition_controls.csv]
+    falsification: Clinical partitions are typical of or worse than matched random partitions.
+    blockers: [partition generator and random-control plan not code-locked]
+
+  - node_id: E4.1
+    parent_id: E4
+    label: Latent shift and collapse
+    scientific_question: Did alignment change discrepancy without collapsing representation variance?
+    claim_scope: supportive_representation_diagnostic
+    protocol_status: ready
+    evidence_status: not_started
+    required_before_model_training: false
+    inputs: [registered latent representations before and after updating]
+    experiment_ids: [V3-E4-LATENT]
+    estimands: [MMD, Wasserstein distance, covariance distance, effective rank, variance spectrum, domain classifier performance]
+    statistical_unit: patient_cluster
+    statistics: [cluster intervals, seed summaries]
+    outputs: [v3/evaluation/results/latent_validation.csv]
+    falsification: Lower discrepancy is accompanied by collapse or is metric-dependent without predictive gain.
+    blockers: [latent audit implementation not frozen]
+
+  - node_id: E4.2
+    parent_id: E4
+    label: Outcome-information preservation
+    scientific_question: Does the aligned representation retain outcome-relevant information?
+    claim_scope: supportive_representation_diagnostic
+    protocol_status: ready
+    evidence_status: not_started
+    required_before_model_training: false
+    inputs: [frozen latent vectors and outcome-probe protocol]
+    experiment_ids: [V3-E4-PRESERVATION]
+    estimands: [source and target linear-probe AUC, PR-AUC and calibration]
+    statistical_unit: patient_cluster
+    statistics: [patient-grouped probe fitting, cluster bootstrap]
+    outputs: [v3/evaluation/results/information_preservation.csv]
+    falsification: Alignment reduces probe performance or preservation is not reproducible across seeds.
+    blockers: [probe training and leakage controls not frozen]
+
+  - node_id: E4.3
+    parent_id: E4
+    label: Attribution stability
+    scientific_question: Are feature-group contributions stable across centers seeds and updating stages?
+    claim_scope: exploratory_interpretation
+    protocol_status: ready
+    evidence_status: not_started
+    required_before_model_training: false
+    inputs: [registered models, fixed attribution sample and method]
+    experiment_ids: [V3-E4-ATTRIBUTION]
+    estimands: [rank correlation, top-k overlap, group contribution change]
+    statistical_unit: patient_cluster
+    statistics: [cluster bootstrap and seed summaries]
+    outputs: [v3/evaluation/results/attribution_stability.csv]
+    falsification: Attribution ranks or group shares are unstable or method-dependent.
+    blockers: [attribution protocol not frozen]
+
+  - node_id: E4.4
+    parent_id: E4
+    label: Calibration preservation
+    scientific_question: Does any representation benefit preserve or improve probabilistic calibration?
+    claim_scope: predictive_validation
+    protocol_status: ready
+    evidence_status: not_started
+    required_before_model_training: false
+    inputs: [locked uncalibrated and calibration-cohort probabilities]
+    experiment_ids: [V3-E4-CALIBRATION]
+    estimands: [calibration intercept, slope, ECE, Brier score]
+    statistical_unit: patient_cluster
+    statistics: [cluster bootstrap, before/after recalibration reporting]
+    outputs: [v3/evaluation/results/representation_calibration.csv]
+    falsification: Discrimination gain is offset by material calibration harm.
+    blockers: [calibration cohort and recalibration rule not locked]
+
+  - node_id: E5.1
+    parent_id: E5
+    label: Clinical calibration
+    scientific_question: Are predicted risks reliable at clinically relevant risk levels?
+    claim_scope: conditional_clinical_validation
+    protocol_status: ready
+    evidence_status: not_started
+    required_before_model_training: false
+    inputs: [locked model, calibration cohort, untouched evaluation cohort]
+    experiment_ids: [V3-E5-CALIBRATION]
+    estimands: [calibration curve, intercept, slope, ECE, Brier]
+    statistical_unit: patient_cluster
+    statistics: [cluster bootstrap intervals]
+    outputs: [v3/evaluation/results/clinical_calibration.csv]
+    falsification: Calibration remains materially biased after the locked calibration procedure.
+    blockers: [untouched temporal or external cohort not identified]
+
+  - node_id: E5.2
+    parent_id: E5
+    label: Decision curves
+    scientific_question: Does the model add net benefit over alert-all and alert-none?
+    claim_scope: conditional_clinical_validation
+    protocol_status: blocked
+    evidence_status: blocked
+    required_before_model_training: false
+    inputs: [clinically justified threshold range, untouched evaluation outcomes]
+    experiment_ids: [V3-E5-DCA]
+    estimands: [net benefit across the prespecified range]
+    statistical_unit: patient_cluster
+    statistics: [cluster bootstrap bands]
+    outputs: [v3/evaluation/results/decision_curve.csv]
+    falsification: Net benefit does not exceed comparators over the clinically relevant range.
+    blockers: [clinical threshold and workflow protocol not approved]
+
+  - node_id: E5.3
+    parent_id: E5
+    label: Alert and review burden
+    scientific_question: Is the true-event yield acceptable relative to false alerts and review workload?
+    claim_scope: conditional_clinical_validation
+    protocol_status: blocked
+    evidence_status: blocked
+    required_before_model_training: false
+    inputs: [locked thresholds, clinical action, untouched evaluation predictions]
+    experiment_ids: [V3-E5-ALERT]
+    estimands: [alerts, true events captured, false alerts, missed events per 1000 sessions, number needed to review]
+    statistical_unit: patient_cluster
+    statistics: [cluster bootstrap intervals]
+    outputs: [v3/evaluation/results/alert_burden.csv]
+    falsification: Review burden or missed-event burden exceeds the prespecified acceptable range.
+    blockers: [acceptable workflow burdens not defined]
+
+  - node_id: E5.4
+    parent_id: E5
+    label: Clinical threshold analysis
+    scientific_question: Are risk thresholds independent of the final evaluation outcomes and clinically actionable?
+    claim_scope: conditional_clinical_validation
+    protocol_status: blocked
+    evidence_status: blocked
+    required_before_model_training: false
+    inputs: [clinical rationale, intended use, independent calibration cohort]
+    experiment_ids: [V3-E5-THRESHOLD]
+    estimands: [threshold-specific sensitivity specificity PPV NPV and burden]
+    statistical_unit: patient_cluster
+    statistics: [cluster bootstrap intervals]
+    outputs: [v3/evaluation/results/threshold_metrics.csv]
+    falsification: Thresholds are post-hoc non-actionable or unstable.
+    blockers: [thresholds and alert action not clinically prespecified]
