@@ -1,8 +1,0 @@
-{
-  "registered_runs": 8,
-  "identical_split_manifests": true,
-  "source_patient_overlap": false,
-  "target_patient_overlap": false,
-  "temporal_leakage_status": "not_verifiable_without_exact_frozen_session-level_datasets",
-  "passed_patient_overlap_gate": true
-}

@@ -1,8 +1,0 @@
-claim_id,claim,claim_type,status,required_experiment,required_artifacts,allowed_current_wording
-V3-C01,Observed clinical variables show heterogeneous cross-center distribution differences,confirmatory,not_tested,V3 shift characterization,"locked manifests; patient-cluster shift estimates",Hypothesis only
-V3-C02,Supervised target-center updating improves held-out target prediction,confirmatory,not_tested,V3_SOURCE_ONLY versus V3_MODEL_A,"registered predictions; paired evaluation",Hypothesis only
-V3-C03,A prespecified clinical partition provides incremental benefit over no and architecture-matched global alignment,confirmatory,not_tested,V3_MODEL_C versus V3_MODEL_D_PHYS and V3_MODEL_D_TREAT versus V3_MODEL_G,"registered multiseed paired contrasts",Hypothesis only
-V3-C04,Clinical partitions outperform size-matched random partitions,confirmatory,not_tested,V3_MODEL_D_PHYS and V3_MODEL_D_TREAT versus V3_MODEL_E,"random-partition distribution; paired contrasts",Hypothesis only
-V3-C05,Different outcomes favor different transport strategies,confirmatory,not_tested,V3_MODEL_C through V3_MODEL_G,"endpoint interaction or prespecified contrast; multiplicity control",Hypothesis only
-V3-C06,Representation changes preserve outcome information while reducing selected discrepancies,exploratory,not_tested,V3 representation analysis,"latent metrics; outcome probes; held-out prediction",Hypothesis only
-V3-C07,The updated model has clinically relevant net benefit,confirmatory,blocked,V3 utility analysis,"locked clinical thresholds; untouched temporal or external evaluation cohort",Not currently claimable
