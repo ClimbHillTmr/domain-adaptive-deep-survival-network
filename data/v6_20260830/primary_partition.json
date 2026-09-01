@@ -1,0 +1,25 @@
+{
+  "branch_a": [
+    "透前体重-干体重"
+  ],
+  "branch_b": [
+    "年龄",
+    "性别",
+    "透析龄年",
+    "透前收缩压",
+    "透前舒张压",
+    "透前体重",
+    "历史平均透前体重",
+    "历史平均透前收缩压",
+    "历史平均透前舒张压",
+    "history_prior_session_count",
+    "history_IDH_240_interval_1_rate",
+    "history_IDH_240_interval_2_rate",
+    "history_IDH_240_interval_3_rate",
+    "history_IDH_240_interval_4_rate",
+    "history_IH_240_interval_1_rate",
+    "history_IH_240_interval_2_rate",
+    "history_IH_240_interval_3_rate",
+    "history_IH_240_interval_4_rate"
+  ]
+}

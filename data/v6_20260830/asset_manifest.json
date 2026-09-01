@@ -1,0 +1,64 @@
+{
+  "assets": [
+    {
+      "asset": "source_cohort",
+      "declared_sha256": "a1b479fbd86fb6023e90537799e74bd8d7afeab92bc279e1591557cb8b2b98bd",
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/data/v6_20260830/source_cohort.csv",
+      "protocol": "v6_20260830_data_protocol_1",
+      "sha256": "a1b479fbd86fb6023e90537799e74bd8d7afeab92bc279e1591557cb8b2b98bd"
+    },
+    {
+      "asset": "target_cohort",
+      "declared_sha256": "f724cfb9a40e65ae9ec01d9ad4773df6f8d1b22b5dffd899853708bd1c2295cf",
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/data/v6_20260830/target_cohort.csv",
+      "protocol": "v6_20260830_data_protocol_1",
+      "sha256": "f724cfb9a40e65ae9ec01d9ad4773df6f8d1b22b5dffd899853708bd1c2295cf"
+    },
+    {
+      "asset": "split_manifest",
+      "declared_sha256": "a73f67543ca6344e1192fb266738ce5a51e938d16a6297cbf11b3c08508abd22",
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/data/v6_20260830/split_manifest.csv",
+      "protocol": "v6_20260830_data_protocol_1",
+      "sha256": "a73f67543ca6344e1192fb266738ce5a51e938d16a6297cbf11b3c08508abd22"
+    },
+    {
+      "asset": "preprocessing",
+      "declared_sha256": "002aed1aca0ee147c17e18ff74778b63338c6a4085b02660efbae19d5d5f5629",
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/data/v6_20260830/preprocessing.json",
+      "protocol": "v6_20260830_data_protocol_1",
+      "sha256": "514a14578401d35d4625d89d44bfebb6680fdd3a5e4b6c91cc24a040a48ac786"
+    },
+    {
+      "asset": "primary_partition",
+      "declared_sha256": "1e7b23105e126820fb110380887a561148f49643a305ed2b0f930de3d5fbc3e1",
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/data/v6_20260830/primary_partition.json",
+      "protocol": "v6_20260830_data_protocol_1",
+      "sha256": "1e7b23105e126820fb110380887a561148f49643a305ed2b0f930de3d5fbc3e1"
+    },
+    {
+      "asset": "random_partitions",
+      "declared_sha256": "28b070d9366373109e7c0917c7b83f67a6a16fee1c40145c471397593d74820b",
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/data/v6_20260830/random_partitions.csv",
+      "protocol": "v6_20260830_data_protocol_1",
+      "sha256": "28b070d9366373109e7c0917c7b83f67a6a16fee1c40145c471397593d74820b"
+    },
+    {
+      "asset": "budget_subsets",
+      "declared_sha256": "bccd441c3a6ba29d660d4fbc4c6998f03dc7e179360be5fb3c19b330f1e6eddb",
+      "path": "/home/cht/Works/domain-adaptive-deep-survival-network/data/v6_20260830/budget_subsets.csv",
+      "protocol": "v6_20260830_data_protocol_1",
+      "sha256": "bccd441c3a6ba29d660d4fbc4c6998f03dc7e179360be5fb3c19b330f1e6eddb"
+    }
+  ],
+  "budget_repeats": 1,
+  "budgets": [
+    0.1,
+    0.25,
+    0.5,
+    1.0
+  ],
+  "data_root": "/home/cht/Works/domain-adaptive-deep-survival-network/data/v6_20260830",
+  "protocol": "v6_20260830_data_protocol_1",
+  "result_blind": true,
+  "root_seed": 20260830
+}

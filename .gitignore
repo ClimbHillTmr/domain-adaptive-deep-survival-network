@@ -1,0 +1,93 @@
+*.pyc
+*.out
+
+data_preprocessing/data/福鼎_optimized_data透前动脉压.csv
+data_preprocessing/data/福鼎_result_df透前动脉压.csv
+data_preprocessing/data/深医_optimized_data.csv
+data_preprocessing/data/深医_result_df.csv
+data_preprocessing/data/福鼎_based_data透前动脉压_HDH.csv
+data_preprocessing/data_10_20_90/福鼎_optimized_data透前动脉压.csv
+data_preprocessing/data_10_20_90/深医_optimized_data.csv
+data_preprocessing/data_10_20_90/深医_result_df.csv
+data_preprocessing/data_10_20_90/福鼎_result_df透前动脉压.csv
+experiments/results/real_test_predictions.csv
+# 临时文件和目录
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 日志文件
+logs/
+*.log
+
+# 输出目录
+output/
+results/
+reports/
+
+# 缓存目录
+.cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# 虚拟环境
+venv/
+env/
+ENV/
+
+# IDE文件
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# 系统文件
+.DS_Store
+Thumbs.db
+data_preprocessing/data_10_20_90/福鼎_final_data.csv
+data_preprocessing/data_10_20_90/深医_final_data.csv
+backup/data_preprocessing/data/
+
+# 大型数据文件 - 存储在 Hugging Face
+data/raw/
+data/processed/
+data/confirmatory_v2/*.csv
+data/v3/*.csv
+data/v3/split_manifest.json
+data/v6_20260830/source_cohort.csv
+data/v6_20260830/target_cohort.csv
+data/v6_20260830/split_manifest.csv
+v3/data_contract/split_manifest.csv
+data_preprocessing/data/
+
+# 大型预测结果文件
+experiments/results/real_test_predictions.csv
+experiments/runs/**/real_test_predictions.csv
+delivery_domain-adaptive-deep-survival-network_*/**/real_test_predictions.csv
+experiments/pipeline_runs/**/processed/*.csv
+
+# 最终实验结果中的大型文件（预测数据和模型权重）
+experiments/final_results/**/test_predictions.csv
+experiments/final_results/**/mlp_models.pt
+experiments/final_results/**/logistic_models.pkl
